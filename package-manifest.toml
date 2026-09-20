@@ -1,0 +1,203 @@
+[package]
+name = "series-continuity-director"
+version = "2026.09.20.1"
+version_scheme = "YYYY.MM.DD.N"
+release_timezone = "UTC"
+
+[knowledge]
+sources = [
+  "references/scene-persona.md",
+  "references/source-material.md",
+  "references/agent-evaluation.md",
+  "references/repair-analysis.md",
+  "references/narrative-authoring.md",
+  "references/creative-options.md",
+  "references/evidence-review.md",
+  "references/production-direction.md",
+  "references/production-execution.md",
+  "references/production-repair.md",
+  "references/timed-production.md",
+  "references/state-and-trust.md",
+  "references/continuity-core.md",
+  "references/story-structure.md",
+  "references/visual-language.md",
+  "references/scoped-lexicon.md",
+  "references/temporal-state.md",
+  "references/runtime-capabilities.md",
+  "references/viewpoint-profiles.md",
+  "references/third-person-camera.md",
+  "references/first-person-camera.md",
+  "references/blocking-and-coverage.md",
+  "references/viewpoint-transitions.md",
+  "references/shot-continuity.md",
+  "references/prompt-composition.md",
+  "references/operational-distinctions.md",
+  "references/model-facing-artifacts.md",
+  "references/target-adaptation.md",
+  "references/contact-scenes.md",
+  "references/performance-details.md",
+  "references/atmosphere-quality.md",
+  "references/dialogue-and-audio.md",
+  "references/post-production.md",
+  "references/visual-contracts.md",
+  "references/morphology-and-species-contracts.md",
+  "references/templates.md",
+]
+
+[flat]
+output = "adapters/series-continuity-director-flat.md"
+sources = [
+  "SKILL.md",
+  "references/scene-persona.md",
+  "references/source-material.md",
+  "references/agent-evaluation.md",
+  "references/repair-analysis.md",
+  "references/narrative-authoring.md",
+  "references/creative-options.md",
+  "references/evidence-review.md",
+  "references/production-direction.md",
+  "references/production-execution.md",
+  "references/production-repair.md",
+  "references/timed-production.md",
+  "references/state-and-trust.md",
+  "references/continuity-core.md",
+  "references/story-structure.md",
+  "references/visual-language.md",
+  "references/scoped-lexicon.md",
+  "references/temporal-state.md",
+  "references/runtime-capabilities.md",
+  "references/viewpoint-profiles.md",
+  "references/third-person-camera.md",
+  "references/first-person-camera.md",
+  "references/blocking-and-coverage.md",
+  "references/viewpoint-transitions.md",
+  "references/shot-continuity.md",
+  "references/prompt-composition.md",
+  "references/operational-distinctions.md",
+  "references/model-facing-artifacts.md",
+  "references/target-adaptation.md",
+  "references/contact-scenes.md",
+  "references/performance-details.md",
+  "references/atmosphere-quality.md",
+  "references/dialogue-and-audio.md",
+  "references/post-production.md",
+  "references/visual-contracts.md",
+  "references/morphology-and-species-contracts.md",
+  "references/templates.md",
+  "examples/mixed-viewpoint-workshop/README.md",
+  "examples/mixed-viewpoint-workshop/director-package.md",
+  "examples/test-cases.md",
+]
+
+[release]
+output = "dist/series-continuity-director-2026.09.20.1.zip"
+# Paths are relative to the repository root, and the archive mirrors the
+# repository, so an extracted release has the same shape as a checkout and a
+# script inside it resolves both roots the same way.
+include = [
+  "README.md",
+  "CHANGELOG.md",
+  "CONTRIBUTING.md",
+  "LICENSE",
+  "package-manifest.toml",
+  "AGENTS.md",
+  "CLAUDE.md",
+  ".claude-plugin",
+  ".codex-plugin",
+  ".agents",
+  "hooks",
+  "hosts",
+  "skills",
+]
+exclude_names = ["__pycache__", ".DS_Store", ".pytest_cache"]
+
+# Host packaging. Every path here is relative to the repository root, which is
+# also the plugin root; this suite sits one level down at `suite_root`. The core
+# is host neutral: nothing under `suite_root` carries a host name, and every host
+# specific file is generated from this table. The sources sit under `hosts/`,
+# named for the host that reads the output, or under `hosts/shared/` where more
+# than one host reads the same document. They are release members, so an
+# extracted release can rebuild and recheck what it carries.
+[hosts]
+suite_root = "skills/series-continuity-director"
+marketplace_name = "series-continuity-director"
+description = "Direct a recurring-character series so the story above it and the identity, state, wardrobe, prop ownership, camera geography and accepted history below it survive from scene to scene and chapter to chapter. The series may be screen, comics or prose: a scene is realized as shots, as pages of panels, or as passages."
+author = "series-continuity-director"
+license = "GPL-3.0-or-later"
+
+# The repository is the plugin for both hosts. Neither carries a copy of the
+# suite, and both describe the same tree.
+#
+# Claude Code: .claude-plugin/plugin.json, .claude-plugin/marketplace.json,
+# hooks/hooks.json. The standard hooks path is loaded without being named in the
+# manifest, so the manifest does not name it.
+#
+# The hook file is declared under this host because this table generates it here,
+# but it is not this host's alone: Codex reads the same default path. One file
+# serves both, and splitting it per host would give each of them a copy of the
+# same thing.
+#
+# The command names CLAUDE_PLUGIN_ROOT, which reads as one host's variable and is
+# not. It is the only name both hosts set: Claude Code sets CLAUDE_PLUGIN_ROOT,
+# CLAUDE_PLUGIN_DATA and CLAUDE_PROJECT_DIR and no neutral equivalent, and Codex
+# sets CLAUDE_PLUGIN_ROOT beside its own PLUGIN_ROOT for exactly this reason.
+# Using the neutral looking name would run on Codex alone.
+[hosts.claude-code]
+kind = "plugin"
+manifest = ".claude-plugin/plugin.json"
+hooks_source = "hosts/shared/hooks.json"
+hooks_output = "hooks/hooks.json"
+hooks_root_variable = "CLAUDE_PLUGIN_ROOT"
+marketplace = ".claude-plugin/marketplace.json"
+marketplace_source = "."
+marketplace_description = "Skills for serialized visual production: shot planning, continuity, asset authority, and a provider neutral submission gate."
+
+# Codex plugin manifest. Required fields are name, version and description;
+# `skills` is a path to the skills directory, and paths start with "./".
+[hosts.codex-plugin]
+kind = "manifest-file"
+output = ".codex-plugin/plugin.json"
+template = "hosts/codex/plugin.json.template"
+
+# The same hook, rendered for the other host. Codex reads hooks/hooks.json by
+# default, and a `hooks` entry in its manifest replaces that lookup, so it is
+# pointed at its own file and reads its own canonical PLUGIN_ROOT. Codex sets
+# CLAUDE_PLUGIN_ROOT as a compatibility alias, so one shared file would run on
+# both; naming a host by the other one's variable depends on that alias rather
+# than on the contract. One source renders both, so there is nothing to keep in
+# step by hand. Codex does not execute a plugin's hooks until the user reviews
+# and trusts them.
+[hosts.codex-hooks]
+kind = "hooks-file"
+source = "hosts/shared/hooks.json"
+output = "hooks/codex.json"
+root_variable = "PLUGIN_ROOT"
+
+# The marketplace entry for Codex, in the shape the CLI writes to
+# ~/.agents/plugins/marketplace.json when it installs a plugin globally. It states
+# this repository's entry so an installation has one to read.
+[hosts.codex-marketplace]
+kind = "manifest-file"
+output = ".agents/plugins/marketplace.json"
+template = "hosts/codex/marketplace.json.template"
+
+# Optional per-skill metadata for Codex, read from inside the skill directory.
+# The documented keys are interface, policy and dependencies.
+[hosts.codex-skill-metadata]
+kind = "entry-file"
+output = "{suite_root}/agents/openai.yaml"
+template = "hosts/openai/agent.yaml.template"
+
+# Repository guides. A host reads one name or the other and never both, so the
+# two outputs are the same document under two names, from one template. Two
+# templates would drift, and the drift would be invisible to whichever host reads
+# only one of them.
+[hosts.agents-md]
+kind = "entry-file"
+output = "AGENTS.md"
+template = "hosts/shared/repository-guide.md.template"
+
+[hosts.claude-md]
+kind = "entry-file"
+output = "CLAUDE.md"
+template = "hosts/shared/repository-guide.md.template"

@@ -1,0 +1,619 @@
+{
+  "artifact_type": "scene-plot",
+  "scene_id": "submission-gate-behind",
+  "narrative_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "chapter": "ch1",
+  "order": 1,
+  "arcs": [
+    "a1",
+    "a2"
+  ],
+  "characters": [
+    "C01"
+  ],
+  "themes": [
+    "t1"
+  ],
+  "focalization": {
+    "kind": "external"
+  },
+  "setting": {
+    "interior_exterior": "interior",
+    "location": "gate-fixture-boathouse",
+    "where": "at the bench, the hatch behind him",
+    "time_of_day": "first light, before either of them has spoken",
+    "season": "the first cold week",
+    "weather": "clear and still"
+  },
+  "scene_function": "entry",
+  "delivery_role": "chapter_opening",
+  "proposition": "From a shared boathouse before either of them speaks, one of them lights a second lantern, leaving the morning admitted rather than said.",
+  "turn": {
+    "value": "what is admitted between them",
+    "from": "unspoken",
+    "to": "set burning on the bench"
+  },
+  "structure": {
+    "profile": "kishotenketsu",
+    "parts": {
+      "ki": "b1",
+      "sho": "b2",
+      "ten": "b3",
+      "ketsu": "b4"
+    }
+  },
+  "beats": [
+    {
+      "id": "b1",
+      "beat": "He lifts one lantern down.",
+      "visibility": "visible"
+    },
+    {
+      "id": "b2",
+      "beat": "He fills the oil for more than one.",
+      "visibility": "visible"
+    },
+    {
+      "id": "b3",
+      "beat": "He lights a second lantern beside the first.",
+      "visibility": "visible",
+      "teaches": [
+        "audience"
+      ]
+    },
+    {
+      "id": "b4",
+      "beat": "He leaves it burning and goes.",
+      "visibility": "visible"
+    },
+    {
+      "id": "b5",
+      "beat": "The other one is still asleep up the ladder.",
+      "visibility": "context"
+    }
+  ],
+  "exchanges": [],
+  "placement": [
+    {
+      "statement": "the subject stands where each fixture's text places it",
+      "from": [
+        "b1",
+        "b2",
+        "b4"
+      ]
+    }
+  ],
+  "must_preserve": [
+    {
+      "statement": "the linen shirt and the leather apron",
+      "from": [
+        "b1"
+      ]
+    }
+  ],
+  "free": [
+    {
+      "statement": "what hangs on the far wall"
+    }
+  ],
+  "state_changes": [
+    {
+      "target": "the second lantern",
+      "change": "it is lit on the bench",
+      "from": [
+        "b3"
+      ]
+    }
+  ],
+  "relationship_delta": [],
+  "realization": {
+    "kind": "shots",
+    "units": [
+      {
+        "id": "asset-carries-shot-fields",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "asset-needs-no-plot",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "character-not-in-narrative",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "character-not-in-scene",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "clean-s03",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "clean-video",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "craft-words",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "e01-lowres",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "e01-negation",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "e02-empty-doorway",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "kind-undeclared",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mode-conflict",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "narrative-outside-root",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "plot-edited-after-approval",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "plot-missing",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "plot-outside-root",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "plot-unapproved",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "prohibited-surface",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "s02-tail",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "s07-hob",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "s08-hoodie",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "scene-id-mismatch",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "shot-outside-plot",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "exclusivity",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "floor",
+        "focal_beat": "b3",
+        "shows": [
+          {
+            "statement": "what this fixture's text describes",
+            "from": [
+              "b3"
+            ]
+          }
+        ],
+        "composition": [
+          {
+            "statement": "the framing this fixture's text states",
+            "from": [
+              "b3"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "approved": {
+    "by": "the fixture author",
+    "at": "2026-09-13T00:00:00Z",
+    "content_sha256": "e58db20c58548486e8928e9b5f164895ff6a1c41b00eb7363c3167ca08e44793"
+  }
+}

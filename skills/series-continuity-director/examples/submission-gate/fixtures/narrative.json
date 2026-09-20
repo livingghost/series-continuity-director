@@ -1,0 +1,131 @@
+{
+  "artifact_type": "narrative",
+  "series_id": "submission-gate-fixture",
+  "timeline_id": "main",
+  "medium": "screen",
+  "themes": [
+    {
+      "id": "t1",
+      "statement": "A fixture exists so that a rule has something to refuse."
+    }
+  ],
+  "characters": [
+    {
+      "id": "C01",
+      "name": "The fixture subject",
+      "persona": "fixtures/persona-c01.md",
+      "prohibitions": [
+        {
+          "kind": "surface",
+          "surface": "never say this",
+          "note": "a phrase this character is declared never to say"
+        },
+        {
+          "kind": "judgement",
+          "statement": "The subject does not account for its own state in dialogue."
+        }
+      ]
+    },
+    {
+      "id": "C02",
+      "name": "The fixture's other subject",
+      "persona": "fixtures/persona-c02.md"
+    }
+  ],
+  "arcs": [
+    {
+      "id": "a1",
+      "name": "The main arc",
+      "type": "main",
+      "status": "in-progress",
+      "themes": [
+        "t1"
+      ],
+      "characters": [
+        "C01"
+      ],
+      "setup": "Two people share a room and not much else.",
+      "rising": [
+        "One is asked for something.",
+        "The asking becomes a habit."
+      ],
+      "climax": "The habit is refused.",
+      "resolution": "What replaces it is chosen rather than fallen into."
+    }
+  ],
+  "acts": [
+    {
+      "id": "act1",
+      "number": 1,
+      "name": "The only act",
+      "does": "Gives every gate rule a case.",
+      "chapters": [
+        "ch1",
+        "ch2"
+      ]
+    }
+  ],
+  "chapters": [
+    {
+      "id": "ch1",
+      "number": 1,
+      "title": "The first chapter",
+      "status": "in-progress",
+      "arcs": [
+        "a1"
+      ],
+      "depicts": [
+        "Every gate rule having a case."
+      ],
+      "story_order_start": 0,
+      "story_order_end": 100
+    },
+    {
+      "id": "ch2",
+      "number": 2,
+      "title": "The second chapter",
+      "status": "in-progress",
+      "arcs": [
+        "a1"
+      ],
+      "depicts": [
+        "The rules that need a second chapter."
+      ],
+      "story_order_start": 100,
+      "story_order_end": 200
+    }
+  ],
+  "relationships": [
+    {
+      "id": "r1",
+      "from": "C01",
+      "to": "C02",
+      "bond_type": "working",
+      "at_start": "One fixture stands beside the other."
+    },
+    {
+      "id": "r2",
+      "from": "C02",
+      "to": "C01",
+      "bond_type": "working",
+      "at_start": "The other stands beside the first."
+    }
+  ],
+  "promises": [],
+  "questions": [],
+  "knowledge": [
+    {
+      "id": "k1",
+      "fact": "The rule set is exercised.",
+      "known_by": [
+        "audience"
+      ],
+      "learned_in": "ch1"
+    }
+  ],
+  "approved": {
+    "by": "the fixture author",
+    "at": "2026-09-11T00:00:00Z",
+    "content_sha256": "fff08a93fa95846a07da910852bacf9e794785f66c578a160c3877cf875ffdb3"
+  }
+}

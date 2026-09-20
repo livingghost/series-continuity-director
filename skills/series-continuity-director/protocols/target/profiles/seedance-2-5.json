@@ -1,0 +1,281 @@
+{
+  "artifact_type": "target-profile",
+  "target_id": "seedance-2-5",
+  "label": "Seedance 2.5 multimodal video with large-scale reference control",
+  "model_identifier": "bytedance:seedance@2.5",
+  "media_kind": [
+    "video-with-audio"
+  ],
+  "evidence": {
+    "checked_on": "2026-08-31",
+    "sources": [
+      {
+        "kind": "vendor-documentation",
+        "reference": "Seedance 2.5 prompt guidance"
+      },
+      {
+        "kind": "surface-control",
+        "reference": "Runware model schema for bytedance:seedance@2.5"
+      }
+    ]
+  },
+  "prompt_contract": {
+    "layers": [
+      "subject",
+      "action or event",
+      "setting and environment",
+      "visual style",
+      "camera work",
+      "sound"
+    ],
+    "required_layers": [
+      "subject",
+      "action or event",
+      "setting and environment"
+    ],
+    "style": "prose sentences in formula order, extended by a beat timeline for long clips",
+    "notes": [
+      "The template reads: subject does main action in setting, the image is visual style, the camera uses shot size position movement or cut, sound includes dialogue ambience effects or music.",
+      "Long clips written as one continuous sentence drift in character and camera; give them beats.",
+      "Every reference needs an assignment sentence stating what it supplies and what it must not control."
+    ]
+  },
+  "camera_control": {
+    "mode": "free-description",
+    "command_syntax": "name shot size, camera position, movement, or cut inside the camera sentence, or inside the beat that carries it",
+    "commands": [
+      "dolly",
+      "push in",
+      "pull out",
+      "pan",
+      "tilt",
+      "orbit",
+      "crane",
+      "tracking shot",
+      "zoom",
+      "cut"
+    ],
+    "framing_terms": [
+      "shot size",
+      "camera position",
+      "end state"
+    ],
+    "moves_per_shot": 1,
+    "notes": [
+      "One camera move per clip or per beat; a second move in the same beat competes with the first."
+    ]
+  },
+  "multi_shot_control": {
+    "supported": true,
+    "syntax": "a beat per line, each naming its seconds, what is on screen, what the camera does, and its audio, for example 0-3s followed by the beat description",
+    "min_shot_seconds": 2,
+    "max_shot_seconds": 5,
+    "shot_budget": [
+      {
+        "duration_seconds": "up to 8",
+        "shots": "prose description without a timeline"
+      },
+      {
+        "duration_seconds": "over 8",
+        "shots": "a beat timeline is required"
+      },
+      {
+        "duration_seconds": "up to 30",
+        "shots": "a full beat sheet, audio attached to each beat"
+      }
+    ],
+    "notes": [
+      "Audio cues belong inside their beat rather than gathered at the end of the prompt."
+    ]
+  },
+  "duration_control": {
+    "min_seconds": 4,
+    "max_seconds": 30,
+    "granularity": "whole seconds, or auto",
+    "sweet_spots": [
+      "up to 8s a single described shot",
+      "over 8s a beat timeline",
+      "edit operations require the auto duration"
+    ]
+  },
+  "audio_control": {
+    "generates_audio": true,
+    "sound_syntax": "the notation separates the kinds: parentheses for music, angle brackets for sound effects, braces for dialogue, and lenticular brackets for subtitles",
+    "dialogue_syntax": "state the language variant and the delivery, then the line in braces",
+    "unspecified_behaviour": "audio is generated in the same pass, so silence must be requested by name",
+    "notes": [
+      "Audio and video are produced together, which supports lip sync with subtitles.",
+      "Subtitles are the most reliable on-screen text; keep the words common and avoid special symbols."
+    ]
+  },
+  "frame_control": {
+    "aspect_parameter": "width and height together",
+    "resolution_parameter": "resolution preset, mutually exclusive with width and height",
+    "supported_geometries": [
+      "480p: 854x480, 752x560, 640x640, 560x752, 480x854, 992x432",
+      "720p: 1280x720, 1112x834, 960x960, 834x1112, 720x1280, 1470x630",
+      "1080p: 1920x1080, 1664x1248, 1440x1440, 1248x1664, 1080x1920, 2206x946"
+    ],
+    "notes": [
+      "Frame images and source video both forbid explicit width and height.",
+      "Every pair above, including the 1080p tier, is in the host's parameter schema for this model."
+    ]
+  },
+  "input_modes": [
+    {
+      "mode": "text only",
+      "media_supplies": "nothing",
+      "text_must_establish": "world, character appearance, placement, state, camera, action, and landing"
+    },
+    {
+      "mode": "frame images",
+      "request_keys": [
+        "inputs.frameImages"
+      ],
+      "limits": "at most two, addressed as first and last",
+      "media_supplies": "the endpoints of the motion",
+      "text_must_establish": "the path between them without creating a competing landing",
+      "excludes": [
+        "inputs.referenceImages",
+        "inputs.referenceVideos",
+        "inputs.video",
+        "width",
+        "height"
+      ]
+    },
+    {
+      "mode": "reference images",
+      "request_keys": [
+        "inputs.referenceImages"
+      ],
+      "limits": "up to thirty by the surface; guidance recommends at most eight subjects, stretching to twelve, before features dilute",
+      "media_supplies": "identity, wardrobe, palette, or a defined side of one object, according to the assigned role",
+      "text_must_establish": "each reference's job by citation, and what it must not control",
+      "excludes": [
+        "inputs.frameImages"
+      ]
+    },
+    {
+      "mode": "reference videos",
+      "request_keys": [
+        "inputs.referenceVideos"
+      ],
+      "limits": "up to ten, each 2 to 30 seconds; guidance recommends at most five subjects",
+      "media_supplies": "motion, timing, camera, or an accepted anchor shot treated as ground truth for continuity",
+      "text_must_establish": "what carries over and what changes",
+      "excludes": [
+        "inputs.frameImages"
+      ]
+    },
+    {
+      "mode": "source video edit or extend",
+      "request_keys": [
+        "inputs.video",
+        "settings.operation"
+      ],
+      "limits": "one clip, 2 to 30 seconds; edit requires the auto duration",
+      "media_supplies": "the existing clip to modify or continue",
+      "text_must_establish": "which change is wanted, or how the continuation proceeds from the ending",
+      "excludes": [
+        "inputs.frameImages",
+        "width",
+        "height"
+      ]
+    },
+    {
+      "mode": "reference audios",
+      "request_keys": [
+        "inputs.referenceAudios"
+      ],
+      "limits": "up to ten, each 2 to 30 seconds",
+      "media_supplies": "voice or performance timing",
+      "text_must_establish": "who speaks and how the audio relates to the visible action"
+    }
+  ],
+  "anti_patterns": [
+    "a reference cited without a stated job, which lets its background and lighting bleed in",
+    "more references than the guidance recommends, which dilutes the features that matter",
+    "a long clip written as one sentence rather than a beat timeline",
+    "reference clips shorter than two seconds, which carry too little information",
+    "mixing prompt languages when on-screen text is wanted",
+    "special symbols in text that must render on screen",
+    "leaving silence unstated when a beat should be quiet"
+  ],
+  "offerings": [
+    {
+      "service": "runware",
+      "model_identifier": "bytedance:seedance@2.5",
+      "request_keys": {
+        "frame images": [
+          "inputs.frameImages"
+        ],
+        "reference images": [
+          "inputs.referenceImages"
+        ],
+        "reference videos": [
+          "inputs.referenceVideos"
+        ],
+        "source video edit or extend": [
+          "inputs.video",
+          "settings.operation"
+        ],
+        "reference audios": [
+          "inputs.referenceAudios"
+        ]
+      },
+      "constraints": {
+        "duration_seconds": {
+          "min": 4,
+          "max": 30,
+          "integer": true,
+          "auto": "accepted in place of a number, and required when settings.operation is edit"
+        },
+        "geometry": "width and height together, from the listed pairs, or the resolution preset (480p, 720p, 1080p); both are refused with frame images or a source video, and the preset is exclusive with width and height",
+        "text": "positivePrompt of 2 to 10000 characters, required when the request carries no input",
+        "reference_images": {
+          "max": 30,
+          "pixels_each": "300 to 6000 on each side",
+          "bytes_each": 31457280
+        },
+        "frame_images": {
+          "max": 2,
+          "placement": "at least one of them is not the last frame"
+        },
+        "reference_videos": {
+          "max": 10,
+          "seconds_each": "2 to 30",
+          "seconds_total": 30,
+          "pixels_each": "300 to 6000 on each side",
+          "ratio_each": "0.4 to 2.5",
+          "bytes_each": 209715200,
+          "input": "an uploaded media id or a URL, not a data URI"
+        },
+        "reference_audios": {
+          "max": 10,
+          "seconds_each": "2 to 30",
+          "seconds_total": 30,
+          "bytes_each": 15728640,
+          "input": "an uploaded media id or a URL"
+        },
+        "source_video": {
+          "max": 1,
+          "seconds": "2 to 30",
+          "pixels": "300 to 6000 on each side",
+          "ratio": "0.4 to 2.5",
+          "bytes": 209715200,
+          "operation": "edit or extend under settings.operation; omitted, the prompt decides"
+        },
+        "frame_images_exclusive_with": "reference images, reference videos and a source video",
+        "seed": "not in the schema: the service exposes no seed for this model",
+        "number_results": {
+          "min": 1,
+          "max": 4
+        },
+        "inputs_envelope": "media keys sit inside an inputs object (inputs.referenceImages, inputs.frameImages, inputs.referenceVideos, inputs.referenceAudios, inputs.video)"
+      },
+      "observed_at": "2026-09-13",
+      "schema_snapshot": "protocols/target/observed-schemas/seedance-2-5.runware.json"
+    }
+  ],
+  "profile_sha256": "316350e8a746cbebf97f4747ecd200e5a826c664f800878ed4b89b4a6057244d"
+}

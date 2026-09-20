@@ -1,0 +1,19 @@
+{
+  "python_minimum": [
+    3,
+    11
+  ],
+  "media": {
+    "distributions": {
+      "Pillow": {
+        "import": "PIL",
+        "minimum_major": 12,
+        "maximum_major_exclusive": 13
+      }
+    },
+    "executables": [
+      "ffmpeg",
+      "ffprobe"
+    ]
+  }
+}

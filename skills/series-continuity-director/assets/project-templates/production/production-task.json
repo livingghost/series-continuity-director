@@ -1,0 +1,63 @@
+{
+  "task_id": "COPY_THE_OPEN_TASK_ID",
+  "route": "development",
+  "features": [],
+  "sources": [
+    {
+      "id": "brief",
+      "path": "brief.md",
+      "role": "world",
+      "disposition": "applied",
+      "locator": "whole",
+      "reason": "The actual requested purpose and constraints."
+    }
+  ],
+  "delivery": {
+    "path": "delivery.txt",
+    "transport": "authored-rendition",
+    "translation_notes": "Author the selected realization, excluding private material."
+  },
+  "criteria": [
+    {
+      "id": "purpose",
+      "strength": "hard",
+      "text": "Replace with an observable criterion appropriate to this request.",
+      "evidence": "any"
+    }
+  ],
+  "direction": {
+    "purpose": "Replace with the requested purpose.",
+    "intended_effect": "Replace with the intended effect, not an observed claim.",
+    "basis": [
+      {
+        "source": "brief",
+        "applicability": "The user-defined constraints and expressive scope."
+      }
+    ],
+    "decisions": [
+      {
+        "id": "depiction",
+        "question": "Which realization serves this purpose?",
+        "compare": false,
+        "options": [
+          {
+            "id": "chosen",
+            "realization": "REPLACE_WITH_THE_SELECTED_REALIZATION_AND_INCLUDE_IT_IN_DELIVERY",
+            "consequence": "Replace with the expected consequence."
+          }
+        ],
+        "selected": "chosen",
+        "reason": "Replace with the specific reason.",
+        "criteria": [
+          "purpose"
+        ]
+      }
+    ],
+    "departures": [],
+    "action_context": null,
+    "verification_limits": [
+      "Replace with what this artifact cannot establish."
+    ]
+  },
+  "sequence_plan": null
+}

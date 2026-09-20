@@ -1,0 +1,28 @@
+{{
+  "name": "{name}",
+  "version": "{version}",
+  "description": "{description}",
+  "author": {{
+    "name": "{author}"
+  }},
+  "license": "{license}",
+  "keywords": [
+    "continuity",
+    "storyboard",
+    "image-generation",
+    "video-generation",
+    "series"
+  ],
+  "skills": "./skills",
+  "hooks": "./hooks/codex.json",
+  "interface": {{
+    "displayName": "Series Continuity Director",
+    "shortDescription": "Keep a recurring character series continuous across shots and episodes.",
+    "longDescription": "{description}",
+    "developerName": "{author}",
+    "category": "Creative",
+    "defaultPrompt": [
+      "Plan the next scene of this series and write the start frame for its first shot."
+    ]
+  }}
+}}

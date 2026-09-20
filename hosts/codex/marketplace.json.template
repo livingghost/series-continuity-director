@@ -1,0 +1,18 @@
+{{
+  "name": "{marketplace_name}",
+  "plugins": [
+    {{
+      "name": "{name}",
+      "description": "{description}",
+      "source": {{
+        "source": "local",
+        "path": "./"
+      }},
+      "policy": {{
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      }},
+      "category": "Creative"
+    }}
+  ]
+}}

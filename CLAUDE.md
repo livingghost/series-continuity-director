@@ -1,0 +1,206 @@
+# series-continuity-director
+
+Direct a recurring-character series so the story above it and the identity, state, wardrobe, prop ownership, camera geography and accepted history below it survive from scene to scene and chapter to chapter. The series may be screen, comics or prose: a scene is realized as shots, as pages of panels, or as passages.
+
+Generated file. Edit `hosts/shared/repository-guide.md.template`.
+
+```
+<repo>/
+  README.md CHANGELOG.md CONTRIBUTING.md LICENSE package-manifest.toml
+  .claude-plugin/ .codex-plugin/ .agents/ hooks/ AGENTS.md CLAUDE.md   generated
+  hosts/                                        templates and hook sources
+  .github/
+  skills/series-continuity-director/
+      SKILL.md references/ scripts/ protocols/ config/ assets/ examples/ adapters/ agents/
+```
+
+`skills/series-continuity-director/` is the skill, and the only copy of it.
+
+Commands below are written with `python`. Use `python3` where that name is not on the
+path, which is the default on macOS and on Debian and Ubuntu.
+
+## What to read, and when
+
+The suite is a procedure, not a prompt. Find the action about to be performed and
+read those files before performing it. A reference read as background earlier in a
+session is not the same as a reference read as the procedure for the work in hand,
+and only the second one binds.
+
+| About to do this | Read first |
+|---|---|
+| Make a saved deliverable, choose its depiction or delegate a bounded action | `production-direction.md`, `production-execution.md` |
+| Revise a reviewed candidate or recover a retained output | `production-repair.md`, `production-execution.md` |
+| Build, inspect or revise timed material and an assembled interval | `timed-production.md`, `production-execution.md` |
+| Create or rename a full persona, world or intent record | `narrative-authoring.md`, `story-structure.md` |
+| Settle or revise what the series is about, its arcs, chapters, characters, promises, questions, or who knows what | `story-structure.md` section 6, `continuity-core.md` |
+| Plan or revise a scene or episode | `story-structure.md` sections 6 and 7, `continuity-core.md`, `blocking-and-coverage.md` |
+| Break a scene into shots and choose coverage | `blocking-and-coverage.md`, `shot-continuity.md`, `third-person-camera.md` |
+| Place a camera, choose scale, angle, height, or lens | `third-person-camera.md`, `visual-language.md`, `cinematic-lexicon.md` |
+| Design a recurring subject or revise its approved appearance | `visual-contracts.md` sections 1 and 2, `morphology-and-species-contracts.md`, `performance-details.md` |
+| Receive or deliver a public protocol artifact | `visual-contracts.md` section 8, `state-and-trust.md` |
+| Write a start frame, boundary frame, or any still | `prompt-composition.md`, `model-facing-artifacts.md`, `morphology-and-species-contracts.md` |
+| Write any text a model will receive | `prompt-composition.md`, `model-facing-artifacts.md`, `scoped-lexicon.md` |
+| Choose a target model, operation, or input mode | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md` |
+| Judge a returned take | `shot-continuity.md`, `post-production.md`, `performance-details.md` |
+| Register, accept, or replace a produced file | `state-and-trust.md` sections 4 and 5 |
+| Continue from an accepted endpoint | `continuity-core.md`, `shot-continuity.md` |
+| Write anything back to canon | `state-and-trust.md`, `temporal-state.md`, `story-structure.md` section 6 |
+| Send a submission, present a result, or generate again | `state-and-trust.md` section 6 |
+| Prepare or reuse a scene's complete Persona-based authoring material | `scene-persona.md` |
+| Preserve existing text and propose evidence-bound extraction | `source-material.md` |
+| Observe a real host execution and retain evaluation evidence | `agent-evaluation.md` |
+| Choose resource budgets, read complete material or export full review evidence | `resource-handling.md` |
+| Analyze repeated failures from actual production reviews | `repair-analysis.md` |
+
+Everything the table names is under `skills/series-continuity-director/references/`.
+
+## Production responsibilities and optional data exchange
+
+Develop the narrative, persona, world and visual design in the project workspace.
+Realize scenes as shots, comic pages or prose passages according to the requested
+medium. Explicitly supplied public artifacts can be inspected and used; they do
+not select a software-specific route or replace authoring. Do not discover
+installed tools or private project files from an artifact's provenance.
+
+Keep intent, approved state, direction, execution, observations and acceptance separate. Read `skills/series-continuity-director/references/state-and-trust.md` section 2. A project path locates evidence; it does not approve it. Exchange validation and service success do not authorize adoption or another run.
+
+The suite ships its own craft vocabulary. Network dispatch requires explicitly
+configured service data (`--service-profiles FILE`), user authorization and any
+credentials that the chosen service actually requires. A resource source is data,
+not an inferred installation dependency.
+
+## Before submitting any text to a generation surface
+
+```
+python skills/series-continuity-director/scripts/submission_gate.py <submission.json> --json
+```
+
+The gate refuses what can be proved wrong before anything is spent: a declared
+lock surface missing from the text, an exclusion or an absence the surface answers
+unreliably, a permanent feature the frame will show that the text does not name, a
+noun repeated inside one sentence, an input mode combination the target profile
+forbids, and an identity reference too small to hold a likeness. What it cannot
+measure it reports as unmeasured rather than passing.
+
+It knows no provider. The submission names a target,
+`skills/series-continuity-director/protocols/target/profiles/`
+says which request keys that target exposes and which exclude each other, and the
+gate compares the two. A surface it has never seen is supported by adding a
+profile, not by editing the gate.
+
+Its verdict is evidence for the user's decision to send, and not that decision.
+Present the exact text, each file and the control it occupies, the settings, and
+the number of outputs, and wait for the user to say to send it. When output comes
+back, present it. Do not review your own result unless the user asks, and do not
+generate again on an unrequested self-assessment.
+
+## At the start of a session
+
+```
+python skills/series-continuity-director/scripts/session_entry_points.py
+```
+
+It prints the installed location, the table above, and, in a
+project workspace, the roles whose asset is not settled.
+
+## What the skill conforms to
+
+The Agent Skills specification, which belongs to no single host. It fixes what
+every host reads and what every host refuses:
+
+- `name` at most 64 characters and `description` at most 1024. A host refuses
+  more than that.
+- The body under 500 lines, and under 5000 tokens once loaded, because a host
+  loads all of it the moment the skill activates.
+- References one level deep from `SKILL.md`. A file reached only through another
+  file may be read in part rather than in full.
+- Scripts are executed rather than read into context.
+
+`skills/series-continuity-director/scripts/validate_skill.py` refuses a `name` or `description` over
+the cap, reports the body's line count without bounding it, and settles that every
+reference is reachable from `SKILL.md` and that every command is documented
+somewhere the suite routes to. The routing table is what keeps references one
+level deep.
+
+## Working on this repository
+
+```
+python skills/series-continuity-director/scripts/build_flat.py            regenerate the flat adapter
+python skills/series-continuity-director/scripts/build_example.py         regenerate the worked example
+python skills/series-continuity-director/scripts/build_host_packages.py   regenerate the host files
+python skills/series-continuity-director/scripts/validate_skill.py        the aggregate check
+```
+
+Run them in that order. The first three write files that the fourth checks, and
+two of them write release members.
+
+The declared layout is in `skills/series-continuity-director/scripts/tree_layout.py`. It states which
+files the repository owns and which the suite owns, and `validate_skill.py`
+compares the tree against that statement rather than against whatever it finds,
+so a declared file that moved is an error and not a new definition of where
+things go.
+
+## Working in a project
+
+```
+python skills/series-continuity-director/scripts/init_project.py --out <directory> --series-id <id> --title "<title>"
+python skills/series-continuity-director/scripts/validate_project.py <directory>
+python skills/series-continuity-director/scripts/narrative_coverage.py <directory>
+```
+
+The first creates the workspace; the second checks its state, layout and registry;
+the third compares what the series declares against what its scenes cover.
+
+```
+python skills/series-continuity-director/scripts/work_ledger.py --project <directory> begin --goal "<goal>" --step "<step>" --step "<step>"
+python skills/series-continuity-director/scripts/work_ledger.py --project <directory> step 1
+python skills/series-continuity-director/scripts/work_ledger.py --project <directory> finish
+```
+
+Work that takes more than one step is opened as a task in `work/current.json`,
+its steps marked as they are done, and finished or abandoned at the end. The
+trail is `work/ledger.jsonl`. A session reads the open task before anything
+else, so one that lost its context continues from `next` instead of guessing.
+
+A project has two halves. `media/`, `state/` and `shots/` hold what was rendered,
+what is true at a moment, and how a moment is covered. `narrative/` holds what the
+series is about: the themes, arcs and chapters in `narrative/narrative.json`, a
+persona per character per phase, the places and groups and terms, and
+one scene plot per scene. Every layer names the layer above it, and the chain ends
+at the theme, which the author declares and which has no source above it.
+
+`asset-registry.md` decides which file a later session submits. Every record
+carries a `role`, the job it holds, and a `status`: `candidate`, `accepted`,
+`superseded` or `stale`. Exactly one asset is `accepted` for a role. The record is
+written when the file arrives, not when it is accepted.
+
+## Whole suite in one file
+
+`skills/series-continuity-director/adapters/series-continuity-director-flat.md`, for a host that accepts
+a single text and cannot follow a routing table.
+
+## Writing for a reader
+
+These rules apply to every file a person reads: README, CONTRIBUTING, CHANGELOG,
+the references, the templates, docstrings and commit messages.
+
+- Say what a thing does, as an action: "the tool records every returned
+  variant". State a boundary at most once per section, and as who decides:
+  "the author decides when a candidate becomes canon", not "the tool does not
+  decide".
+- One idea per sentence, about twenty words. Three or more items become a list.
+- Prefer the general word. Where a product term must appear because the tools
+  use it, put the general phrase beside it at its first use and use the general
+  word afterward. Do not add a glossary, a preamble about the document itself,
+  or a section that explains why other sections repeat.
+- Show a real example next to any claim about output: an actual command's output
+  or an actual record, trimmed, and labeled synthetic when it is a fixture.
+- Delete a repeated principle and refer to the place it is stated. Longer is
+  not safer.
+- ASCII punctuation, no em or en dashes, English throughout.
+- After changing README.md, run `python skills/series-continuity-director/scripts/readme_smoke_test.py`
+  and keep the executable example blocks byte-identical unless the commands changed.
+
+## Entry point
+
+`skills/series-continuity-director/SKILL.md`

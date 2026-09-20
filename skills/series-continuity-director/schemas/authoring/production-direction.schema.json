@@ -1,0 +1,220 @@
+{
+  "type": "object",
+  "properties": {
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "intended_effect": {
+      "type": "string",
+      "minLength": 1
+    },
+    "basis": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "applicability": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "source",
+          "applicability"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1
+          },
+          "compare": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "realization": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "consequence": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "id",
+                "realization",
+                "consequence"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1
+          },
+          "selected": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "criteria": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "id",
+          "question",
+          "compare",
+          "options",
+          "selected",
+          "reason",
+          "criteria"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "departures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "preserved": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "source",
+          "scope",
+          "reason",
+          "preserved"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "action_context": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "phase": {
+              "type": "string",
+              "minLength": 1
+            },
+            "before": {
+              "type": "string",
+              "minLength": 1
+            },
+            "after": {
+              "type": "string",
+              "minLength": 1
+            },
+            "relations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "subjects": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  },
+                  "relation": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "condition": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "subjects",
+                  "relation",
+                  "condition"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0
+            }
+          },
+          "required": [
+            "phase",
+            "before",
+            "after",
+            "relations"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "verification_limits": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "purpose",
+    "intended_effect",
+    "basis",
+    "decisions",
+    "departures",
+    "action_context",
+    "verification_limits"
+  ],
+  "additionalProperties": false
+}

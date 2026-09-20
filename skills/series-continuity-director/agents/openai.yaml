@@ -1,0 +1,6 @@
+interface:
+  display_name: Series Continuity Director
+  short_description: Keep a recurring character series continuous across shots and episodes.
+  default_prompt: Plan the next scene of this series and write the start frame for its first shot.
+policy:
+  allow_implicit_invocation: true

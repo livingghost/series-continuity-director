@@ -1,0 +1,293 @@
+{
+  "artifact_type": "target-profile",
+  "target_id": "minimax-h3",
+  "label": "MiniMax H3 video with native audio",
+  "model_identifier": "minimax:h3@0",
+  "media_kind": [
+    "video-with-audio"
+  ],
+  "evidence": {
+    "checked_on": "2026-08-31",
+    "sources": [
+      {
+        "kind": "vendor-documentation",
+        "reference": "MiniMax H3 prompt guidance"
+      },
+      {
+        "kind": "surface-control",
+        "reference": "Runware model schema for minimax:h3@0"
+      },
+      {
+        "kind": "preserved-run",
+        "reference": "preserved runs on this host"
+      }
+    ]
+  },
+  "prompt_contract": {
+    "layers": [
+      "subject",
+      "action",
+      "scene",
+      "visual style",
+      "camera",
+      "audio"
+    ],
+    "required_layers": [
+      "subject",
+      "action",
+      "scene"
+    ],
+    "style": "prose description of one readable shot",
+    "notes": [
+      "A named layer left unstated is filled by a surface default rather than left neutral.",
+      "Describe the action as continuous behaviour; a still description produces a static result.",
+      "The submitted text is bounded at two to seven thousand characters on this host.",
+      "The host rewrites the text before generation unless settings.promptExpansion is disabled; the default is balanced rewriting, and quality rewrites further at the cost of time. A submission whose text must reach the model as written states disabled."
+    ]
+  },
+  "camera_control": {
+    "mode": "named-commands-preferred",
+    "command_syntax": "the vendor vocabulary is written in square brackets inside the prose, for example a bracketed push in; up to three commands share one bracket, comma separated, to run together; two brackets separated by an ordering word run in sequence",
+    "commands": [
+      "Truck left",
+      "Truck right",
+      "Pan left",
+      "Pan right",
+      "Push in",
+      "Pull out",
+      "Pedestal up",
+      "Pedestal down",
+      "Tilt up",
+      "Tilt down",
+      "Zoom in",
+      "Zoom out",
+      "Shake",
+      "Tracking shot",
+      "Static shot"
+    ],
+    "framing_terms": [
+      "extreme close-up",
+      "close-up",
+      "medium shot",
+      "wide shot",
+      "establishing shot",
+      "low angle",
+      "high angle",
+      "over the shoulder"
+    ],
+    "moves_per_shot": 1,
+    "notes": [
+      "The bracketed vocabulary is closed: a move named outside it is ordinary prose the surface may or may not honour, so plan shots against the list rather than against an arbitrary camera path.",
+      "At most three commands may be combined in one bracket; more fail.",
+      "A push or truck moves the camera body; a zoom changes the lens. The surface treats them as different commands, and asking for both at once produces neither cleanly.",
+      "Framing terms are prose, not bracketed commands; the bracket carries movement only.",
+      "One move per shot is the recommendation for a readable result, not the syntax limit; the bracket itself accepts three."
+    ]
+  },
+  "multi_shot_control": {
+    "supported": true,
+    "syntax": "MM:SS.mmm-MM:SS.mmm followed by the shot description, ranges sequential and non-overlapping",
+    "min_shot_seconds": 2,
+    "max_shot_seconds": 5,
+    "shot_budget": [
+      {
+        "duration_seconds": "5-6",
+        "shots": "1-2"
+      },
+      {
+        "duration_seconds": "7-10",
+        "shots": "2-3"
+      },
+      {
+        "duration_seconds": "11-15",
+        "shots": "3-5"
+      }
+    ],
+    "notes": [
+      "The two second floor above is a planning floor; visible degradation begins below about 1.5 seconds.",
+      "Each internal cut still declares its story function, as any clip with internal cuts does."
+    ]
+  },
+  "duration_control": {
+    "min_seconds": 5,
+    "max_seconds": 15,
+    "granularity": "whole seconds",
+    "sweet_spots": [
+      "5s one moment, the shortest clip this host accepts",
+      "6-8s mini-story, the optimal band",
+      "9-12s full scene",
+      "13-15s extended sequence"
+    ]
+  },
+  "audio_control": {
+    "generates_audio": true,
+    "sound_syntax": "describe sound naturally in prose alongside the action",
+    "dialogue_syntax": "<d>[English] line </d> placed inline, one or two sentences per shot",
+    "unspecified_behaviour": "arbitrary ambient sound rather than silence",
+    "notes": [
+      "Name the intended silence explicitly when a beat should be quiet."
+    ]
+  },
+  "frame_control": {
+    "aspect_parameter": "width and height together",
+    "resolution_parameter": "resolution preset, mutually exclusive with width and height",
+    "supported_geometries": [
+      "768p: 1344x768, 1024x768, 768x768, 768x1024, 768x1344, 1536x672",
+      "1440p: 2560x1440, 1920x1440, 1440x1440, 1440x1920, 1440x2560, 2944x1248"
+    ],
+    "notes": [
+      "The resolution preset alone does not set orientation; state width and height to fix it.",
+      "The resolution preset is accepted only when input media is supplied, so a text-only submission sets geometry through width and height.",
+      "Frame-image mode forbids explicit width and height."
+    ]
+  },
+  "input_modes": [
+    {
+      "mode": "text only",
+      "media_supplies": "nothing",
+      "text_must_establish": "world, character appearance, placement, state, camera, action, and landing",
+      "limits": "compositional variation is an expected risk"
+    },
+    {
+      "mode": "frame images",
+      "request_keys": [
+        "inputs.frameImages"
+      ],
+      "limits": "at most two, addressed as first and last",
+      "media_supplies": "the endpoints of the motion",
+      "text_must_establish": "the physically plausible path between them, without creating a competing landing",
+      "excludes": [
+        "inputs.referenceImages",
+        "inputs.referenceVideos",
+        "inputs.referenceAudios",
+        "width",
+        "height"
+      ]
+    },
+    {
+      "mode": "reference images",
+      "request_keys": [
+        "inputs.referenceImages"
+      ],
+      "limits": "up to nine",
+      "media_supplies": "identity and appearance carried into new scenes",
+      "text_must_establish": "scene, placement, scale, blocking, contact, camera, and action",
+      "excludes": [
+        "inputs.frameImages"
+      ]
+    },
+    {
+      "mode": "reference videos",
+      "request_keys": [
+        "inputs.referenceVideos"
+      ],
+      "limits": "up to three, each 2 to 15 seconds",
+      "media_supplies": "source timing, camera, and motion",
+      "text_must_establish": "what remains from the source and what changes",
+      "excludes": [
+        "inputs.frameImages"
+      ]
+    },
+    {
+      "mode": "reference audios",
+      "request_keys": [
+        "inputs.referenceAudios"
+      ],
+      "limits": "up to three, each 2 to 15 seconds, and accepted only alongside image or video references",
+      "media_supplies": "voice or performance timing",
+      "text_must_establish": "who speaks and how the audio relates to the visible action",
+      "excludes": [
+        "inputs.frameImages"
+      ]
+    }
+  ],
+  "anti_patterns": [
+    "transition language such as dissolve or fade to black",
+    "requests for on-screen text, logos, or watermarks",
+    "slideshow phrasing that gives a shot no internal motion",
+    "contradictory style signals combined in one prompt",
+    "frame rate or frame count instructions",
+    "meta-instructions such as high quality or make it viral",
+    "overlapping timestamp ranges",
+    "leaving audio unaddressed",
+    "a reverse angle whose lighting is the inverse of the shot it answers, which the surface tends to render with the light source in the background either way",
+    "A reference image that already shows the described pose in the described setting is reproduced as the frame, static composition included; the text and the other references do not override it. Choose the pose-bearing reference as deliberately as a first frame, and give a shot that must compose from text only identity references that show no such pose."
+  ],
+  "profile_sha256": "6c1cab4b37054b445e4a3c54ebbe412c1dcd0f68f4a522178c844949d5fdba36",
+  "offerings": [
+    {
+      "service": "runware",
+      "model_identifier": "minimax:h3@0",
+      "request_keys": {
+        "frame images": [
+          "inputs.frameImages"
+        ],
+        "reference images": [
+          "inputs.referenceImages"
+        ],
+        "reference videos": [
+          "inputs.referenceVideos"
+        ],
+        "reference audios": [
+          "inputs.referenceAudios"
+        ]
+      },
+      "constraints": {
+        "duration_seconds": {
+          "min": 5,
+          "max": 15,
+          "integer": true,
+          "schema_minimum": 4
+        },
+        "geometry": "width and height together, from the listed pairs; the schema does not require them (2560x1440 by default), but without them the result is 16:9 whatever the references show, so state them in reference mode and text-only mode; refused in frame-image mode; the resolution preset needs input media and is exclusive with width and height",
+        "text": "positivePrompt of 2 to 7000 characters, always required",
+        "prompt_rewriting": "settings.promptExpansion is disabled, balanced (the default) or quality; the host rewrites the text unless disabled",
+        "as_written": {
+          "settings": {
+            "promptExpansion": "disabled"
+          }
+        },
+        "reference_images": {
+          "max": 9,
+          "pixels_each": "256 to 5760 on each side",
+          "ratio_each": "0.4 to 2.5",
+          "bytes_each": 31457280
+        },
+        "frame_images": {
+          "max": 2,
+          "placement": "at least one of them is not the last frame",
+          "pixels_each": "256 to 5760 on each side",
+          "ratio_each": "0.4 to 2.5",
+          "bytes_each": 31457280
+        },
+        "seed": "supported: an integer 0 to 4294967295; omitted, the service draws one",
+        "reference_videos": {
+          "max": 3,
+          "seconds_each": "2 to 15",
+          "seconds_total": 15,
+          "frame_rate": "23.976 to 60",
+          "pixels_each": "256 to 5760 on each side",
+          "ratio_each": "0.4 to 2.5",
+          "bytes_each": 52428800,
+          "input": "an uploaded media id or a URL, not a data URI"
+        },
+        "reference_audios": {
+          "max": 3,
+          "seconds_each": "2 to 15",
+          "seconds_total": 15,
+          "bytes_each": 15728640,
+          "requires": "reference images or reference videos in the same request",
+          "input": "an uploaded media id or a URL"
+        },
+        "media_bytes_total": 67108864,
+        "number_results": {
+          "min": 1,
+          "max": 4
+        },
+        "inputs_envelope": "media keys sit inside an inputs object (inputs.referenceImages, inputs.frameImages, inputs.referenceVideos, inputs.referenceAudios)"
+      },
+      "observed_at": "2026-09-13",
+      "schema_snapshot": "protocols/target/observed-schemas/minimax-h3.runware.json"
+    }
+  ]
+}

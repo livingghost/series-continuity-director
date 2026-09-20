@@ -1,0 +1,24 @@
+{
+  "submission_id": "e02-craft",
+  "kind": "shot",
+  "scene_plot": "fixtures/scene-plot.json",
+  "shot_id": "craft-words",
+  "target": "xai-grok-imagine-2",
+  "text": "Follow c01-outfit-anchor.jpg and the accepted pose from SHOT-EP002-03, seed1234 wardrobe.",
+  "inputs": [
+    {
+      "role": "reference",
+      "path": "fixtures/large.jpg"
+    }
+  ],
+  "obligations": {
+    "locks": [],
+    "permanent_features": []
+  },
+  "expected_status": "refused",
+  "expected_code": "OPERATOR_VOCABULARY",
+  "narrative": "fixtures/narrative.json",
+  "characters": [
+    "C01"
+  ]
+}

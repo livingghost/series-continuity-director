@@ -1,0 +1,30 @@
+{
+  "submission_id": "e02-s01-video",
+  "kind": "shot",
+  "scene_plot": "fixtures/scene-plot.json",
+  "shot_id": "mode-conflict",
+  "target": "minimax-h3",
+  "text": "The badger keeps his eyes closed and one ear turns toward the hatch.",
+  "inputs": [
+    {
+      "role": "first_frame",
+      "path": "fixtures/large.jpg",
+      "request_key": "inputs.frameImages"
+    },
+    {
+      "role": "reference",
+      "path": "fixtures/large.jpg",
+      "request_key": "inputs.referenceImages"
+    }
+  ],
+  "obligations": {
+    "locks": [],
+    "permanent_features": []
+  },
+  "expected_status": "refused",
+  "expected_code": "INPUT_MODE_CONFLICT",
+  "narrative": "fixtures/narrative.json",
+  "characters": [
+    "C01"
+  ]
+}

@@ -1,0 +1,802 @@
+{
+  "artifact_type": "observed-parameter-schema",
+  "target_id": "minimax-h3",
+  "service": "runware",
+  "model_identifier": "minimax:h3@0",
+  "observed_at": "2026-09-13",
+  "source": "the service's model schema endpoint",
+  "added": [
+    "taskType",
+    "taskUUID",
+    "deliveryMethod"
+  ],
+  "schema": {
+    "type": "object",
+    "x-constraints": [
+      {
+        "operation": "width",
+        "parameters": [
+          "inputs.referenceImages",
+          "inputs.frameImages",
+          "inputs.referenceVideos"
+        ],
+        "minimum": 256,
+        "maximum": 5760,
+        "scope": "each"
+      },
+      {
+        "operation": "height",
+        "parameters": [
+          "inputs.referenceImages",
+          "inputs.frameImages",
+          "inputs.referenceVideos"
+        ],
+        "minimum": 256,
+        "maximum": 5760,
+        "scope": "each"
+      },
+      {
+        "operation": "ratio",
+        "parameters": [
+          "inputs.referenceImages",
+          "inputs.frameImages",
+          "inputs.referenceVideos"
+        ],
+        "minimum": 0.4,
+        "maximum": 2.5,
+        "scope": "each"
+      },
+      {
+        "operation": "frameRate",
+        "parameters": [
+          "inputs.referenceVideos"
+        ],
+        "minimum": 23.976,
+        "maximum": 60,
+        "scope": "each"
+      },
+      {
+        "operation": "duration",
+        "parameters": [
+          "inputs.referenceVideos",
+          "inputs.referenceAudios"
+        ],
+        "minimum": 2,
+        "maximum": 15,
+        "scope": "each"
+      },
+      {
+        "operation": "duration",
+        "parameters": [
+          "inputs.referenceVideos",
+          "inputs.referenceAudios"
+        ],
+        "maximum": 15
+      },
+      {
+        "operation": "fileSize",
+        "parameters": [
+          "inputs.referenceImages",
+          "inputs.frameImages"
+        ],
+        "maximum": 31457280,
+        "scope": "each"
+      },
+      {
+        "operation": "fileSize",
+        "parameters": [
+          "inputs.referenceVideos"
+        ],
+        "maximum": 52428800,
+        "scope": "each"
+      },
+      {
+        "operation": "fileSize",
+        "parameters": [
+          "inputs.referenceAudios"
+        ],
+        "maximum": 15728640,
+        "scope": "each"
+      },
+      {
+        "operation": "fileSize",
+        "parameters": [
+          "inputs.referenceImages",
+          "inputs.frameImages",
+          "inputs.referenceVideos",
+          "inputs.referenceAudios"
+        ],
+        "maximum": 67108864
+      },
+      {
+        "operation": "duration",
+        "parameters": [
+          "inputs.referenceAudios"
+        ],
+        "minimum": 2,
+        "maximum": 15,
+        "scope": "each"
+      }
+    ],
+    "properties": {
+      "model": {
+        "title": "Model",
+        "description": "Identifier of the model to use for generation.",
+        "type": "string",
+        "const": "minimax:h3@0"
+      },
+      "taskType": {
+        "type": "string"
+      },
+      "taskUUID": {
+        "type": "string"
+      },
+      "deliveryMethod": {
+        "type": "string"
+      },
+      "inputs": {
+        "title": "Inputs",
+        "description": "The unified payload wrapper for complex media assets dictating image, video or audio inference constraints.",
+        "type": "object",
+        "properties": {
+          "referenceImages": {
+            "title": "Reference Images",
+            "description": "List of reference images (UUID, URL, Data URI, or Base64).",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "title": "Image",
+              "description": "Image input (UUID, URL, Data URI, or Base64).",
+              "type": "string",
+              "anyOf": [
+                {
+                  "format": "uuid"
+                },
+                {
+                  "format": "uri"
+                },
+                {
+                  "pattern": "^data:image\\/[a-zA-Z]+;base64,[a-zA-Z0-9+/=]+$"
+                },
+                {
+                  "pattern": "^[a-zA-Z0-9+/=]+$"
+                }
+              ]
+            },
+            "maxItems": 9
+          },
+          "frameImages": {
+            "title": "Frame Images",
+            "description": "List of frame-specific image inputs. Each item can be either a plain image input (UUID, URL, Data URI, or Base64) or an object with an image and a target position in the video.",
+            "type": "array",
+            "minItems": 1,
+            "contains": {
+              "not": {
+                "type": "object",
+                "properties": {
+                  "frame": {
+                    "enum": [
+                      "last",
+                      -1
+                    ]
+                  }
+                },
+                "required": [
+                  "frame"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "items": {
+              "anyOf": [
+                {
+                  "title": "Image",
+                  "description": "Image input (UUID, URL, Data URI, or Base64).",
+                  "type": "string",
+                  "anyOf": [
+                    {
+                      "format": "uuid"
+                    },
+                    {
+                      "format": "uri"
+                    },
+                    {
+                      "pattern": "^data:image\\/[a-zA-Z]+;base64,[a-zA-Z0-9+/=]+$"
+                    },
+                    {
+                      "pattern": "^[a-zA-Z0-9+/=]+$"
+                    }
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "image": {
+                      "title": "Image",
+                      "description": "Image input (UUID, URL, Data URI, or Base64).",
+                      "type": "string",
+                      "anyOf": [
+                        {
+                          "format": "uuid"
+                        },
+                        {
+                          "format": "uri"
+                        },
+                        {
+                          "pattern": "^data:image\\/[a-zA-Z]+;base64,[a-zA-Z0-9+/=]+$"
+                        },
+                        {
+                          "pattern": "^[a-zA-Z0-9+/=]+$"
+                        }
+                      ]
+                    },
+                    "frame": {
+                      "title": "Frame",
+                      "description": "Target frame position for the image. Supports first and last frame.",
+                      "oneOf": [
+                        {
+                          "const": "first",
+                          "description": "First frame of the video."
+                        },
+                        {
+                          "const": "last",
+                          "description": "Last frame of the video."
+                        },
+                        {
+                          "const": 0,
+                          "description": "Frame index 0 (first frame)."
+                        },
+                        {
+                          "const": -1,
+                          "description": "Frame index -1 (last frame)."
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "image"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "maxItems": 2
+          },
+          "referenceVideos": {
+            "title": "Reference Videos",
+            "description": "List of reference videos (UUID, URL).",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "title": "Video",
+              "description": "Video input (UUID or URL).",
+              "type": "string",
+              "anyOf": [
+                {
+                  "format": "uuid"
+                },
+                {
+                  "format": "uri"
+                }
+              ]
+            },
+            "maxItems": 3
+          },
+          "referenceAudios": {
+            "title": "Reference Audios",
+            "description": "List of reference audios (UUID, URL).",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "title": "Audio",
+              "description": "Audio input (UUID or URL).",
+              "type": "string",
+              "anyOf": [
+                {
+                  "format": "uuid"
+                },
+                {
+                  "format": "uri"
+                }
+              ]
+            },
+            "maxItems": 3
+          }
+        },
+        "additionalProperties": false
+      },
+      "positivePrompt": {
+        "title": "Positive Prompt",
+        "description": "Text prompt describing elements to include in the generated output.",
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 7000
+      },
+      "width": {
+        "title": "Width",
+        "description": "Width of the generated media in pixels.",
+        "type": "integer",
+        "default": 2560
+      },
+      "height": {
+        "title": "Height",
+        "description": "Height of the generated media in pixels.",
+        "type": "integer",
+        "default": 1440
+      },
+      "resolution": {
+        "title": "Resolution",
+        "description": "Resolution preset for the output. When used with input media, automatically matches the aspect ratio from the input.",
+        "type": "string",
+        "enum": [
+          "768p",
+          "1440p"
+        ]
+      },
+      "duration": {
+        "title": "Duration",
+        "description": "Length of the generated video in seconds. The total number of frames produced is determined by duration multiplied by the model's frame rate (fps).",
+        "type": "integer",
+        "default": 5,
+        "minimum": 4,
+        "maximum": 15
+      },
+      "seed": {
+        "title": "Seed",
+        "description": "Random seed for reproducible generation. When not provided, a random seed is generated in the unsigned 32-bit range.",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4294967295
+      },
+      "settings": {
+        "title": "Settings",
+        "description": "Global inference settings.",
+        "type": "object",
+        "properties": {
+          "promptExpansion": {
+            "title": "Prompt Expansion",
+            "description": "Level of automatic prompt rewriting applied before generation. Affects reproducibility.",
+            "type": "string",
+            "default": "balanced",
+            "oneOf": [
+              {
+                "description": "No prompt rewriting.",
+                "const": "disabled"
+              },
+              {
+                "description": "Balanced rewriting.",
+                "const": "balanced"
+              },
+              {
+                "description": "Quality-first rewriting, at the cost of longer generation time.",
+                "const": "quality"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "includeCost": {
+        "title": "Include Cost",
+        "description": "Include task cost in the response.",
+        "type": "boolean"
+      },
+      "numberResults": {
+        "title": "Number of Results",
+        "description": "Number of results to generate. Each result uses a different seed, producing variations of the same parameters.",
+        "type": "integer",
+        "minimum": 1,
+        "default": 1,
+        "maximum": 4
+      },
+      "uploadEndpoint": {
+        "title": "Upload Endpoint",
+        "description": "URL to upload content via HTTP PUT. The request body will contain the raw binary data.",
+        "type": "string",
+        "format": "uri"
+      },
+      "ttl": {
+        "title": "TTL",
+        "description": "Time-to-live (TTL) in seconds for generated content. Only applies when `outputType` is `URL`.",
+        "type": "integer",
+        "minimum": 60
+      },
+      "outputType": {
+        "title": "Output Type",
+        "description": "Video output type.",
+        "type": "string",
+        "enum": [
+          "URL"
+        ],
+        "default": "URL"
+      },
+      "outputFormat": {
+        "title": "Output Format",
+        "description": "File format for the generated video.",
+        "type": "string",
+        "enum": [
+          "MP4",
+          "WEBM",
+          "MOV"
+        ],
+        "default": "MP4"
+      },
+      "outputQuality": {
+        "title": "Output Quality",
+        "description": "Compression quality of the output. Higher values preserve quality but increase file size.",
+        "type": "integer",
+        "minimum": 20,
+        "maximum": 99,
+        "default": 95
+      },
+      "safety": {
+        "type": "object",
+        "title": "Safety Settings",
+        "description": "Content safety checking configuration for video generation.",
+        "properties": {
+          "checkContent": {
+            "title": "Check Content",
+            "description": "Enable or disable content safety checking. Increases total generation time.",
+            "type": "boolean"
+          },
+          "mode": {
+            "title": "Safety Mode",
+            "description": "Safety checking mode for video generation.",
+            "type": "string",
+            "oneOf": [
+              {
+                "const": "fast",
+                "title": "Fast",
+                "description": "Checks key frames."
+              },
+              {
+                "const": "full",
+                "title": "Full",
+                "description": "Checks all frames."
+              }
+            ],
+            "default": "fast"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "required": [
+      "positivePrompt",
+      "model"
+    ],
+    "allOf": [
+      {
+        "dependentRequired": {
+          "width": [
+            "height"
+          ],
+          "height": [
+            "width"
+          ]
+        }
+      },
+      {
+        "not": {
+          "allOf": [
+            {
+              "properties": {
+                "inputs": {
+                  "required": [
+                    "frameImages"
+                  ]
+                }
+              },
+              "required": [
+                "inputs"
+              ]
+            },
+            {
+              "properties": {
+                "inputs": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "referenceImages"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "referenceVideos"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "referenceAudios"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "inputs"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "not": {
+          "allOf": [
+            {
+              "required": [
+                "resolution"
+              ]
+            },
+            {
+              "anyOf": [
+                {
+                  "required": [
+                    "width"
+                  ]
+                },
+                {
+                  "required": [
+                    "height"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "inputs": {
+              "required": [
+                "frameImages"
+              ]
+            }
+          },
+          "required": [
+            "inputs"
+          ]
+        },
+        "then": {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "width"
+                ]
+              },
+              {
+                "required": [
+                  "height"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "if": {
+          "required": [
+            "resolution"
+          ]
+        },
+        "then": {
+          "properties": {
+            "inputs": {
+              "anyOf": [
+                {
+                  "required": [
+                    "frameImages"
+                  ]
+                },
+                {
+                  "required": [
+                    "referenceImages"
+                  ]
+                },
+                {
+                  "required": [
+                    "referenceVideos"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "inputs"
+          ]
+        }
+      },
+      {
+        "if": {
+          "anyOf": [
+            {
+              "required": [
+                "width"
+              ]
+            },
+            {
+              "required": [
+                "height"
+              ]
+            }
+          ]
+        },
+        "then": {
+          "required": [
+            "width",
+            "height"
+          ],
+          "oneOf": [
+            {
+              "title": "768p (~16:9)",
+              "properties": {
+                "width": {
+                  "const": 1344
+                },
+                "height": {
+                  "const": 768
+                }
+              }
+            },
+            {
+              "title": "768p (4:3)",
+              "properties": {
+                "width": {
+                  "const": 1024
+                },
+                "height": {
+                  "const": 768
+                }
+              }
+            },
+            {
+              "title": "768p (1:1)",
+              "properties": {
+                "width": {
+                  "const": 768
+                },
+                "height": {
+                  "const": 768
+                }
+              }
+            },
+            {
+              "title": "768p (3:4)",
+              "properties": {
+                "width": {
+                  "const": 768
+                },
+                "height": {
+                  "const": 1024
+                }
+              }
+            },
+            {
+              "title": "768p (~9:16)",
+              "properties": {
+                "width": {
+                  "const": 768
+                },
+                "height": {
+                  "const": 1344
+                }
+              }
+            },
+            {
+              "title": "768p (~21:9)",
+              "properties": {
+                "width": {
+                  "const": 1536
+                },
+                "height": {
+                  "const": 672
+                }
+              }
+            },
+            {
+              "title": "1440p (16:9)",
+              "properties": {
+                "width": {
+                  "const": 2560
+                },
+                "height": {
+                  "const": 1440
+                }
+              }
+            },
+            {
+              "title": "1440p (4:3)",
+              "properties": {
+                "width": {
+                  "const": 1920
+                },
+                "height": {
+                  "const": 1440
+                }
+              }
+            },
+            {
+              "title": "1440p (1:1)",
+              "properties": {
+                "width": {
+                  "const": 1440
+                },
+                "height": {
+                  "const": 1440
+                }
+              }
+            },
+            {
+              "title": "1440p (3:4)",
+              "properties": {
+                "width": {
+                  "const": 1440
+                },
+                "height": {
+                  "const": 1920
+                }
+              }
+            },
+            {
+              "title": "1440p (9:16)",
+              "properties": {
+                "width": {
+                  "const": 1440
+                },
+                "height": {
+                  "const": 2560
+                }
+              }
+            },
+            {
+              "title": "1440p (~21:9)",
+              "properties": {
+                "width": {
+                  "const": 2944
+                },
+                "height": {
+                  "const": 1248
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "inputs": {
+              "required": [
+                "referenceAudios"
+              ]
+            }
+          },
+          "required": [
+            "inputs"
+          ]
+        },
+        "then": {
+          "properties": {
+            "inputs": {
+              "anyOf": [
+                {
+                  "required": [
+                    "referenceImages"
+                  ]
+                },
+                {
+                  "required": [
+                    "referenceVideos"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "additionalProperties": false
+  }
+}

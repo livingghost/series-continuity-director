@@ -1,0 +1,155 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions: {}
+
+env:
+  # The check steps must not leave __pycache__ behind in a tree the release compares.
+  PYTHONDONTWRITEBYTECODE: "1"
+  # The scripts emit JSON with ensure_ascii=False; force UTF-8 stdout so the
+  # Windows runner does not fail on its default ANSI code page.
+  PYTHONUTF8: "1"
+
+jobs:
+  build:
+    name: build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install declared media test dependencies
+        run: python -m pip install -r skills/series-continuity-director/requirements-media.txt
+
+      - name: Install FFmpeg on Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Install FFmpeg on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { choco install ffmpeg --yes --no-progress }
+          if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Get-Command ffprobe -ErrorAction SilentlyContinue)) { throw 'ffprobe is required for the declared media tests' }
+
+      - name: Validate product identity, documentation and process evidence
+        shell: bash
+        run: |
+          python skills/series-continuity-director/scripts/release_contract.py --tag "$GITHUB_REF_NAME"
+          python skills/series-continuity-director/scripts/release_management_smoke_test.py
+          python skills/series-continuity-director/scripts/readme_smoke_test.py
+          python skills/series-continuity-director/scripts/agent_evaluation_smoke_test.py
+          python skills/series-continuity-director/scripts/resource_handling_smoke_test.py
+
+      - name: Build validated release files
+        shell: bash
+        run: |
+          OUT=$(python -c 'import tomllib; print(tomllib.load(open("package-manifest.toml", "rb"))["release"]["output"])')
+          python skills/series-continuity-director/scripts/build_release.py --out "$OUT" --reports-dir dist/reports
+
+      - name: Upload validated release files
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-files-${{ matrix.os }}
+          path: |
+            dist/*.zip
+            dist/*.sha256
+            dist/reports/archive-check.json
+          if-no-files-found: error
+          retention-days: 7
+
+  package-consistency:
+    name: Compare release archives across operating systems
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Download Linux release files
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-files-ubuntu-latest
+          path: release-linux
+
+      - name: Download Windows release files
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-files-windows-latest
+          path: release-windows
+
+      - name: Require matching archive bytes and content
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          def load(root):
+              base = Path(root)
+              archive = next(base.glob("*.zip"))
+              report = json.loads((base / "reports" / "archive-check.json").read_text(encoding="utf-8"))
+              return archive, archive.read_bytes(), report["content_sha256"]
+
+          linux_archive, linux_bytes, linux_content = load("release-linux")
+          _, windows_bytes, windows_content = load("release-windows")
+          failures = []
+          if linux_content != windows_content:
+              failures.append(f"content digests differ: linux={linux_content} windows={windows_content}")
+          if linux_bytes != windows_bytes:
+              failures.append(
+                  "raw archive bytes differ: "
+                  f"linux={hashlib.sha256(linux_bytes).hexdigest()} "
+                  f"windows={hashlib.sha256(windows_bytes).hexdigest()}"
+              )
+          if failures:
+              raise SystemExit("; ".join(failures))
+          print(linux_archive.name, hashlib.sha256(linux_bytes).hexdigest())
+          PY
+
+      - name: Promote verified Linux release files
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-files
+          path: |
+            release-linux/*.zip
+            release-linux/*.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: package-consistency
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download validated release files
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-files
+          path: release-files
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: gh release create "$GITHUB_REF_NAME" release-files/* --verify-tag --generate-notes

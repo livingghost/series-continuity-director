@@ -1,0 +1,28 @@
+{
+  "submission_id": "e02-s08-frame",
+  "kind": "shot",
+  "scene_plot": "fixtures/scene-plot.json",
+  "shot_id": "s08-hoodie",
+  "target": "xai-grok-imagine-2",
+  "text": "A close frame on the head and shoulders of the broad anthro badger standing at a boathouse bench in the morning.",
+  "inputs": [
+    {
+      "role": "reference",
+      "path": "fixtures/large.jpg"
+    }
+  ],
+  "obligations": {
+    "locks": [
+      "black boxer briefs"
+    ],
+    "permanent_features": [
+      "white stripe from brow to nape"
+    ]
+  },
+  "expected_status": "refused",
+  "expected_code": "LOCK_SURFACE_ABSENT",
+  "narrative": "fixtures/narrative.json",
+  "characters": [
+    "C01"
+  ]
+}

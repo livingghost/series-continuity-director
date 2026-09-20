@@ -1,0 +1,12 @@
+# The working tree is LF everywhere; keep it that way on all platforms so the
+# generated-artifact checks (build_flat.py --check, build_example.py --check)
+# compare byte-identically on Windows and Linux.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.zip binary
+*.woff binary
+*.woff2 binary

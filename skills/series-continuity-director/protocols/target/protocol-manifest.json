@@ -1,0 +1,21 @@
+{
+  "protocol": "series-target-protocol",
+  "implementation": "series-continuity-director",
+  "artifact_types": [
+    "target-profile"
+  ],
+  "profile_files": [
+    "profiles/minimax-h3.json",
+    "profiles/seedance-2-0.json",
+    "profiles/seedance-2-5.json",
+    "profiles/xai-grok-imagine-2.json"
+  ],
+  "principles": {
+    "profile_per_exact_model": true,
+    "documentation_and_behaviour_kept_separate": true,
+    "camera_vocabulary_constrains_shot_planning": true,
+    "multi_shot_support_changes_clip_packing": true,
+    "unstated_prompt_layer_takes_a_surface_default": true
+  },
+  "usage": "Read the profile for the selected model before writing a director package or an exact submission. Profiles hold durable surface facts; project files hold the decisions made from them."
+}

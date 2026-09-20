@@ -1,0 +1,135 @@
+{
+  "type": "object",
+  "properties": {
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "principal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "actor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "enum": [
+              "decide",
+              "edit",
+              "submit",
+              "select",
+              "adopt"
+            ]
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "max_calls": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_outputs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max_cost": {
+            "type": "string",
+            "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "operation",
+          "scopes",
+          "max_calls",
+          "max_outputs",
+          "max_cost",
+          "currency"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "preserve_sources": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "stop_conditions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "halt_on": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "failed-hard-review",
+          "unresolved-review"
+        ]
+      },
+      "minItems": 0
+    },
+    "expires_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "path",
+        "locator"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "input_sha256",
+    "principal",
+    "actor",
+    "purpose",
+    "permissions",
+    "preserve_sources",
+    "stop_conditions",
+    "halt_on",
+    "expires_at",
+    "evidence"
+  ],
+  "additionalProperties": false
+}

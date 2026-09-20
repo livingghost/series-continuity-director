@@ -1,0 +1,381 @@
+{
+  "always_read": [
+    "SKILL.md",
+    "references/production-execution.md",
+    "references/production-direction.md"
+  ],
+  "external_inputs": [
+    "task",
+    "source-files",
+    "delivery",
+    "artifact-file",
+    "review-file",
+    "selection-file"
+  ],
+  "stages": [
+    {
+      "id": "prepare",
+      "inputs": [
+        "task",
+        "source-files",
+        "delivery"
+      ],
+      "outputs": [
+        "prepared",
+        "consumer"
+      ],
+      "next": "handoff",
+      "on_failure": "prepare",
+      "resume": "status",
+      "owner": "scripts/production_workflow.py:prepare",
+      "command": "python scripts/production_workflow.py prepare --help"
+    },
+    {
+      "id": "handoff",
+      "inputs": [
+        "prepared",
+        "consumer"
+      ],
+      "outputs": [
+        "handoff"
+      ],
+      "next": "capture",
+      "on_failure": "prepare",
+      "resume": "status",
+      "owner": "scripts/production_workflow.py:handoff",
+      "command": "python scripts/production_workflow.py handoff --help"
+    },
+    {
+      "id": "capture",
+      "inputs": [
+        "handoff",
+        "artifact-file"
+      ],
+      "outputs": [
+        "candidate"
+      ],
+      "next": "review",
+      "on_failure": "capture",
+      "resume": "status",
+      "owner": "scripts/production_workflow.py:capture",
+      "command": "python scripts/production_workflow.py capture --help"
+    },
+    {
+      "id": "review",
+      "inputs": [
+        "candidate",
+        "review-file"
+      ],
+      "outputs": [
+        "review"
+      ],
+      "next": "select",
+      "on_failure": "review",
+      "resume": "status",
+      "owner": "scripts/production_workflow.py:review",
+      "command": "python scripts/production_workflow.py review --help"
+    },
+    {
+      "id": "select",
+      "inputs": [
+        "review",
+        "selection-file"
+      ],
+      "outputs": [
+        "selection"
+      ],
+      "next": "complete",
+      "on_failure": "review",
+      "resume": "status",
+      "owner": "scripts/production_workflow.py:select",
+      "command": "python scripts/production_workflow.py select --help"
+    },
+    {
+      "id": "complete",
+      "inputs": [
+        "selection"
+      ],
+      "outputs": [
+        "completion"
+      ],
+      "next": "done",
+      "on_failure": "prepare",
+      "resume": "status",
+      "owner": "scripts/production_workflow.py:complete",
+      "command": "python scripts/production_workflow.py complete --help"
+    }
+  ],
+  "features": {
+    "persona": {
+      "when": "Individualized portrayal is relevant.",
+      "reads": [
+        "references/performance-details.md"
+      ],
+      "source_roles": [
+        "persona"
+      ]
+    },
+    "state": {
+      "when": "A realization depends on declared time-varying state.",
+      "reads": [
+        "references/temporal-state.md"
+      ],
+      "source_roles": []
+    },
+    "timed": {
+      "when": "Time, motion, editing or sound must be observed.",
+      "reads": [
+        "references/timed-production.md",
+        "references/production-repair.md"
+      ],
+      "source_roles": []
+    },
+    "protocol-exchange": {
+      "when": "Selected public artifacts cross an application boundary.",
+      "reads": [
+        "protocols/semantics.md"
+      ],
+      "source_roles": []
+    },
+    "reviewed-repair": {
+      "when": "A reviewed candidate needs scoped changes to direction or realization.",
+      "reads": [
+        "references/production-repair.md"
+      ],
+      "source_roles": []
+    },
+    "evidence-review": {
+      "when": "A user requests an inspectable production report or evidence assessment.",
+      "reads": [
+        "references/evidence-review.md"
+      ],
+      "source_roles": []
+    },
+    "creative-options": {
+      "when": "Comparing or choosing authored possibilities before production.",
+      "reads": [
+        "references/creative-options.md"
+      ],
+      "source_roles": []
+    },
+    "scene-persona": {
+      "when": "Reusing a prepared, whole-source-verified scene Persona document within its reviewed scope.",
+      "reads": [
+        "references/scene-persona.md"
+      ],
+      "source_roles": []
+    }
+  },
+  "routes": {
+    "development": {
+      "when": "development production",
+      "reads": [
+        "references/story-structure.md"
+      ],
+      "features": [],
+      "stages": [
+        "prepare",
+        "handoff",
+        "capture",
+        "review",
+        "select",
+        "complete"
+      ],
+      "completion": "Current observed, explicitly selected artifact and completion receipt; delivery does not adopt canon."
+    },
+    "scene": {
+      "when": "scene production",
+      "reads": [
+        "references/story-structure.md"
+      ],
+      "features": [],
+      "stages": [
+        "prepare",
+        "handoff",
+        "capture",
+        "review",
+        "select",
+        "complete"
+      ],
+      "completion": "Current observed, explicitly selected artifact and completion receipt; delivery does not adopt canon."
+    },
+    "performance": {
+      "when": "performance production",
+      "reads": [
+        "references/performance-details.md"
+      ],
+      "features": [
+        "persona"
+      ],
+      "stages": [
+        "prepare",
+        "handoff",
+        "capture",
+        "review",
+        "select",
+        "complete"
+      ],
+      "completion": "Current observed, explicitly selected artifact and completion receipt; delivery does not adopt canon."
+    },
+    "media": {
+      "when": "media production",
+      "reads": [
+        "references/model-facing-artifacts.md"
+      ],
+      "features": [],
+      "stages": [
+        "prepare",
+        "handoff",
+        "capture",
+        "review",
+        "select",
+        "complete"
+      ],
+      "completion": "Current observed, explicitly selected artifact and completion receipt; delivery does not adopt canon."
+    },
+    "timed-sequence": {
+      "when": "timed-sequence production",
+      "reads": [
+        "references/timed-production.md"
+      ],
+      "features": [
+        "timed"
+      ],
+      "stages": [
+        "prepare",
+        "handoff",
+        "capture",
+        "review",
+        "select",
+        "complete"
+      ],
+      "completion": "Current observed, explicitly selected artifact and completion receipt; delivery does not adopt canon."
+    },
+    "edit": {
+      "when": "edit production",
+      "reads": [
+        "references/post-production.md",
+        "references/production-repair.md"
+      ],
+      "features": [
+        "timed"
+      ],
+      "stages": [
+        "prepare",
+        "handoff",
+        "capture",
+        "review",
+        "select",
+        "complete"
+      ],
+      "completion": "Current observed, explicitly selected artifact and completion receipt; delivery does not adopt canon."
+    },
+    "adoption": {
+      "when": "adoption production",
+      "reads": [
+        "references/state-and-trust.md"
+      ],
+      "features": [],
+      "stages": [
+        "prepare",
+        "handoff",
+        "capture",
+        "review",
+        "select",
+        "complete"
+      ],
+      "completion": "Current observed, explicitly selected artifact and completion receipt; delivery does not adopt canon."
+    }
+  },
+  "regression": [
+    "scripts/production_workflow_smoke_test.py",
+    "scripts/timed_sequence_smoke_test.py",
+    "examples/production-execution/run_example.py",
+    "scripts/production_direction_smoke_test.py",
+    "scripts/production_dispatch_smoke_test.py",
+    "examples/timed-production/run_example.py",
+    "scripts/production_integrity_smoke_test.py",
+    "examples/production-execution/repair_example.py",
+    "scripts/evidence_tools_smoke_test.py",
+    "scripts/creative_options_smoke_test.py",
+    "scripts/scene_material_smoke_test.py",
+    "scripts/agent_evaluation_smoke_test.py"
+  ],
+  "operations": {
+    "revision-intent": {
+      "owner": "scripts/production_revision.py:revision_intent",
+      "command": "python scripts/production_workflow.py revision-intent --help",
+      "effect": "read-only full change-scope comparison against latest review"
+    },
+    "revise": {
+      "owner": "scripts/production_revision.py:revise",
+      "command": "python scripts/production_workflow.py revise --help",
+      "effect": "create a parent-linked run under explicit edit permission"
+    },
+    "recover-action": {
+      "owner": "scripts/production_recovery.py:recover",
+      "command": "python scripts/production_workflow.py recover-action --help",
+      "effect": "publish retained output only, never rerender or resubmit"
+    },
+    "export-review": {
+      "owner": "scripts/artifact_review.py:export",
+      "command": "python scripts/artifact_review.py --help",
+      "effect": "export a read-only snapshot from existing production receipts"
+    },
+    "evaluate-evidence": {
+      "owner": "scripts/evaluation_evidence.py:export",
+      "command": "python scripts/evaluation_evidence.py --help",
+      "effect": "aggregate declared attempts without model calls, selection or canonical writes"
+    },
+    "creative-options-prepare": {
+      "owner": "scripts/creative_options.py:prepare",
+      "command": "python scripts/creative_options.py prepare --help",
+      "effect": "operate only on noncanonical, source-bound planning alternatives"
+    },
+    "creative-options-status": {
+      "owner": "scripts/creative_options.py:status",
+      "command": "python scripts/creative_options.py status --help",
+      "effect": "operate only on noncanonical, source-bound planning alternatives"
+    },
+    "creative-options-select": {
+      "owner": "scripts/creative_options.py:select",
+      "command": "python scripts/creative_options.py select --help",
+      "effect": "operate only on noncanonical, source-bound planning alternatives"
+    },
+    "creative-options-export": {
+      "owner": "scripts/creative_options.py:export",
+      "command": "python scripts/creative_options.py export --help",
+      "effect": "operate only on noncanonical, source-bound planning alternatives"
+    },
+    "scene-persona-build": {
+      "owner": "scripts/scene_persona.py:build",
+      "command": "python scripts/scene_persona.py --help",
+      "effect": "save exact definitions and authored scene applications after complete-source reading"
+    },
+    "scene-persona-verify": {
+      "owner": "scripts/scene_persona.py:verify",
+      "command": "python scripts/scene_persona.py --help",
+      "effect": "verify complete originals and deterministic prepared material without rereading it through the model"
+    },
+    "source-material-ingest": {
+      "owner": "scripts/source_material.py:ingest",
+      "command": "python scripts/source_material.py ingest --help",
+      "effect": "preserve original bytes and declared segments; no semantic inference or canonical adoption"
+    },
+    "source-material-propose": {
+      "owner": "scripts/source_material.py:propose",
+      "command": "python scripts/source_material.py propose --help",
+      "effect": "bind authored extraction candidates to exact original source spans"
+    },
+    "agent-evaluation": {
+      "owner": "scripts/agent_evaluation.py:run_study",
+      "command": "python scripts/agent_evaluation.py --help",
+      "effect": "execute only an explicitly approved host command plan; retain unknown and failed measurements"
+    },
+    "repair-analysis": {
+      "owner": "scripts/repair_analysis.py:analyze",
+      "command": "python scripts/repair_analysis.py --help",
+      "effect": "derive failure groups and attributed hypotheses from existing review receipts; no retry or canonical writes"
+    }
+  }
+}

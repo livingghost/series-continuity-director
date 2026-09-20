@@ -1,0 +1,182 @@
+{
+  "artifact_type": "integration-capability-manifest",
+  "interfaces": {
+    "produces": [
+      {
+        "profile": "reusable-authoring-material",
+        "artifact_types": [
+          "scene-persona-material",
+          "source-extraction-proposal",
+          "source-material-index"
+        ],
+        "required_features": [
+          "exact-source-excerpts",
+          "hash-bound-payload",
+          "no-automatic-canon",
+          "whole-source-commitments"
+        ],
+        "supported_features": [
+          "exact-source-excerpts",
+          "explicit-snapshot-acceptance",
+          "hash-bound-payload",
+          "no-automatic-canon",
+          "whole-source-commitments"
+        ],
+        "unknown_optional_feature_policy": "preserve",
+        "unknown_required_feature_policy": "reject",
+        "profile_sha256": "216e08e09371ac636323b1e8475d08a74e7d1075fe895587bb04feb7a0288261"
+      },
+      {
+        "profile": "shot-request",
+        "artifact_types": [
+          "shot-request"
+        ],
+        "required_features": [
+          "camera-hash-binding",
+          "hash-bound-payload",
+          "identity-hash-binding",
+          "shot-context-binding",
+          "state-hash-binding",
+          "visible-feature-obligations"
+        ],
+        "supported_features": [
+          "camera-hash-binding",
+          "hash-bound-payload",
+          "identity-hash-binding",
+          "reference-candidates",
+          "shot-context-binding",
+          "state-hash-binding",
+          "viewpoint-profile",
+          "visible-feature-obligations"
+        ],
+        "unknown_optional_feature_policy": "preserve",
+        "unknown_required_feature_policy": "reject",
+        "profile_sha256": "e3664c61d36236c1bd63cbdb04dfbd3f090479e54ad815158d87ba3a611c8b2d"
+      },
+      {
+        "profile": "visual-contract-package",
+        "artifact_types": [
+          "asset-render-specification",
+          "candidate-manifest",
+          "character-identity-contract",
+          "individual-morphology-contract",
+          "prepared-reference-set",
+          "reference-bundle-plan",
+          "reference-use-plan",
+          "species-morphology-profile",
+          "surface-lighting-plan",
+          "visual-authority",
+          "visual-evidence-bundle"
+        ],
+        "required_features": [
+          "hash-bound-payload",
+          "producer-provenance"
+        ],
+        "supported_features": [
+          "candidate-adoption",
+          "canonical-prepared-reference-set",
+          "hash-bound-payload",
+          "opaque-extension-preservation",
+          "producer-provenance",
+          "record-scoped-reference-authority",
+          "reference-bundle-planning",
+          "state-lineage",
+          "state-reconciled-reference-activation",
+          "surface-lighting-plan"
+        ],
+        "unknown_optional_feature_policy": "preserve",
+        "unknown_required_feature_policy": "reject",
+        "profile_sha256": "2878c335a672575cc0f75a1d778e9cbbd2bd958ae08993564584a2110d6ea68e"
+      }
+    ],
+    "consumes": [
+      {
+        "profile": "reusable-authoring-material",
+        "artifact_types": [
+          "scene-persona-material",
+          "source-extraction-proposal",
+          "source-material-index"
+        ],
+        "required_features": [
+          "exact-source-excerpts",
+          "hash-bound-payload",
+          "no-automatic-canon",
+          "whole-source-commitments"
+        ],
+        "supported_features": [
+          "exact-source-excerpts",
+          "explicit-snapshot-acceptance",
+          "hash-bound-payload",
+          "no-automatic-canon",
+          "whole-source-commitments"
+        ],
+        "unknown_optional_feature_policy": "preserve",
+        "unknown_required_feature_policy": "reject",
+        "profile_sha256": "216e08e09371ac636323b1e8475d08a74e7d1075fe895587bb04feb7a0288261"
+      },
+      {
+        "profile": "shot-request",
+        "artifact_types": [
+          "shot-request"
+        ],
+        "required_features": [
+          "camera-hash-binding",
+          "hash-bound-payload",
+          "identity-hash-binding",
+          "shot-context-binding",
+          "state-hash-binding",
+          "visible-feature-obligations"
+        ],
+        "supported_features": [
+          "camera-hash-binding",
+          "hash-bound-payload",
+          "identity-hash-binding",
+          "reference-candidates",
+          "shot-context-binding",
+          "state-hash-binding",
+          "viewpoint-profile",
+          "visible-feature-obligations"
+        ],
+        "unknown_optional_feature_policy": "preserve",
+        "unknown_required_feature_policy": "reject",
+        "profile_sha256": "e3664c61d36236c1bd63cbdb04dfbd3f090479e54ad815158d87ba3a611c8b2d"
+      },
+      {
+        "profile": "visual-contract-package",
+        "artifact_types": [
+          "asset-render-specification",
+          "candidate-manifest",
+          "character-identity-contract",
+          "individual-morphology-contract",
+          "prepared-reference-set",
+          "reference-bundle-plan",
+          "reference-use-plan",
+          "species-morphology-profile",
+          "surface-lighting-plan",
+          "visual-authority",
+          "visual-evidence-bundle"
+        ],
+        "required_features": [
+          "hash-bound-payload",
+          "producer-provenance"
+        ],
+        "supported_features": [
+          "candidate-adoption",
+          "canonical-prepared-reference-set",
+          "hash-bound-payload",
+          "opaque-extension-preservation",
+          "producer-provenance",
+          "record-scoped-reference-authority",
+          "reference-bundle-planning",
+          "state-lineage",
+          "state-reconciled-reference-activation",
+          "surface-lighting-plan"
+        ],
+        "unknown_optional_feature_policy": "preserve",
+        "unknown_required_feature_policy": "reject",
+        "profile_sha256": "2878c335a672575cc0f75a1d778e9cbbd2bd958ae08993564584a2110d6ea68e"
+      }
+    ]
+  },
+  "manifest_sha256": "1a39ac5864c6eca2d3e014a287d6ce1cf868b8842feb13a424c66ba21442913f"
+}

@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"__PLUGIN_ROOT__/skills/series-continuity-director/scripts/session_entry_points.py\" || python \"__PLUGIN_ROOT__/skills/series-continuity-director/scripts/session_entry_points.py\"",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
+}

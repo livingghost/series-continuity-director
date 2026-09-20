@@ -1,0 +1,5 @@
+{
+  "shared-state": "protocols/shared-state/schemas",
+  "viewpoint": "protocols/viewpoint/schemas",
+  "capabilities": "protocols/interchange/integration-capabilities.json"
+}

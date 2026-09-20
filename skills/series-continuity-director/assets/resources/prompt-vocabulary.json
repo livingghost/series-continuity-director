@@ -1,0 +1,401 @@
+{
+  "scope": "Directing vocabulary; model dialect support is verified separately.",
+  "categories": [
+    {
+      "id": "cinematic-1",
+      "name": "Shot scale",
+      "entries": [
+        {
+          "term": "extreme close-up",
+          "aliases": [],
+          "description": "one detail fills the frame (an eye, a hand on a handle)",
+          "source": "references/cinematic-lexicon.md#1"
+        },
+        {
+          "term": "close-up",
+          "aliases": [],
+          "description": "the head, shoulders up",
+          "source": "references/cinematic-lexicon.md#1"
+        },
+        {
+          "term": "medium close-up",
+          "aliases": [],
+          "description": "chest up",
+          "source": "references/cinematic-lexicon.md#1"
+        },
+        {
+          "term": "medium shot",
+          "aliases": [],
+          "description": "waist up",
+          "source": "references/cinematic-lexicon.md#1"
+        },
+        {
+          "term": "medium wide (cowboy)",
+          "aliases": [],
+          "description": "mid-thigh up",
+          "source": "references/cinematic-lexicon.md#1"
+        },
+        {
+          "term": "full shot",
+          "aliases": [],
+          "description": "head to toe, the figure fills the height",
+          "source": "references/cinematic-lexicon.md#1"
+        },
+        {
+          "term": "wide shot",
+          "aliases": [],
+          "description": "the figure small within the environment",
+          "source": "references/cinematic-lexicon.md#1"
+        },
+        {
+          "term": "establishing shot",
+          "aliases": [],
+          "description": "the whole location with the players placed; the first shot of a scene",
+          "source": "references/cinematic-lexicon.md#1"
+        },
+        {
+          "term": "extreme wide",
+          "aliases": [],
+          "description": "a vast area, the figure barely visible",
+          "source": "references/cinematic-lexicon.md#1"
+        },
+        {
+          "term": "insert",
+          "aliases": [],
+          "description": "a part of the action in a tighter frame than the master (hands, a prop)",
+          "source": "references/cinematic-lexicon.md#1"
+        }
+      ]
+    },
+    {
+      "id": "cinematic-2",
+      "name": "Angle and height",
+      "entries": [
+        {
+          "term": "eye level",
+          "aliases": [],
+          "description": "the camera at the subject's eye line; neutral",
+          "source": "references/cinematic-lexicon.md#2"
+        },
+        {
+          "term": "low angle",
+          "aliases": [],
+          "description": "the camera below the eye line looking up; stature, threat",
+          "source": "references/cinematic-lexicon.md#2"
+        },
+        {
+          "term": "high angle",
+          "aliases": [],
+          "description": "the camera above the eye line looking down; smallness, overview",
+          "source": "references/cinematic-lexicon.md#2"
+        },
+        {
+          "term": "top-down, bird's eye",
+          "aliases": [],
+          "description": "straight down from above",
+          "source": "references/cinematic-lexicon.md#2"
+        },
+        {
+          "term": "worm's eye",
+          "aliases": [],
+          "description": "straight up from the ground",
+          "source": "references/cinematic-lexicon.md#2"
+        },
+        {
+          "term": "dutch angle",
+          "aliases": [],
+          "description": "the horizon tilted",
+          "source": "references/cinematic-lexicon.md#2"
+        },
+        {
+          "term": "over the shoulder",
+          "aliases": [],
+          "description": "framed past one subject's shoulder toward another",
+          "source": "references/cinematic-lexicon.md#2"
+        },
+        {
+          "term": "point of view",
+          "aliases": [],
+          "description": "the frame is what a character sees",
+          "source": "references/cinematic-lexicon.md#2"
+        },
+        {
+          "term": "profile, three-quarter, front, rear",
+          "aliases": [],
+          "description": "the subject's facing to the camera; follows from where the camera stands",
+          "source": "references/cinematic-lexicon.md#2"
+        }
+      ]
+    },
+    {
+      "id": "cinematic-3",
+      "name": "Camera movement",
+      "entries": [
+        {
+          "term": "static, locked-off",
+          "aliases": [],
+          "description": "the camera does not move",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "pan left, pan right",
+          "aliases": [],
+          "description": "the camera swivels horizontally in place; no parallax",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "whip pan",
+          "aliases": [],
+          "description": "a very fast pan with motion blur",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "tilt up, tilt down",
+          "aliases": [],
+          "description": "the camera pivots vertically in place",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "dolly in, push in",
+          "aliases": [],
+          "description": "the camera body moves toward the subject; perspective changes",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "dolly out, pull out",
+          "aliases": [],
+          "description": "the camera body moves away; the environment expands",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "truck left, truck right",
+          "aliases": [],
+          "description": "the body slides sideways, parallel to the subject",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "pedestal up, pedestal down",
+          "aliases": [],
+          "description": "the whole camera rises or drops",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "crane up",
+          "aliases": [],
+          "description": "the camera lifts high over the scene",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "tracking shot",
+          "aliases": [],
+          "description": "the camera follows a moving subject; name the direction it follows from",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "orbit, arc",
+          "aliases": [],
+          "description": "the camera circles the subject, fully or partly",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "zoom in, zoom out",
+          "aliases": [],
+          "description": "the lens changes, the body stays; the image flattens",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "crash zoom",
+          "aliases": [],
+          "description": "an extremely fast zoom",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "dolly zoom",
+          "aliases": [],
+          "description": "dolly one way while zooming the other; the background stretches",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "rack focus",
+          "aliases": [],
+          "description": "the frame holds and the focus shifts between planes",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "handheld, steadicam, gimbal",
+          "aliases": [],
+          "description": "the texture of the camera's own motion, from raw to smooth",
+          "source": "references/cinematic-lexicon.md#3"
+        },
+        {
+          "term": "slow motion",
+          "aliases": [],
+          "description": "time slowed for a named action",
+          "source": "references/cinematic-lexicon.md#3"
+        }
+      ]
+    },
+    {
+      "id": "cinematic-4",
+      "name": "Shot grammar",
+      "entries": [
+        {
+          "term": "master shot",
+          "aliases": [],
+          "description": "one shot holding the whole scene with every player in view; the geography the closer shots inherit",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "coverage",
+          "aliases": [],
+          "description": "the set of shots that lets a scene be cut: master, singles, over-the-shoulders, inserts, reactions",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "single",
+          "aliases": [],
+          "description": "one person alone in the frame within a scene of several",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "two-shot",
+          "aliases": [],
+          "description": "two people in one frame; their distance is the content",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "over-the-shoulder",
+          "aliases": [],
+          "description": "conversation coverage past one shoulder",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "insert",
+          "aliases": [],
+          "description": "a detail of the action in a tighter frame",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "cutaway",
+          "aliases": [],
+          "description": "a view of something else, then back",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "reaction shot",
+          "aliases": [],
+          "description": "a cutaway to a face reacting to what just happened",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "eyeline match",
+          "aliases": [],
+          "description": "a cut from a look to what is looked at",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "match cut",
+          "aliases": [],
+          "description": "a cut joined on a shared shape, motion, or position",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "axis of action",
+          "aliases": [],
+          "description": "the line between two interacting characters, or along a movement",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "180-degree rule",
+          "aliases": [],
+          "description": "keep the camera on one side of the axis so left and right hold across cuts",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "reverse angle",
+          "aliases": [],
+          "description": "the opposite side of the previous shot along the same axis; fixtures swap sides",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "frame within frame",
+          "aliases": [],
+          "description": "a doorway, window, or arch framing the subject",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "leading lines",
+          "aliases": [],
+          "description": "lines in the scene that pull the eye to the subject",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "negative space",
+          "aliases": [],
+          "description": "the subject small against emptiness",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "cinematic hold",
+          "aliases": [],
+          "description": "a beat with no camera or subject movement before or after an action",
+          "source": "references/cinematic-lexicon.md#4"
+        },
+        {
+          "term": "one beat per clip",
+          "aliases": [],
+          "description": "one narrative moment per short clip",
+          "source": "references/cinematic-lexicon.md#4"
+        }
+      ]
+    },
+    {
+      "id": "cinematic-5",
+      "name": "Focus and lens",
+      "entries": [
+        {
+          "term": "deep focus",
+          "aliases": [],
+          "description": "foreground, middle, and background all sharp",
+          "source": "references/cinematic-lexicon.md#5"
+        },
+        {
+          "term": "shallow focus",
+          "aliases": [],
+          "description": "one plane sharp, the rest soft; isolates the subject",
+          "source": "references/cinematic-lexicon.md#5"
+        },
+        {
+          "term": "soft focus",
+          "aliases": [],
+          "description": "diffusion across the whole frame",
+          "source": "references/cinematic-lexicon.md#5"
+        },
+        {
+          "term": "wide lens (24 to 28 mm feel)",
+          "aliases": [],
+          "description": "more of the room, stretched perspective near the edges",
+          "source": "references/cinematic-lexicon.md#5"
+        },
+        {
+          "term": "normal lens (35 to 50 mm feel)",
+          "aliases": [],
+          "description": "natural perspective",
+          "source": "references/cinematic-lexicon.md#5"
+        },
+        {
+          "term": "long lens (85 mm and up feel)",
+          "aliases": [],
+          "description": "compressed space, flattened background, easy isolation",
+          "source": "references/cinematic-lexicon.md#5"
+        },
+        {
+          "term": "anamorphic",
+          "aliases": [],
+          "description": "wide frame, oval highlights, horizontal flares",
+          "source": "references/cinematic-lexicon.md#5"
+        }
+      ]
+    }
+  ]
+}
