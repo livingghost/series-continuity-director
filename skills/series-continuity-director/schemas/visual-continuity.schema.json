@@ -1,0 +1,300 @@
+{
+  "type": "object",
+  "properties": {
+    "purpose": {
+      "enum": [
+        "sheet-panel",
+        "image",
+        "video",
+        "nonvisual"
+      ]
+    },
+    "basis": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "locator": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "path",
+            "sha256",
+            "locator"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "subjects": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "continuity": {
+            "enum": [
+              "recurring",
+              "one-off",
+              "undecided"
+            ]
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          },
+          "identity_refs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "object",
+                  "properties": {
+                    "owner_path": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "asset_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "role": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "owner_path",
+                    "asset_id",
+                    "role"
+                  ],
+                  "additionalProperties": false
+                },
+                "file": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "sha256"
+                  ],
+                  "additionalProperties": false
+                },
+                "activation_reference": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "adoption": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "production-selection"
+                        },
+                        "run": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "selection_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "run",
+                        "selection_sha256"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "public-receipt"
+                        },
+                        "manifest": {
+                          "type": "object",
+                          "properties": {
+                            "path": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            }
+                          },
+                          "required": [
+                            "path",
+                            "sha256"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "receipt": {
+                          "type": "object",
+                          "properties": {
+                            "path": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            }
+                          },
+                          "required": [
+                            "path",
+                            "sha256"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "candidate_id": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "manifest",
+                        "receipt",
+                        "candidate_id"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "registry",
+                "file",
+                "activation_reference",
+                "adoption"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "continuity",
+          "character_id",
+          "identity_refs"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "shot_camera": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "shot_request": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "reference_activation": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "required": [
+    "purpose",
+    "basis",
+    "subjects",
+    "shot_camera",
+    "shot_request",
+    "reference_activation"
+  ],
+  "additionalProperties": false
+}

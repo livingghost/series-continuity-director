@@ -22,6 +22,8 @@ class ProductionTests(unittest.TestCase):
             'criteria':[{'id':'condition','strength':'hard','text':'Holds the condition','evidence':'text'}],'sequence_plan':None}
         self.task['direction']=support.direction(self.task,'Hold the declared condition.')
     def prepare(self):
+        from reading_fixtures import task_reading
+        task_reading(self.root,self.task)
         (self.root/'task.json').write_bytes(c.encoded(self.task));return w.prepare(self.root,'task.json')['run']
     def captured(self):
         run=self.prepare();w.handoff(self.root,run,'test','manual');(self.root/'result.txt').write_text('The condition persists.')

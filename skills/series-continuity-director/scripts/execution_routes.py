@@ -80,9 +80,15 @@ def main() -> int:
     parser=argparse.ArgumentParser(description=__doc__)
     sub=parser.add_subparsers(dest='command',required=True)
     p=sub.add_parser('inspect'); p.add_argument('route'); p.add_argument('--feature',action='append',default=[])
+    reading = sub.add_parser('read', help='Read the complete route documents and record issuance')
+    from route_reading import add_read_arguments, read_command
+    add_read_arguments(reading)
     sub.add_parser('validate')
     a=parser.parse_args()
     try:
+        if a.command == 'read':
+            read_command(a, parser)
+            return 0
         result=validate() if a.command=='validate' else resolve(a.route,a.feature)
         print(json.dumps(result,indent=2)); return 0 if result.get('ok',True) else 1
     except (ValueError,OSError) as exc:

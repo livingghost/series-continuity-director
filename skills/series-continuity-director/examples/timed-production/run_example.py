@@ -30,6 +30,8 @@ def run(root: Path) -> dict:
                       {'id':'sound','strength':'hard','text':'The test signal is present inside, and absent before, its placed interval.','evidence':'audio'}],
           'sequence_plan':'sequence.json'}
     spec['direction']=support.direction(spec,instruction)
+    from reading_fixtures import task_reading
+    task_reading(root,spec)
     (root/'task.json').write_bytes(c.encoded(spec));run=w.prepare(root,'task.json')['run']
     w.handoff(root,run,'synthetic editor','editor')
     authorization=support.grant(w,root,run,actor='synthetic operator',operations=('edit','select'),outputs=1,calls=1)

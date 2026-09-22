@@ -61,9 +61,13 @@ def validate(grant: Any, prepared: dict[str, Any]) -> None:
         raise ValueError('authorization needs explicit permissions')
     seen = set()
     for permission in permissions:
-        c.exact(permission, {'operation', 'scopes', 'max_calls', 'max_outputs', 'max_cost', 'currency'}, 'permission')
+        c.exact(permission, {'operation', 'scopes', 'max_calls', 'max_outputs', 'max_cost', 'currency',
+                              'request_scope', 'submission_validation_modes'}, 'permission')
         if permission['operation'] not in OPERATIONS:
             raise ValueError('unknown authorized operation')
+        import request_scope
+        request_scope.validate(permission['request_scope'], submit=permission['operation'] == 'submit',
+                               modes=permission['submission_validation_modes'])
         scopes = strings(permission['scopes'], 'permission scopes', nonempty=True)
         if any('*' in s for s in scopes):
             raise ValueError('wildcard scopes are not supported; task means this exact prepared task')
@@ -91,6 +95,23 @@ def authority_key(grant: dict, proof_sha256: str = '') -> str:
 
 def grant_body(grant: dict) -> dict:
     return {k: v for k, v in grant.items() if k != 'input_sha256'}
+
+
+def select_permission(grant: dict, operation: str, scopes: list[str], currency: str) -> tuple[int, dict]:
+    """Select the one declared operation, scope and currency used by accounting."""
+    matches = []
+    for index, permission in enumerate(grant['permissions']):
+        if permission['operation'] != operation:
+            continue
+        if 'task' not in permission['scopes'] and not set(scopes) <= set(permission['scopes']):
+            continue
+        if currency != permission['currency']:
+            continue
+        matches.append((index, permission))
+    if len(matches) != 1:
+        raise ValueError('exactly one permission must cover operation, scope and currency')
+    index, permission = matches[0]
+    return index, permission
 
 
 def reservation(prepared: dict[str, Any], records: list[dict[str, Any]], *, authorization: str,
@@ -132,23 +153,15 @@ def reservation(prepared: dict[str, Any], records: list[dict[str, Any]], *, auth
             raise ValueError('authorization stopped on unresolved review issues')
         if 'failed-hard-review' in grant['halt_on'] and any(x['criterion'] in reviewed_hard and x['verdict'] == 'fail' for x in reviewed['checks']):
             raise ValueError('authorization stopped on a failed hard criterion')
-    matches = []
-    for index, permission in enumerate(grant['permissions']):
-        if permission['operation'] != operation:
-            continue
-        if 'task' not in permission['scopes'] and not set(scopes) <= set(permission['scopes']):
-            continue
-        if currency != permission['currency']:
-            continue
-        matches.append((index, permission))
-    if len(matches) != 1:
-        raise ValueError('exactly one permission must cover operation, scope and currency')
-    index, permission = matches[0]
+    index, permission = select_permission(grant, operation, scopes, currency)
     result = {'authorization': authorization, 'authority_key': key, 'permission': index, 'actor': actor,
               'operation': operation, 'scopes': sorted(scopes), 'request_sha256': request_sha256,
               'outputs': outputs, 'cost': cost, 'currency': currency}
-    used = [r['data'] for r in history if r['event'] == 'reservation'
-            and r['data']['authority_key'] == key and r['data']['permission'] == index]
+    released={r['data']['reservation']['reservation_sha256'] for r in history if r['event']=='reservation-release'}
+    all_used=[r for r in history if r['event']=='reservation' and r['data']['authority_key']==key and r['data']['permission']==index]
+    if any(r['sha256'] in released and r['data']['request_sha256']==request_sha256 and r['data']['authorization']==authorization for r in all_used):
+        raise ValueError('reservation was released; prepare a new run for a new action')
+    used=[r['data'] for r in all_used if r['sha256'] not in released]
     repeated = [x for x in used if x['request_sha256'] == request_sha256 and x['authorization'] == authorization]
     if repeated:
         if len(repeated) != 1 or repeated[0] != result:

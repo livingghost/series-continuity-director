@@ -1,71 +1,68 @@
 #!/usr/bin/env python3
-"""Store a service's parameter schema for one offering, so the gate can read it.
-
-Usage: python scripts/observe_schema.py <target-id> <service-id> <schema.json> [--source "<where it came from>"]
-
-The schema file is what the service returned for the model (its schema endpoint,
-its documentation, or a tool that exposes it). It is stored as observed, with the
-date and the source, under protocols/target/observed-schemas/<target>.<service>.json,
-and the offering in the target profile is pointed at it. Re-run to refresh; the
-date moves with the file.
-"""
+"""Publish original schema evidence or an existing trial into a local target catalog."""
 from __future__ import annotations
-
 import argparse
+import copy
 import json
-import sys
-from datetime import date
 from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
-import integration_contract  # noqa: E402
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Store an observed parameter schema for an offering")
-    parser.add_argument("target")
-    parser.add_argument("service")
-    parser.add_argument("schema_file")
-    parser.add_argument("--source", default="the service's model schema endpoint",
-                        help="Where the schema came from, as a name and not a story")
-    parser.add_argument("--added", nargs="*", default=[],
-                        help="Top-level string keys added beyond what the source lists, such as the task envelope keys")
-    args = parser.parse_args()
-    profile_path = ROOT / "protocols/target/profiles" / f"{args.target}.json"
-    if not profile_path.is_file():
-        raise SystemExit(f"no target profile {profile_path}")
-    profile = json.loads(profile_path.read_text(encoding="utf-8"))
-    offerings = [o for o in profile.get("offerings") or [] if o.get("service") == args.service]
-    if not offerings:
-        raise SystemExit(f"{args.target} records no offering on {args.service}")
-    schema = json.loads(Path(args.schema_file).read_text(encoding="utf-8"))
-    if isinstance(schema, dict) and "schema" in schema and "properties" not in schema:
-        schema = schema["schema"]
-    rel = f"protocols/target/observed-schemas/{args.target}.{args.service}.json"
-    out = ROOT / rel
-    out.parent.mkdir(parents=True, exist_ok=True)
-    for key in args.added:
-        schema.setdefault("properties", {})[key] = {"type": "string"}
-    wrapper = {
-        "artifact_type": "observed-parameter-schema",
-        "target_id": args.target,
-        "service": args.service,
-        "model_identifier": offerings[0].get("model_identifier"),
-        "observed_at": date.today().isoformat(),
-        "source": args.source,
-        "added": list(args.added),
-        "schema": schema,
-    }
-    out.write_text(json.dumps(wrapper, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
-    offerings[0]["schema_snapshot"] = rel
-    offerings[0]["observed_at"] = wrapper["observed_at"]
-    profile["profile_sha256"] = ""
-    profile = integration_contract.finalize(profile, "profile_sha256")
-    profile_path.write_text(json.dumps(profile, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
-    print(json.dumps({"ok": True, "snapshot": rel, "observed_at": wrapper["observed_at"], "profile": str(profile_path.relative_to(ROOT))}, ensure_ascii=False, indent=2))
-    return 0
+import execution_contract as c
+from input_evidence import InputEvidence
+import model_observation
+import schema_observation
+import target_protocol
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+def publish(args) -> dict:
+    root=args.root.resolve(strict=True);reader=InputEvidence(root)
+    profile_ref=reader.select(args.profile);profile=reader.json(profile_ref)
+    report=target_protocol.validate_profile(profile)
+    if not report['ok']:raise ValueError('target profile must pass its public contract')
+    matches=[item for item in profile['offerings'] if item['service']==args.service and item['model_identifier']==args.model]
+    if len(matches)!=1:raise ValueError('select one exact target offering')
+    target={'service':args.service,'model_identifier':args.model,'operation':args.operation}
+    prefix=args.out_dir;out=c.local(root,prefix,exists=False)
+    if out.exists():raise FileExistsError('select a new local evidence destination')
+    if args.command=='attach-probe':
+        source=model_observation.capture(root,args.run)
+        if model_observation._derive(source)['target']!=target:raise ValueError('trial names another target')
+        files,result=model_observation.bundle(root,args.run,relative_prefix=prefix)
+        catalog={'artifact_type':'local-model-evidence-catalog','target':target,'target_profile':profile_ref,
+            'schema_snapshot':None,'schema_acquisition':None,'reference_schemas':[],
+            'parameter_observations':[result]}
+        files['catalog.json']=c.encoded(catalog)
+        schema_observation.publish(root,prefix,files)
+    else:
+        relationship=None
+        if args.command=='reference':relationship=dict(reader.select(args.relationship),locator=args.locator)
+        files,result=schema_observation.assemble(root,target=target,acquisition=args.acquisition,
+            pointer=args.pointer,prefix=prefix,kind=args.command,relationship=relationship,
+            overlay=args.overlay if args.command=='schema' else None)
+        catalog={'artifact_type':'local-model-evidence-catalog','target':target,'target_profile':profile_ref,
+            'schema_snapshot':result['contract'] if args.command=='schema' else None,
+            'schema_acquisition':result['evidence'] if args.command=='schema' else None,
+            'reference_schemas':[result['contract']] if args.command=='reference' else [],'parameter_observations':[]}
+        files['catalog.json']=c.encoded(catalog)
+        schema_observation.publish(root,prefix,files)
+    return {'ok':True,'target':target,'catalog':{'path':prefix+'/catalog.json','sha256':c.content_id(catalog)},
+            'evidence':result,'external_effect':False,'budget_effect':'none'}
+
+
+def main(argv=None) -> int:
+    parser=argparse.ArgumentParser(description=__doc__);subparsers=parser.add_subparsers(dest='command',required=True)
+    for name in ('schema','reference','attach-probe'):
+        sub=subparsers.add_parser(name);sub.add_argument('--root',type=Path,required=True)
+        sub.add_argument('--profile',required=True,help='Project-relative public target profile; retained unchanged.')
+        sub.add_argument('--service',required=True);sub.add_argument('--model',required=True);sub.add_argument('--operation',required=True)
+        sub.add_argument('--out-dir',required=True,help='New project-relative local evidence directory.')
+        if name=='attach-probe':sub.add_argument('--run',required=True)
+        else:
+            sub.add_argument('--acquisition',required=True);sub.add_argument('--pointer',default='')
+            if name=='schema':sub.add_argument('--overlay')
+            else:sub.add_argument('--relationship',required=True);sub.add_argument('--locator',required=True)
+    args=parser.parse_args(argv)
+    try:result=publish(args)
+    except (ValueError,OSError,KeyError,TypeError) as exc:parser.error(str(exc))
+    print(json.dumps(result,ensure_ascii=False,indent=2));return 0
+
+
+if __name__=='__main__':raise SystemExit(main())

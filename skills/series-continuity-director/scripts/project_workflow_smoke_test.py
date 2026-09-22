@@ -74,11 +74,18 @@ class ProjectWorkflow(unittest.TestCase):
         self.assertRaisesRegex(ValueError,'missing character state schema',state_protocol.resolve_world,base_state={'characters':{}},events=[event],processes=[],timeline_id='main',story_order=10,story_time='now',snapshot_id='world',scene_context_id='scene')
     def test_dry_dispatch_from_project_service_file(self):
         service=self.save('service-profiles.json',{'services':{'runware':{'endpoint':{'base_url':'https://example.invalid/not-called'},'operations':{'imageInference':{}},'observed_at':'synthetic-test'}}})
-        spec=self.save('submission.json',{'submission_id':'preview-fixture','kind':'asset','target':'xai-grok-imagine-2','service':'runware','operation':'imageInference','text':'A painted empty room, warm light across a wooden table.','inputs':[],'parameters':{'width':1024,'height':1024},'obligations':{}})
+        spec=self.save('submission.json',{'submission_id':'preview-fixture','kind':'asset','target':'xai-grok-imagine-2','service':'runware','operation':'imageInference','text':'A painted empty room, warm light across a wooden table.','inputs':[],'parameters':{'width':1024,'height':1024,'numberResults':1},'obligations':{}})
+        import execution_contract as c
+        import production_test_support as support
+        value=json.loads(spec.read_text())
+        value.update(target='fixture',model='synthetic-target')
+        service_record=json.loads(service.read_text())['services']['runware']
+        _,_,profiles=support.model_inputs(self.root,value,service_record)
+        spec.write_bytes(c.encoded(value))
         out=io.StringIO()
-        with patch.object(transport_runware,'send',side_effect=AssertionError('network send')),patch.object(transport_runware,'upload',side_effect=AssertionError('network upload')),redirect_stdout(out):
-            result=dispatch.main([str(spec),'--service-profiles',str(service)])
-        self.assertEqual(result,0,out.getvalue());self.assertIn('Dry run. Nothing was sent.',out.getvalue());self.assertFalse((self.root/'runs').exists())
+        with patch.object(transport_runware,'send',side_effect=AssertionError('network send')),patch.object(transport_runware,'upload_bytes',side_effect=AssertionError('network upload')),redirect_stdout(out):
+            result=dispatch.main([str(spec),'--service-profiles',str(service),'--profiles',str(profiles)])
+        self.assertEqual(result,0,out.getvalue());self.assertIn('Preview recorded.',out.getvalue());self.assertFalse((self.root/'runs').exists())
 
     def test_example_inventory_is_relative_to_its_root(self):
         import runpy

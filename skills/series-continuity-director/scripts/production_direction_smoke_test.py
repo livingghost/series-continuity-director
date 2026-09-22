@@ -35,8 +35,13 @@ class DirectionTests(unittest.TestCase):
     def test_each_criterion_has_realization(self):
         self.task['criteria'].append({'id':'unlinked','strength':'hard','text':'Some other effect','evidence':'any'})
         with self.assertRaises(ValueError):self.check()
-    def test_authored_delivery_contains_selected_instruction(self):
-        with self.assertRaises(ValueError):direction.compile_direction(self.value,'Different instructions','authored-rendition')
+    def test_authored_delivery_retains_selected_evidence(self):
+        before=copy.deepcopy(self.value)
+        result=direction.compile_direction(self.value,'A distinct authored rendition.','authored-rendition')
+        decision=self.value['decisions'][0]
+        option=next(x for x in decision['options'] if x['id']==decision['selected'])
+        self.assertEqual(result['selected'],[{'decision':decision['id'],'instruction':option['realization'],'criteria':decision['criteria']}])
+        self.assertEqual(self.value,before)
     def test_bounded_delivery_excludes_alternatives(self):
         self.value['decisions'][0]['options'].append({'id':'unused','realization':'PRIVATE UNUSED MATERIAL','consequence':'Private consideration.'})
         result=direction.compile_direction(self.value,'Instructions','bounded-context');self.assertNotIn('PRIVATE',str(result));self.assertNotIn('persona',str(result))
@@ -59,13 +64,17 @@ class AuthorityTests(unittest.TestCase):
     def setUp(self):
         self.p={'input_sha256':'a'*64,'task':{'sources':[],'criteria':[{'id':'hard','strength':'hard'}]}}
         self.grant={'input_sha256':'a'*64,'principal':'SYNTHETIC TEST','actor':'test','purpose':'Test only',
-          'permissions':[{'operation':'edit','scopes':['decision:one'],'max_calls':2,'max_outputs':2,'max_cost':'0.30','currency':'USD'}],
+          'permissions':[{'operation':'edit','scopes':['decision:one'],'max_calls':2,'max_outputs':2,'max_cost':'0.30','currency':'USD', 'request_scope': None, 'submission_validation_modes': (['target-schema', 'bounded-probe', 'observed-profile'] if 'edit' == 'submit' else [])}],
           'preserve_sources':[],'stop_conditions':[],'halt_on':[],'expires_at':None,'evidence':{'path':'test.txt','locator':'whole'}}
         self.rows=[{'event':'authorization','sha256':'b'*64,'sequence':1,'data':{'authorization':self.grant}}]
         self.args={'authorization':'b'*64,'actor':'test','operation':'edit','scopes':['decision:one'],'request_sha256':'c'*64,'outputs':1,'cost':'0.10','currency':'USD'}
     def reserve(self,**kw):return authority.reservation(self.p,self.rows,**{**self.args,**kw})
     def used(self,**kw):
-        r=self.reserve(**kw);self.rows.append({'event':'reservation','sequence':len(self.rows)+1,'data':r});return r
+        r=self.reserve(**kw)
+        row={'event':'reservation','sequence':len(self.rows)+1,'data':r}
+        row['sha256']=c.content_id(row)
+        self.rows.append(row)
+        return r
     def test_explicit_permission(self):self.reserve()
     def test_spending_does_not_imply_adoption(self):
         with self.assertRaises(ValueError):self.reserve(operation='adopt')

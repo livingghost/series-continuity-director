@@ -65,8 +65,26 @@ jobs:
       - name: Validate reusable authoring and host-execution evidence
         working-directory: skills/series-continuity-director
         run: |
+          python scripts/dependencies_smoke_test.py
           python scripts/scene_material_smoke_test.py
           python scripts/production_workflow_smoke_test.py
+          python scripts/production_resume_smoke_test.py
+          python scripts/production_inputs_smoke_test.py
+          python scripts/tactic_consultation_smoke_test.py
+          python examples/tactic-consultation/build_example.py --check
+          python scripts/production_input_model_smoke_test.py
+          python scripts/dispatch_preview_smoke_test.py
+          python scripts/schema_observation_smoke_test.py
+          python scripts/production_variation_smoke_test.py
+          python scripts/route_reading_smoke_test.py
+          python scripts/visual_continuity_smoke_test.py
+          python scripts/request_contract_smoke_test.py
+          python scripts/request_validation_smoke_test.py
+          python scripts/reservation_lifecycle_smoke_test.py
+          python examples/input-assembly/build_example.py --check
+          python examples/model-evidence/build_example.py --check
+          python examples/submission-gate/build_example.py --check
+          python examples/resume-recording/build_example.py --check
 
       - name: Build and validate release archive
         shell: bash

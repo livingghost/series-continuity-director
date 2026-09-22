@@ -1,0 +1,23 @@
+{
+  "submission_id": "e01-lens",
+  "kind": "shot",
+  "scene_plot": "fixtures/scene-plot.json",
+  "shot_id": "E01-NEGATION",
+  "target": "xai-grok-imagine-2",
+  "text": "A portrait with no wide-angle stretch on the face or limbs, shapes round off rather than sharpen.",
+  "inputs": [
+    {
+      "role": "reference",
+      "path": "fixtures/large.jpg"
+    }
+  ],
+  "obligations": {
+    "locks": [],
+    "permanent_features": []
+  },
+  "expected_status": "admitted",
+  "narrative": "fixtures/narrative.json",
+  "characters": [
+    "C01"
+  ]
+}

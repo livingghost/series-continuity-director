@@ -164,6 +164,13 @@
         "references/scene-persona.md"
       ],
       "source_roles": []
+    },
+    "craft-consultation": {
+      "when": "Reusable craft is consulted or applied to the current production.",
+      "reads": [
+        "references/tactic-consultation.md"
+      ],
+      "source_roles": []
     }
   },
   "routes": {
@@ -299,7 +306,16 @@
     "scripts/evidence_tools_smoke_test.py",
     "scripts/creative_options_smoke_test.py",
     "scripts/scene_material_smoke_test.py",
-    "scripts/agent_evaluation_smoke_test.py"
+    "scripts/agent_evaluation_smoke_test.py",
+    "scripts/production_resume_smoke_test.py",
+    "scripts/production_inputs_smoke_test.py",
+    "scripts/production_input_model_smoke_test.py",
+    "scripts/route_reading_smoke_test.py",
+    "scripts/visual_continuity_smoke_test.py",
+    "scripts/request_contract_smoke_test.py",
+    "scripts/request_validation_smoke_test.py",
+    "scripts/reservation_lifecycle_smoke_test.py",
+    "scripts/tactic_consultation_smoke_test.py"
   ],
   "operations": {
     "revision-intent": {
@@ -376,6 +392,21 @@
       "owner": "scripts/repair_analysis.py:analyze",
       "command": "python scripts/repair_analysis.py --help",
       "effect": "derive failure groups and attributed hypotheses from existing review receipts; no retry or canonical writes"
+    },
+    "recover-recording": {
+      "owner": "scripts/production_workflow.py:recover_recording",
+      "command": "python scripts/production_workflow.py recover-recording --help",
+      "effect": "register retained dispatch output bytes without a new provider operation"
+    },
+    "consult-tactics": {
+      "owner": "scripts/tactic_consultation.py:command",
+      "command": "python scripts/production_workflow.py consult-tactics --help",
+      "effect": "read craft candidates"
+    },
+    "apply-tactics": {
+      "owner": "scripts/tactic_consultation.py:command",
+      "command": "python scripts/production_workflow.py apply-tactics --help",
+      "effect": "publish scoped craft application as a production source"
     }
   }
 }

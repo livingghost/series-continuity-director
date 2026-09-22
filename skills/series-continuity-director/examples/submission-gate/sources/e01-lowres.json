@@ -1,0 +1,26 @@
+{
+  "submission_id": "e01-s01f",
+  "kind": "shot",
+  "scene_plot": "fixtures/scene-plot.json",
+  "shot_id": "E01-LOWRES",
+  "target": "minimax-h3",
+  "text": "The badger turns his head to look back over his shoulder.",
+  "inputs": [
+    {
+      "role": "reference",
+      "path": "fixtures/tiny.jpg"
+    }
+  ],
+  "obligations": {
+    "locks": [],
+    "permanent_features": [],
+    "identity_reference_minimum_shorter_side": 512
+  },
+  "expected_status": "refused",
+  "expected_code": "IDENTITY_REFERENCE_TOO_SMALL",
+  "expected_unmeasured": "inputs.referenceImages",
+  "narrative": "fixtures/narrative.json",
+  "characters": [
+    "C01"
+  ]
+}

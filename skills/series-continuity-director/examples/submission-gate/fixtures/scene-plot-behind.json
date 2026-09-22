@@ -1,6 +1,6 @@
 {
   "artifact_type": "scene-plot",
-  "scene_id": "submission-gate-behind",
+  "scene_id": "SUBMISSION-GATE-BEHIND",
   "narrative_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
   "chapter": "ch1",
   "order": 1,
@@ -110,7 +110,7 @@
     "kind": "shots",
     "units": [
       {
-        "id": "asset-carries-shot-fields",
+        "id": "ASSET-CARRIES-SHOT-FIELDS",
         "focal_beat": "b3",
         "shows": [
           {
@@ -130,7 +130,7 @@
         ]
       },
       {
-        "id": "asset-needs-no-plot",
+        "id": "ASSET-NEEDS-NO-PLOT",
         "focal_beat": "b3",
         "shows": [
           {
@@ -150,7 +150,7 @@
         ]
       },
       {
-        "id": "character-not-in-narrative",
+        "id": "CHARACTER-NOT-IN-NARRATIVE",
         "focal_beat": "b3",
         "shows": [
           {
@@ -170,7 +170,7 @@
         ]
       },
       {
-        "id": "character-not-in-scene",
+        "id": "CHARACTER-NOT-IN-SCENE",
         "focal_beat": "b3",
         "shows": [
           {
@@ -190,7 +190,7 @@
         ]
       },
       {
-        "id": "clean-s03",
+        "id": "CLEAN-S03",
         "focal_beat": "b3",
         "shows": [
           {
@@ -210,7 +210,7 @@
         ]
       },
       {
-        "id": "clean-video",
+        "id": "CLEAN-VIDEO",
         "focal_beat": "b3",
         "shows": [
           {
@@ -230,7 +230,7 @@
         ]
       },
       {
-        "id": "craft-words",
+        "id": "CRAFT-WORDS",
         "focal_beat": "b3",
         "shows": [
           {
@@ -250,7 +250,7 @@
         ]
       },
       {
-        "id": "e01-lowres",
+        "id": "E01-LOWRES",
         "focal_beat": "b3",
         "shows": [
           {
@@ -270,7 +270,7 @@
         ]
       },
       {
-        "id": "e01-negation",
+        "id": "E01-NEGATION",
         "focal_beat": "b3",
         "shows": [
           {
@@ -290,7 +290,7 @@
         ]
       },
       {
-        "id": "e02-empty-doorway",
+        "id": "E02-EMPTY-DOORWAY",
         "focal_beat": "b3",
         "shows": [
           {
@@ -310,7 +310,7 @@
         ]
       },
       {
-        "id": "kind-undeclared",
+        "id": "KIND-UNDECLARED",
         "focal_beat": "b3",
         "shows": [
           {
@@ -330,7 +330,7 @@
         ]
       },
       {
-        "id": "mode-conflict",
+        "id": "MODE-CONFLICT",
         "focal_beat": "b3",
         "shows": [
           {
@@ -350,7 +350,7 @@
         ]
       },
       {
-        "id": "narrative-outside-root",
+        "id": "NARRATIVE-OUTSIDE-ROOT",
         "focal_beat": "b3",
         "shows": [
           {
@@ -370,7 +370,7 @@
         ]
       },
       {
-        "id": "plot-edited-after-approval",
+        "id": "PLOT-EDITED-AFTER-APPROVAL",
         "focal_beat": "b3",
         "shows": [
           {
@@ -390,7 +390,7 @@
         ]
       },
       {
-        "id": "plot-missing",
+        "id": "PLOT-MISSING",
         "focal_beat": "b3",
         "shows": [
           {
@@ -410,7 +410,7 @@
         ]
       },
       {
-        "id": "plot-outside-root",
+        "id": "PLOT-OUTSIDE-ROOT",
         "focal_beat": "b3",
         "shows": [
           {
@@ -430,7 +430,7 @@
         ]
       },
       {
-        "id": "plot-unapproved",
+        "id": "PLOT-UNAPPROVED",
         "focal_beat": "b3",
         "shows": [
           {
@@ -450,7 +450,7 @@
         ]
       },
       {
-        "id": "prohibited-surface",
+        "id": "PROHIBITED-SURFACE",
         "focal_beat": "b3",
         "shows": [
           {
@@ -470,7 +470,7 @@
         ]
       },
       {
-        "id": "s02-tail",
+        "id": "S02-TAIL",
         "focal_beat": "b3",
         "shows": [
           {
@@ -490,7 +490,7 @@
         ]
       },
       {
-        "id": "s07-hob",
+        "id": "S07-HOB",
         "focal_beat": "b3",
         "shows": [
           {
@@ -510,7 +510,7 @@
         ]
       },
       {
-        "id": "s08-hoodie",
+        "id": "S08-HOODIE",
         "focal_beat": "b3",
         "shows": [
           {
@@ -530,7 +530,7 @@
         ]
       },
       {
-        "id": "scene-id-mismatch",
+        "id": "SCENE-ID-MISMATCH",
         "focal_beat": "b3",
         "shows": [
           {
@@ -550,7 +550,7 @@
         ]
       },
       {
-        "id": "shot-outside-plot",
+        "id": "SHOT-OUTSIDE-PLOT",
         "focal_beat": "b3",
         "shows": [
           {
@@ -570,7 +570,7 @@
         ]
       },
       {
-        "id": "exclusivity",
+        "id": "EXCLUSIVITY",
         "focal_beat": "b3",
         "shows": [
           {
@@ -590,7 +590,7 @@
         ]
       },
       {
-        "id": "floor",
+        "id": "FLOOR",
         "focal_beat": "b3",
         "shows": [
           {
@@ -614,6 +614,6 @@
   "approved": {
     "by": "the fixture author",
     "at": "2026-09-13T00:00:00Z",
-    "content_sha256": "e58db20c58548486e8928e9b5f164895ff6a1c41b00eb7363c3167ca08e44793"
+    "content_sha256": "9709a68b05d3cdb59ee34c9c2036d423816ad1ba6a7e63e9f2cacb838fc320b6"
   }
 }

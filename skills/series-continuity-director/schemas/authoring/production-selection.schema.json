@@ -60,6 +60,74 @@
     "authorization": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
+    },
+    "influence": {
+      "enum": [
+        null,
+        "identity",
+        "asset"
+      ]
+    },
+    "continuity_decision": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "character_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "continuity": {
+              "enum": [
+                "recurring",
+                "one-off"
+              ]
+            },
+            "basis": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "locator": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "path",
+                "sha256",
+                "locator"
+              ],
+              "additionalProperties": false
+            },
+            "by": {
+              "type": "string",
+              "minLength": 1
+            },
+            "at": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "character_id",
+            "continuity",
+            "basis",
+            "by",
+            "at"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   },
   "required": [

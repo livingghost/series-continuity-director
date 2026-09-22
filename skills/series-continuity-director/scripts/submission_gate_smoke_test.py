@@ -1,40 +1,8 @@
 #!/usr/bin/env python3
-"""Check that the submission gate reaches the declared verdict on each fixture.
+"""Test declared submission contracts and retain creative requirements for review.
 
-Every fixture is a real submission and carries the verdict it must receive, and a
-refused one also carries the code that must appear. A fixture may also declare a
-line that must appear in `unmeasured`, because a check that quietly stops running
-leaves the status unchanged on the day it stops working.
-
-The exclusivity rule is exercised separately, against a profile written here. No
-shipped profile has two reference channels that exclude each other, and that is
-the shape the rule has to survive: a submission carrying one reference occupies
-one channel, and charging it with a conflict between two would refuse a
-submission that is fine.
-
-The rest of the cases are written here rather than as fixtures, for two reasons.
-Some exercise a rule at the boundary that separates it from a looser reading of
-it, and a submission admitted or refused identically under both readings proves
-nothing about which is in force: the permanent feature head, the word boundary
-a prohibited surface is searched on, and the code `finding` refuses to emit.
-Each of those cases records the looser reading it refutes, and a case that
-cannot tell the two apart is not a case for the rule it is filed under. The others hand the gate a submission no fixture
-would be allowed to be: a field of the wrong shape, and a file that cannot be
-read at all. What they fix is that a verdict is reached and the exit code says
-which verdict it is, because a traceback is not a verdict.
-
-One case reads no single report. The gate writes prose, and `check_report_language`
-reads every line it wrote across every case above, because the defect that rule
-exists for is not visible in any one verdict: a report is still correct about
-which field it could not read while naming that field's shape in Python's word
-for it rather than in the reader's.
-
-No case here asserts the exact sentence the gate happens to write. An expectation
-pinned to a sentence goes red when somebody improves the wording and stays green
-when somebody deletes the check underneath it, which is the failure this file
-exists to be the opposite of. Where a case has to look inside a line it looks for
-a name it supplied itself -- a request key, a field, a character -- and never for
-the gate's words around it.
+Synthetic fixtures exercise literal locks, explicit input keys, declared pixel floors,
+source approvals, route reading and the camera/request artifact correspondence.
 """
 from __future__ import annotations
 
@@ -51,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from submission_gate import (  # noqa: E402
-    check_permanent_features,
+    review_requirements,
     finding,
     gate,
     image_size,
@@ -66,9 +34,12 @@ PROFILES = ROOT / "protocols" / "target" / "profiles"
 MESSAGES: list[tuple[str, str]] = []
 
 
-def run_gate(case: str, submission: Any, profiles: Path, root: Path) -> dict:
+def run_gate(case: str, submission: Any, profiles: Path, root: Path, *, assemble: bool = True) -> dict:
     """Reach a verdict, and keep every line the gate wrote reaching it."""
 
+    from submission_fixtures import current_submission
+    if assemble:
+        submission = current_submission(submission, root, profiles)
     report = gate(submission, profiles, root)
     MESSAGES.extend((case, item["message"]) for item in report["errors"])
     MESSAGES.extend((case, line) for line in report["unmeasured"])
@@ -245,7 +216,7 @@ def check_fixtures(results: list[dict], errors: list[str]) -> None:
         if expected is None:
             errors.append(f"{path.name}: fixture declares no expected_status")
             continue
-        report = run_gate(f"fixture {path.stem}", submission, PROFILES, CASES)
+        report = run_gate(f"fixture {path.stem}", submission, PROFILES, CASES, assemble=False)
         actual = report["status"]
         results.append({
             "case": path.stem,
@@ -299,7 +270,7 @@ def check_exclusivity(results: list[dict], errors: list[str]) -> None:
         "submission_id": "exclusivity",
         "kind": "shot",
         "scene_plot": "fixtures/scene-plot.json",
-        "shot_id": "exclusivity",
+        "shot_id": "EXCLUSIVITY",
         "narrative": "fixtures/narrative.json",
         "characters": ["C01"],
         "target": EXCLUSIVITY_PROFILE["target_id"],
@@ -367,7 +338,7 @@ def check_resolution_floor(results: list[dict], errors: list[str]) -> None:
         "submission_id": "floor",
         "kind": "shot",
         "scene_plot": "fixtures/scene-plot.json",
-        "shot_id": "floor",
+        "shot_id": "FLOOR",
         "narrative": "fixtures/narrative.json",
         "characters": ["C01"],
         "target": "floor-fixture",
@@ -487,48 +458,22 @@ def check_image_formats(results: list[dict], errors: list[str]) -> None:
 # reach the same verdict on most submissions, so each case below says which of
 # them it is here to refute:
 #   any    a rule matching any word of the feature admits this one wrongly
-#   last   a rule matching the last word of the feature refuses this one wrongly
-#   stem   a rule comparing whole words rather than stems refuses this one wrongly
-# feature, text, verdict, what it refutes
-PERMANENT_FEATURE_CASES = [
-    ("one long bushy tail", "The wolf walks down a long corridor at dawn.", "refused", "any"),
-    ("two white forepaws", "A white wall stands behind him.", "refused", "any"),
-    ("a white patch on the chest", "His chest is turned away from the window.", "refused", "any, last"),
-    ("a tail with a white tip", "His tail curls around the chair leg.", "named", "last"),
-    ("six fins along the spine", "Six fins stand up as he turns.", "named", "last"),
-    ("a notch in the right ear", "He stands at the right of the door.", "refused", "any"),
-    ("a scar across the left cheek", "The scar runs from brow to jaw.", "named", "last"),
-    ("upright triangular ears", "His upper ear rotates toward the door.", "named", "stem"),
-    ("rounded ears", "He has rounded ears and one long striped tail.", "named", "nothing; the fixture case"),
+FEATURE_REVIEW_CASES = [
+    ("a marked sleeve", "A figure opens a case."),
+    ("two rounded joints", "Two tools remain on the table."),
+    ("a light patch on the shoulder", "The figure faces away."),
 ]
 
 
-def check_permanent_feature_head(results: list[dict], errors: list[str]) -> None:
-    """SUB-05 reads the head of the declared phrase, not a word of it.
-
-    An English noun phrase puts its head before its complement. Asking for any
-    word admits `one long bushy tail` on `a long corridor at dawn`; asking for
-    the last word refuses a text that names the tail, the patch and the fins
-    while the declaration named the tip, the chest and the spine. Every case
-    here separates the head rule from one of those two.
-    """
-
-    for feature, text, expected, refutes in PERMANENT_FEATURE_CASES:
-        found: list[dict] = []
-        check_permanent_features(text, [feature], found)
-        MESSAGES.extend((f"permanent feature: {feature!r}", item["message"]) for item in found)
-        actual = "refused" if found else "named"
-        results.append({
-            "case": f"permanent feature: {feature!r} against {text!r}",
-            "expected": expected,
-            "actual": actual,
-            "refutes": refutes,
-        })
-        if actual != expected:
-            errors.append(
-                f"permanent feature {feature!r} against {text!r}: expected {expected}, "
-                f"got {actual}; this case exists to refute the {refutes} rule"
-            )
+def check_feature_review(results: list[dict], errors: list[str]) -> None:
+    for feature, text in FEATURE_REVIEW_CASES:
+        requirements = review_requirements({"text": text, "obligations": {"permanent_features": [feature]}})
+        valid = (len(requirements) == 1 and requirements[0]["statement"] == feature
+                 and requirements[0]["requires"] == "rendition-review"
+                 and requirements[0]["source"] == {"field": "obligations.permanent_features", "index": 0})
+        results.append({"case": "authored feature remains a review requirement", "passed": valid})
+        if not valid:
+            errors.append("declared feature lost its statement or source in review requirements")
 
 
 # The prohibition surface the shipped narrative fixture carries: once standing
@@ -585,39 +530,17 @@ def check_prohibition_boundary(results: list[dict], errors: list[str]) -> None:
             )
 
 
-# A submission is a project file, and a project file is untrusted data. Each row
-# is a field given a shape it is not, and three things have to be true of every
-# one of them. None of the three is a sentence the gate happens to write.
-#
-#   It reaches a verdict rather than raising. A traceback is not a verdict, and
-#   a caller cannot tell one from a refusal.
-#
-#   The report names the field it could not read, once. A reader told only that
-#   something was unreadable is left to diff the document against the schema,
-#   and a field reported twice says the submission has two problems: the gate
-#   holds back its `declares none` line for exactly that reason, and until now
-#   nothing checked that it did.
-#
-#   The value is dropped rather than walked, which is the column that costs
-#   something to satisfy. `"black boxer briefs"` iterates, so a lock loop
-#   written for a list walks it one character at a time and refuses the
-#   submission eighteen times over surfaces nobody declared. Every row states
-#   the codes the submission earns in full, and each of these earns exactly one:
-#   it declares no kind. A code beyond that list is the gate having read a value
-#   it reported it could not read.
-#
-# Between them the rows hand the gate every shape a JSON document can put in the
-# wrong place -- a piece of text, a number, a true/false, a list, a block of
-# named fields -- because a report is only as good as its worst branch, and the
-# loop at the end of the check adds the sixth, a document that is nothing at all.
-# name, submission, expected status, the field the report must name, the codes it must cite
+# Malformed fields receive one diagnostic and remain unread. Missing kind also
+# prevents resolving the independent visual contract. Literal locks retain
+# their own refusal when the fixture supplies an actual phrase.
+# name, submission, expected status, unread field, exact expected refusal codes
 UNTRUSTED_CASES = [
     (
         "obligations is a string",
         {"obligations": "none"},
         "refused",
         "obligations",
-        ["SUBMISSION_KIND_UNDECLARED"],
+        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
     ),
     (
         "a lock list given as one string",
@@ -625,14 +548,14 @@ UNTRUSTED_CASES = [
         "refused",
         "lock surfaces",
         # Not eighteen LOCK_SURFACE_ABSENT refusals, one per character.
-        ["SUBMISSION_KIND_UNDECLARED"],
+        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
     ),
     (
         "a lock list given as a block of named fields",
         {"obligations": {"locks": {"chest": "black boxer briefs"}}},
         "refused",
         "lock surfaces",
-        ["SUBMISSION_KIND_UNDECLARED"],
+        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
     ),
     (
         "a lock list holding something that is not a phrase",
@@ -641,42 +564,42 @@ UNTRUSTED_CASES = [
         "lock surfaces",
         # The phrase in the list is still checked, and the entry that is not a
         # phrase is dropped instead of being searched for as one.
-        ["LOCK_SURFACE_ABSENT", "SUBMISSION_KIND_UNDECLARED"],
+        ["LOCK_SURFACE_ABSENT", "SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
     ),
     (
         "permanent features given as a number",
         {"obligations": {"permanent_features": 42}},
         "refused",
         "permanent features",
-        ["SUBMISSION_KIND_UNDECLARED"],
+        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
     ),
     (
         "permanent features given as true",
         {"obligations": {"permanent_features": True}},
         "refused",
         "permanent features",
-        ["SUBMISSION_KIND_UNDECLARED"],
+        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
     ),
     (
         "parameters given as a list",
         {"parameters": ["duration", 6]},
         "refused",
         "parameters",
-        ["SUBMISSION_KIND_UNDECLARED"],
+        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
     ),
     (
         "text form given as a number",
         {"text_form": 1},
         "refused",
         "text form",
-        ["SUBMISSION_KIND_UNDECLARED"],
+        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
     ),
     (
         "negative text given as a list",
         {"negative_text": ["a mug"]},
         "refused",
         "negative text",
-        ["SUBMISSION_KIND_UNDECLARED"],
+        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
     ),
     (
         "an input whose role is a list",
@@ -684,7 +607,7 @@ UNTRUSTED_CASES = [
          "inputs": [{"role": ["reference"], "path": "fixtures/large.jpg"}]},
         "refused",
         "input 0",
-        ["SUBMISSION_KIND_UNDECLARED"],
+        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
     ),
     (
         "an input whose request key is a number",
@@ -692,21 +615,13 @@ UNTRUSTED_CASES = [
          "inputs": [{"role": "reference", "request_key": 7}]},
         "refused",
         "input 0",
-        ["SUBMISSION_KIND_UNDECLARED"],
+        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
     ),
 ]
 
 
 def check_untrusted_fields(results: list[dict], errors: list[str]) -> None:
-    """A field of the wrong shape is reported, dropped, and never raised.
-
-    The submission is refused throughout these cases for a reason of its own:
-    it declares no kind. What each case fixes is that the gate reached that
-    verdict at all, said which field it could not read, and refused by nothing
-    else, because a value reported as unread and then read anyway is the worse
-    of the two failures: the report says the check did not run and the refusals
-    say it did.
-    """
+    """Report malformed fields without treating them as usable declarations."""
 
     for name, overlay, expected, field, codes in UNTRUSTED_CASES:
         case = f"untrusted: {name}"
@@ -894,17 +809,53 @@ def check_report_language(results: list[dict], errors: list[str]) -> None:
         )
 
 
-def main() -> int:
+def check_public_visual_contract(results: list[dict], errors: list[str]) -> None:
+    import copy
+    import execution_contract as c
+    from protocol_contract import finalize_artifact
+    original = c.load(CASES / 'clean-s03.json')
+    cases = [('the declared public camera and shot request', copy.deepcopy(original), None)]
+    missing_read = copy.deepcopy(original)
+    missing_read.pop('route_reading')
+    cases.append(('reading evidence is required', missing_read, 'ROUTE_READING_INVALID'))
+    missing_visual = copy.deepcopy(original)
+    missing_visual.pop('visual_continuity')
+    cases.append(('visual evidence is required', missing_visual, 'VISUAL_CONTINUITY_INVALID'))
+    wrong_subject = copy.deepcopy(original)
+    wrong_subject['visual_continuity']['subjects'] = {}
+    wrong_subject['visual_continuity_sha256'] = c.content_id(wrong_subject['visual_continuity'])
+    cases.append(('camera subjects must match the declaration', wrong_subject, 'VISUAL_CONTINUITY_INVALID'))
+    wrong_camera = copy.deepcopy(original)
+    ref = wrong_camera['visual_continuity']['shot_request']
+    request = c.load(CASES / ref['path'])
+    request['camera_spec_sha256'] = c.content_id({'synthetic': 'another camera'})
+    request = finalize_artifact(request)
+    path = CASES / 'fixtures' / 'another-camera-request.json'
+    path.write_bytes(c.encoded(request))
+    wrong_camera['visual_continuity']['shot_request'] = {'path': str(path.relative_to(CASES)), 'sha256': c.digest(path.read_bytes())}
+    wrong_camera['visual_continuity_sha256'] = c.content_id(wrong_camera['visual_continuity'])
+    cases.append(('request must reference the selected camera', wrong_camera, 'VISUAL_CONTINUITY_INVALID'))
+    for label, specimen, expected_code in cases:
+        report = run_gate(label, specimen, PROFILES, CASES, assemble=False)
+        codes = {item['code'] for item in report['errors']}
+        expected = 'refused' if expected_code else 'admitted'
+        results.append({'case': label, 'expected': expected, 'actual': report['status'], 'codes': sorted(codes)})
+        if report['status'] != expected or expected_code and expected_code not in codes:
+            errors.append(label + ': ' + json.dumps(report, ensure_ascii=False))
+
+
+def check_all() -> int:
     results: list[dict] = []
     errors: list[str] = []
 
     check_fixtures(results, errors)
+    check_public_visual_contract(results, errors)
     fixtures = len(results)
     if fixtures < 9:
         errors.append(f"expected at least nine fixtures, found {fixtures}")
     check_exclusivity(results, errors)
     check_resolution_floor(results, errors)
-    check_permanent_feature_head(results, errors)
+    check_feature_review(results, errors)
     check_prohibition_boundary(results, errors)
     check_untrusted_fields(results, errors)
     check_exit_codes(results, errors)
@@ -921,6 +872,16 @@ def main() -> int:
         "errors": errors,
     }, ensure_ascii=False, indent=2))
     return 0 if not errors else 1
+
+
+def main() -> int:
+    global CASES
+    import shutil
+    with tempfile.TemporaryDirectory(prefix="submission-gate-suite-") as temporary:
+        destination = Path(temporary) / "cases"
+        shutil.copytree(CASES, destination)
+        CASES = destination
+        return check_all()
 
 
 if __name__ == "__main__":

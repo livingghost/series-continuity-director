@@ -1,0 +1,23 @@
+{
+  "submission_id": "e02-s05-frame",
+  "kind": "shot",
+  "scene_plot": "fixtures/scene-plot.json",
+  "shot_id": "E02-EMPTY-DOORWAY",
+  "target": "xai-grok-imagine-2",
+  "text": "Landscape frame, flat cel-shaded anime illustration matching the reference drawing style. The same loft seen from beside the bench, looking back along the room at the open hatch in the left wall. The hatch is empty and the ladder well beyond it is dim but the frame and the boards inside it stay clearly visible in the spill of morning light from the window behind the camera. The bench and the pale lockers run down the right side of the picture. The camera stands high, at the eye height of a very tall person at the bench, and looks slightly down toward the hatch boards.",
+  "inputs": [
+    {
+      "role": "reference",
+      "path": "fixtures/large.jpg"
+    }
+  ],
+  "obligations": {
+    "locks": [],
+    "permanent_features": []
+  },
+  "expected_status": "admitted",
+  "narrative": "fixtures/narrative.json",
+  "characters": [
+    "C01"
+  ]
+}

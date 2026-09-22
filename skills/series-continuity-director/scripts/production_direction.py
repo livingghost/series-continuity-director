@@ -91,13 +91,13 @@ def validate(value: Any, sources: list[dict[str, Any]], criteria: list[dict[str,
 
 
 def compile_direction(value: dict[str, Any], delivery: str, transport: str) -> dict[str, Any]:
+    c.text(delivery, 'delivery')
+    if transport not in {'authored-rendition', 'bounded-context'}:
+        raise ValueError('invalid direction transport')
     selected = []
     for row in value['decisions']:
         option = next(x for x in row['options'] if x['id'] == row['selected'])
         instruction = option['realization']
-        if transport == 'authored-rendition' and instruction not in delivery:
-            raise ValueError(f"selected realization {row['id']} is absent from the authored delivery; "
-                             "author it into the delivery or use bounded-context")
         selected.append({'decision': row['id'], 'instruction': instruction, 'criteria': row['criteria']})
     return {'purpose': value['purpose'], 'intended_effect': value['intended_effect'],
             'selected': selected, 'verification_limits': value['verification_limits']}

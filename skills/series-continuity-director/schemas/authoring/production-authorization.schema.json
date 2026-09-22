@@ -54,6 +54,23 @@
           "currency": {
             "type": "string",
             "minLength": 1
+          },
+          "request_scope": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "submission_validation_modes": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "target-schema",
+                "bounded-probe",
+                "observed-profile"
+              ]
+            }
           }
         },
         "required": [
@@ -62,7 +79,9 @@
           "max_calls",
           "max_outputs",
           "max_cost",
-          "currency"
+          "currency",
+          "request_scope",
+          "submission_validation_modes"
         ],
         "additionalProperties": false
       },

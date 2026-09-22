@@ -1,0 +1,1 @@
+Synthetic tests declare one-off subjects and inspect mechanical request constraints.

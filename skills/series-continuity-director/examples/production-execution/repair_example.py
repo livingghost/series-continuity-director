@@ -27,7 +27,10 @@ def run(out: Path) -> dict:
         'sources':[{'id':'field','path':'source.txt','role':'world','disposition':'applied','locator':'whole','reason':'Explicit synthetic premise.'}],
         'delivery':{'path':'delivery.txt','transport':'authored-rendition','translation_notes':'Only the declared realization.'},
         'criteria':[{'id':'held','strength':'hard','text':'A field persists without added motion.','evidence':'text'}],'sequence_plan':None}
-    task['direction']=support.direction(task,(out/'delivery.txt').read_text());write('task.json',task)
+    task['direction']=support.direction(task,(out/'delivery.txt').read_text())
+    from reading_fixtures import task_reading
+    task_reading(out,task)
+    write('task.json',task)
     parent=w.prepare(out,'task.json')['run'];w.handoff(out,parent,'synthetic operator','manual')
     write('initial.txt','The field moves.');initial=w.capture(out,parent,'initial.txt','A deliberately mismatching synthetic passage.')
     review=support.observed(w.draft_review(out,parent,initial['sha256']),'The literal passage adds motion.')

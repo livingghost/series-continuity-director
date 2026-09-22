@@ -1,6 +1,6 @@
 [package]
 name = "series-continuity-director"
-version = "2026.09.20.1"
+version = "2026.09.22.3"
 version_scheme = "YYYY.MM.DD.N"
 release_timezone = "UTC"
 
@@ -15,6 +15,7 @@ sources = [
   "references/evidence-review.md",
   "references/production-direction.md",
   "references/production-execution.md",
+  "references/tactic-consultation.md",
   "references/production-repair.md",
   "references/timed-production.md",
   "references/state-and-trust.md",
@@ -57,6 +58,7 @@ sources = [
   "references/evidence-review.md",
   "references/production-direction.md",
   "references/production-execution.md",
+  "references/tactic-consultation.md",
   "references/production-repair.md",
   "references/timed-production.md",
   "references/state-and-trust.md",
@@ -90,7 +92,7 @@ sources = [
 ]
 
 [release]
-output = "dist/series-continuity-director-2026.09.20.1.zip"
+output = "dist/series-continuity-director-2026.09.22.3.zip"
 # Paths are relative to the repository root, and the archive mirrors the
 # repository, so an extracted release has the same shape as a checkout and a
 # script inside it resolves both roots the same way.

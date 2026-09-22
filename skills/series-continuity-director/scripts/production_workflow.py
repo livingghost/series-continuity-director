@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 import execution_contract as c
+import reservation_lifecycle as lifecycle
 import execution_routes
 import production_direction
 import production_authority
@@ -23,7 +24,7 @@ import media_evidence
 from execution_contract import new_run_id as generate_uuid7
 
 ROOT = Path(__file__).resolve().parents[1]
-TASK_FIELDS = {'task_id','route','features','sources','delivery','criteria','sequence_plan','direction'}
+TASK_FIELDS = {'route_reading','task_id','route','features','sources','delivery','criteria','sequence_plan','direction'}
 
 
 def run_dir(root: Path, run: str, *, exists: bool = True) -> Path:
@@ -78,6 +79,9 @@ def snapshot(root: Path, task_path: str) -> tuple[dict[str,Any],dict[str,Any],li
         dependencies[(space,path)]={'space':space,'path':path,'sha256':key,'size':len(raw)}
         blobs[key]=raw; return raw
     if add(root,task_path,'project')!=task_bytes: raise ValueError('task changed during preparation')
+    import route_reading
+    reading=c.decode(add(root,task['route_reading'],'project'))
+    issuance=route_reading.require_route_reading(reading,project=root,routes={task['route']},features=task['features'])
     for source in task['sources']:
         raw=add(root,source['path'],'project')
         if source['disposition']!='applied': continue
@@ -111,7 +115,8 @@ def snapshot(root: Path, task_path: str) -> tuple[dict[str,Any],dict[str,Any],li
     consumer={'route':task['route'],'transport':task['delivery']['transport'],'instructions':delivery,
               'criteria':task['criteria'],'direction':production_direction.compile_direction(task['direction'],delivery,task['delivery']['transport']),
               'sequence':sequence,'authoring_materials':scene_materials}
-    prepared={'task_path':task_path,'task':task,'route':route,'dependencies':sorted(dependencies.values(),key=lambda x:(x['space'],x['path'])),
+    prepared={'task_path':task_path,'task':task,'route':route,
+              'route_reading':reading,'route_reading_sha256':c.content_id(reading),'reading_issuance':issuance,'dependencies':sorted(dependencies.values(),key=lambda x:(x['space'],x['path'])),
               'consumer_sha256':c.content_id(consumer)}
     prepared['input_sha256']=c.content_id(prepared)
     return prepared,consumer,prepared['dependencies'],blobs
@@ -178,14 +183,21 @@ def load_run(root: Path, run: str) -> tuple[Path,dict[str,Any],dict[str,Any],lis
         if path.name!=f'{len(records)+1:06d}-{key}.json' or row.get('input_sha256')!=prepared['input_sha256']:
             raise ValueError('receipt address or input mismatch')
         if row.get('event') not in {'handoff','dispatch-claim','dispatch-results','dispatch-trace','candidate','review','selection','completion',
-                                      'authorization','revocation','reservation','choice','action-result','revision','action-output'}:
+                                      'authorization','revocation','reservation','choice','action-result','revision','action-output'} | lifecycle.EVENTS:
             raise ValueError('unknown receipt event')
         records.append(row); previous=key
+    lifecycle.completion_tail(records,prepared,run)
+    for row in records:
+        for item in row['data'].get('files',[])+row['data'].get('evidence',[]):
+            if len(c.object_read(directory,item['sha256']))!=item['size']:
+                raise ValueError('recorded artifact snapshot size mismatch')
     return directory,prepared,consumer,records
 
 
 def assert_current(root: Path, run: str) -> tuple[Path,dict[str,Any],dict[str,Any],list[dict[str,Any]]]:
     loaded=load_run(root,run); directory,prepared,consumer,records=loaded
+    import route_reading
+    route_reading.require_route_reading(prepared['route_reading'],project=root,routes={prepared['task']['route']},features=prepared['task']['features'])
     for dep in prepared['dependencies']:
         base=ROOT if dep['space']=='skill' else root
         raw=c.read(c.local(base,dep['path']))
@@ -204,7 +216,6 @@ def assert_current(root: Path, run: str) -> tuple[Path,dict[str,Any],dict[str,An
             confirm_asset_adoption(root,selection['adoption'],candidate['data']['files'][0])
     return loaded
 
-
 def require_mutable(records: list[dict[str,Any]]) -> None:
     if any(r['event']=='completion' for r in records):
         raise ValueError('this run is complete; prepare a new run for new work')
@@ -214,10 +225,11 @@ def append_record(directory: Path, prepared: dict[str,Any], records: list[dict[s
     # Exact repeated calls reuse durable evidence instead of duplicating it.
     for row in reversed(records):
         if row['event']==event and row['data']==data: return row
-    require_mutable(records)
+    if event!='reservation-release':require_mutable(records)
     row={'sequence':len(records)+1,'previous':records[-1]['sha256'] if records else None,
          'input_sha256':prepared['input_sha256'],'event':event,'data':data}
     row['sha256']=c.content_id(row)
+    lifecycle.completion_tail([*records,row],prepared,directory.name)
     c.atomic(directory/'records'/f'{row["sequence"]:06d}-{row["sha256"]}.json',c.encoded(row))
     return row
 
@@ -259,17 +271,70 @@ def capture(root: Path, run: str, artifact: str, note: str, limitations: list[st
                              'media':media,'limitations':limitations or []})
 
 
+
+def capture_dispatch_result(root: Path, run: str, artifact: str) -> dict[str, Any]:
+    """Register an already acquired result against its saved claim and bytes."""
+    with c.lock(root):
+        directory, prepared, _, rows = load_run(root, run)
+        handoff_record = find(rows, 'handoff')
+        if handoff_record['data']['method'] != 'dispatcher':
+            raise ValueError('recording recovery requires the saved dispatcher handoff')
+        claim = find(rows, 'dispatch-claim')
+        result = find(rows, 'dispatch-results')
+        if result['data']['claim'] != claim['sha256']:
+            raise ValueError('acquired results belong to a different dispatch claim')
+        matches = [item for item in result['data']['files'] if item['path'] == artifact]
+        if len(matches) != 1:
+            raise ValueError('recording recovery requires one exact acquired result')
+        item = matches[0]
+        raw = c.object_read(directory, item['sha256'])
+        if len(raw) != item['size'] or not raw:
+            raise ValueError('acquired result snapshot size differs')
+        existing = [row for row in rows if row['event'] == 'candidate'
+                    and row['data']['handoff'] == handoff_record['sha256']
+                    and row['data']['files'] == [item]]
+        if len(existing) > 1:
+            raise ValueError('acquired result has ambiguous candidate registrations')
+        if not existing:
+            require_mutable(rows)
+        path = c.local(root, artifact, exists=False)
+        if path.exists():
+            if c.read(path) != raw:
+                raise ValueError('recorded output path contains different bytes')
+        else:
+            c.atomic(path, raw)
+        if existing:
+            return existing[0]
+        inspected = media_evidence.inspect(directory / 'objects' / item['sha256'], raw)
+        return append_record(directory, prepared, rows, 'candidate', {
+            'handoff': handoff_record['sha256'], 'files': [item],
+            'note': 'Recorded from acquired dispatch evidence; content review pending.',
+            'media': inspected, 'limitations': []})
+
+
+def recover_recording(root: Path, run: str) -> dict[str, Any]:
+    """Recover local candidate records using completed output snapshots only."""
+    with c.lock(root):
+        _, _, _, rows = load_run(root, run)
+        result = find(rows, 'dispatch-results')
+        records = [capture_dispatch_result(root, run, item['path']) for item in result['data']['files']]
+        return {'ok': True, 'run': run, 'candidates': [row['sha256'] for row in records],
+                'network_calls': 0, 'new_reservations': 0}
+
+
 def draft_review(root: Path, run: str, candidate: str) -> dict[str,Any]:
-    _,p,_,rows=assert_current(root,run); find(rows,'candidate',candidate)
+    directory,p,_,rows=assert_current(root,run); find(rows,'candidate',candidate)
+    from tactic_consultation import review_questions
+    questions = review_questions(root, p['task'], directory=directory, dependencies=p['dependencies'])
     return {'input_sha256':p['input_sha256'],'candidate':candidate,'reviewer':'','observations':[],
             'checks':[{'criterion':x['id'],'verdict':'not-assessed','observation_indices':[],
-                       'evidence_basis':'not-assessed','reason':''} for x in p['task']['criteria']],
+                       'evidence_basis':'not-assessed','reason':'\n'.join(questions.get(x['id'], []))} for x in p['task']['criteria']],
             'repairs':[],'unresolved':[],'conclusion':''}
 
 
 def validate_review(data: Any, p: dict[str,Any], candidate: dict[str,Any], raw: bytes) -> None:
     schema_check(data,'review')
-    c.exact(data,{'input_sha256','candidate','reviewer','observations','checks','repairs','unresolved','conclusion'},'review')
+    c.exact(data,{'input_sha256','candidate','reviewer','observations','checks','repairs','unresolved','conclusion'} | ({'visual_assessment'} & data.keys()),'review')
     if data['input_sha256']!=p['input_sha256'] or data['candidate']!=candidate['sha256']: raise ValueError('review names another input or candidate')
     c.text(data['reviewer'],'reviewer'); c.text(data['conclusion'],'conclusion')
     obs=data['observations']; media=candidate['data']['media']
@@ -283,6 +348,15 @@ def validate_review(data: Any, p: dict[str,Any], candidate: dict[str,Any], raw: 
         support.append(media_evidence.validate_locator(entry['locator'],raw,media))
         if entry['method']=='audio-inspection' and 'audio' not in support[-1]:
             raise ValueError('audio inspection needs an observed interval of actual audio')
+    assessment=data.get('visual_assessment')
+    if assessment is not None:
+        if media.get('kind')!='image': raise ValueError('a single-image assessment needs an inspected still image')
+        indices=assessment['observation_indices']
+        if any(type(i) is not int or not 0<=i<len(obs) or obs[i]['method']!='visual-inspection' for i in indices):
+            raise ValueError('visual subjects must cite the actual visual inspection')
+        for subject in assessment['subjects'].values():
+            if subject['continuity']=='recurring' and subject['character_id'] is None:
+                raise ValueError('a recurring assessed subject needs a character ID')
     if not isinstance(data['checks'],list): raise ValueError('checks list required')
     expected={x['id']:x for x in p['task']['criteria']}; seen=set()
     for check in data['checks']:
@@ -354,27 +428,41 @@ def select(root: Path, run: str, selection_file: str) -> dict[str,Any]:
         directory,p,_,rows=assert_current(root,run)
         f=file_record(root,directory,selection_file); data=c.decode(c.object_read(directory,f['sha256']))
         schema_check(data,'selection')
-        c.exact(data,{'input_sha256','candidate','review','selector','reason','scope','adoption','authorization'},'selection')
+        c.exact(data,{'input_sha256','candidate','review','selector','reason','scope','adoption','authorization'} | ({'influence','continuity_decision'} & data.keys()),'selection')
         if data['input_sha256']!=p['input_sha256']: raise ValueError('selection is for a different input')
         c.text(data['selector'],'selector'); c.text(data['reason'],'selection reason')
         find(rows,'candidate',data['candidate'])
         matching=[r for r in rows if r['event']=='review' and r['data']['candidate']==data['candidate']]
         if not matching or matching[-1]['sha256']!=data['review']: raise ValueError('selection must use the latest review of this candidate')
         eligible(p,matching[-1]); files=[f]
+        if data.get('influence')=='identity':
+            if data['scope']!='registry-adoption': raise ValueError('identity acceptance requires registry adoption')
+            import visual_continuity
+            visual_continuity.selection_subject(root,run,data,loaded=(directory,p,{},rows))
+        elif data.get('continuity_decision') is not None:
+            raise ValueError('a continuity decision belongs to an identity acceptance')
+
+        if data['scope']=='delivery-only' and data['adoption'] is not None:
+            raise ValueError('delivery-only must not carry an adoption claim')
+        if data['scope']=='registry-adoption':
+            confirm_asset_adoption(root,data['adoption'],find(rows,'candidate',data['candidate'])['data']['files'][0])
         selection_reservation=_reserve(directory,p,rows,authorization=data['authorization'],actor=data['selector'],
             operation='select',scopes=['candidate:'+data['candidate']],request_sha256=c.content_id(data))
+        tokens=[selection_reservation['sha256']]
         rows=load_run(root,run)[3]
         if data['scope']=='delivery-only':
             if data['adoption'] is not None: raise ValueError('delivery-only must not carry an adoption claim')
         elif data['scope']=='registry-adoption':
-            _reserve(directory,p,rows,authorization=data['authorization'],actor=data['selector'],
+            adoption_reservation=_reserve(directory,p,rows,authorization=data['authorization'],actor=data['selector'],
                 operation='adopt',scopes=['candidate:'+data['candidate']],request_sha256=c.content_id({'adopt':data}))
+            tokens.append(adoption_reservation['sha256'])
             rows=load_run(root,run)[3]
             candidate=find(rows,'candidate',data['candidate'])
             for path in confirm_asset_adoption(root,data['adoption'],candidate['data']['files'][0]):
                 files.append(file_record(root,directory,path.relative_to(root).as_posix()))
         else: raise ValueError('invalid selection scope')
-        return append_record(directory,p,rows,'selection',{'files':files,'selection':data,'reservation':selection_reservation['sha256']})
+        return lifecycle.commit_effect(root,run,'selection',
+            {'files':files,'selection':data,'reservation':selection_reservation['sha256']},tokens,effect='local-action')
 
 
 def complete(root: Path, run: str) -> dict[str,Any]:
@@ -397,7 +485,8 @@ def verify_completion(root: Path, run: str, task_id: str) -> dict[str,Any]:
     _,p,_,rows=assert_current(root,run); done=find(rows,'completion')
     if p['task']['task_id']!=task_id or done['data']['task_id']!=task_id or done['data']['run']!=run:
         raise ValueError('completion belongs to another task')
-    if rows[-1]['event']!='completion' or done['data']['selection']!=find(rows,'selection')['sha256']:
+    lifecycle.completion_tail(rows,p,run)
+    if done['data']['selection']!=find(rows,'selection')['sha256']:
         raise ValueError('completion is not the terminal selected state')
     chosen=find(rows,'selection')['data']['selection']
     production_authority.reservation(p,rows,history=permission_history(root,p),authorization=chosen['authorization'],actor=chosen['selector'],
@@ -408,23 +497,9 @@ def verify_completion(root: Path, run: str, task_id: str) -> dict[str,Any]:
     return done
 
 
-def status(root: Path, run: str) -> dict[str,Any]:
-    with c.lock(root):
-        try:
-            _,p,_,rows=assert_current(root,run)
-        except (ValueError,OSError,UnicodeError) as exc:
-            return {'ok':False,'run':run,'next':'prepare','reason':str(exc),'resume_action':'retain the current evidence; prepare a new run from revised sources'}
-        events={r['event'] for r in rows}
-        next_stage='handoff'
-        for evt,nxt in [('handoff','capture'),('candidate','review'),('review','select'),('selection','complete'),('completion','done')]:
-            if evt in events: next_stage=nxt
-        if next_stage=='select':
-            try: eligible(p,find(rows,'review'))
-            except ValueError: next_stage='review-or-revise-candidate'
-        if 'dispatch-claim' in events and 'dispatch-results' not in events:
-            next_stage='recover-recording-or-resolve-remote-status'
-        return {'ok':True,'run':run,'input_sha256':p['input_sha256'],'next':next_stage,'events':len(rows),
-                'reads':p['route']['reads'],'scope':'structural evidence, not artistic or consent verification'}
+def status(root: Path, run: str) -> dict:
+    from production_resume import report
+    return report(root, run)
 
 
 def draft_authorization(root: Path, run: str) -> dict[str,Any]:
@@ -445,6 +520,12 @@ def authorize(root: Path, run: str, filename: str) -> dict[str,Any]:
         schema_check(grant,'authorization'); production_authority.validate(grant,p)
         proof=file_record(root,directory,grant['evidence']['path'])
         if not proof['size']: raise ValueError('authorization evidence is empty')
+        from input_evidence import InputEvidence
+        import request_scope
+        reader = InputEvidence(root)
+        for permission in grant['permissions']:
+            request_scope.verify_sources(permission['request_scope'], None, reader)
+        scope_files = [file_record(root, directory, name) for name in sorted(reader.read_paths)]
         key=production_authority.authority_key(grant,proof['sha256'])
         history=permission_history(root,p)
         for prior in history:
@@ -453,7 +534,7 @@ def authorize(root: Path, run: str, filename: str) -> dict[str,Any]:
                     raise ValueError('the same approval cannot silently change its permissions; obtain new explicit evidence')
             if prior['event']=='revocation' and prior['data'].get('authority_key')==key:
                 raise ValueError('this approval was revoked across the task')
-        return append_record(directory,p,rows,'authorization',{'authorization':grant,'authority_key':key,'files':[f,proof]})
+        return append_record(directory,p,rows,'authorization',{'authorization':grant,'authority_key':key,'files':[f,proof,*scope_files]})
 
 
 def revoke(root: Path, run: str, authorization: str, reason: str) -> dict[str,Any]:
@@ -488,7 +569,12 @@ def reserve_action(root: Path, run: str, **request: Any) -> dict[str,Any]:
         directory,p,_,rows=assert_current(root,run)
         data=production_authority.reservation(p,rows,history=permission_history(root,p),**request)
         prior=[r for r in rows if r['event']=='reservation' and r['data']==data]
-        return {'record':append_record(directory,p,rows,'reservation',data),'repeated':bool(prior)}
+        if prior:
+            lifecycle.require_active(rows,p,run,prior[-1]['sha256'])
+            raise ValueError('external action permission was already handed out; recover its existing result')
+        reservation=append_record(directory,p,rows,'reservation',data)
+        lifecycle.begin(root,run,reservation['sha256'],effect='external-handoff')
+        return {'record':reservation,'repeated':False}
 
 
 def action_result(root: Path, run: str, reservation: str, artifact: str, note: str,
@@ -526,7 +612,8 @@ def record_choice(root: Path, run: str, filename: str) -> dict[str,Any]:
         reserved=_reserve(directory,p,rows,authorization=data['authorization'],actor=data['actor'],operation='decide',
                           scopes=['decision:'+data['decision']],request_sha256=c.content_id(data))
         rows=load_run(root,run)[3]
-        return append_record(directory,p,rows,'choice',{'choice':data,'reservation':reserved['sha256'],'files':[f]})
+        return lifecycle.commit_effect(root,run,'choice',{'choice':data,'reservation':reserved['sha256'],'files':[f]},
+            [reserved['sha256']],effect='local-action')
 
 
 def impact(root: Path, run: str) -> dict[str,Any]:
@@ -566,7 +653,13 @@ def impact(root: Path, run: str) -> dict[str,Any]:
 def main() -> int:
     parser=argparse.ArgumentParser(description=__doc__)
     sub=parser.add_subparsers(dest='command',required=True)
-    for name in ['prepare','handoff','capture','draft-review','review','draft-selection','select','complete','status','impact','resume','draft-authorization','authorize','revoke','record-choice','revision-intent','revise','recover-action']:
+    import production_inputs
+    production_inputs.add_arguments(sub)
+    import tactic_consultation
+    tactic_consultation.add_arguments(sub)
+    import production_variation
+    production_variation.add_arguments(sub)
+    for name in ['prepare','handoff','capture','draft-review','review','draft-selection','select','complete','status','impact','resume','draft-authorization','authorize','revoke','record-choice','revision-intent','revise','recover-action','recover-recording','release-reservation','draft-release']:
         p=sub.add_parser(name); p.add_argument('--root',type=Path,required=True)
         if name=='prepare': p.add_argument('--task',required=True)
         else: p.add_argument('--run',required=True)
@@ -581,16 +674,26 @@ def main() -> int:
             p.add_argument('--task',required=True);p.add_argument('--candidate',required=True);p.add_argument('--repair-index',type=int,required=True)
         if name=='revise':
             p.add_argument('--authorization',required=True);p.add_argument('--actor',required=True)
-        if name=='recover-action': p.add_argument('--reservation',required=True)
+        if name in {'recover-action','draft-release'}: p.add_argument('--reservation',required=True)
+        if name=='draft-release':p.add_argument('--out',required=True)
+        if name=='release-reservation':p.add_argument('--request',required=True)
     a=parser.parse_args(); root=a.root.absolute()
     try:
-        if a.command=='prepare': result=prepare(root,a.task)
+        if a.command in tactic_consultation.COMMANDS: result=tactic_consultation.command(a,parser)
+        elif a.command == 'draft-variation': result=production_variation.command(a,parser)
+        elif a.command in production_inputs.COMMANDS: result=production_inputs.command(a,parser)
+        elif a.command=='release-reservation':result=lifecycle.release(root,a.run,a.request)
+        elif a.command=='draft-release':
+            result=lifecycle.draft_release(root,a.run,a.reservation)
+            c.atomic(c.local(root,a.out,exists=False),c.encoded(result))
+        elif a.command=='prepare': result=prepare(root,a.task)
         elif a.command=='revision-intent':
             from production_revision import revision_intent
             result=revision_intent(root,a.run,a.task,a.candidate,a.repair_index)
         elif a.command=='revise':
             from production_revision import revise
             result=revise(root,a.run,a.task,a.candidate,a.repair_index,a.authorization,a.actor)
+        elif a.command=='recover-recording': result=recover_recording(root,a.run)
         elif a.command=='recover-action':
             from production_recovery import recover
             result=recover(root,a.run,a.reservation)
@@ -610,6 +713,6 @@ def main() -> int:
         elif a.command=='complete': result=complete(root,a.run)
         else: result=status(root,a.run)
         print(json.dumps(result,ensure_ascii=False,indent=2)); return 0 if result.get('ok',True) else 1
-    except (ValueError,OSError,UnicodeError,KeyError) as exc:
+    except (ValueError,OSError,UnicodeError,KeyError,TypeError) as exc:
         print(json.dumps({'ok':False,'error':str(exc)})); return 1
 if __name__=='__main__': raise SystemExit(main())

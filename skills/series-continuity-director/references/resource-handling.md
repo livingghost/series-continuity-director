@@ -85,3 +85,15 @@ The fixtures exercise:
 - the locally available media operations.
 
 They run no model and establish nothing about a machine's maximum safe workload.
+
+## 8. Media dependencies
+
+Core inspection uses the Python standard library. Image decoding, SVG parsing,
+and rendering load the declared media dependencies when those operations run.
+Install `requirements-media.txt` and run `python scripts/dependencies.py --scope media`
+before media work. The report identifies each installed distribution and missing tool.
+The declaration in `config/dependencies.json` supplies the versions and executable names.
+See [the submission examples](../examples/submission-gate/README.md) for local contract tests.
+
+Run `python scripts/dependencies_smoke_test.py` to check declaration consistency
+and core imports without optional site packages.

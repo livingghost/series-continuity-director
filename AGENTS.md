@@ -29,9 +29,11 @@ and only the second one binds.
 | About to do this | Read first |
 |---|---|
 | Make a saved deliverable, choose its depiction or delegate a bounded action | `production-direction.md`, `production-execution.md` |
+| Look up a craft method while planning, composing, or repairing | `tactic-consultation.md` |
 | Revise a reviewed candidate or recover a retained output | `production-repair.md`, `production-execution.md` |
 | Build, inspect or revise timed material and an assembled interval | `timed-production.md`, `production-execution.md` |
 | Create or rename a full persona, world or intent record | `narrative-authoring.md`, `story-structure.md` |
+| Add a person to the cast, or decide how much of a persona a scene needs | `story-structure.md` section 6, `scene-persona.md` |
 | Settle or revise what the series is about, its arcs, chapters, characters, promises, questions, or who knows what | `story-structure.md` section 6, `continuity-core.md` |
 | Plan or revise a scene or episode | `story-structure.md` sections 6 and 7, `continuity-core.md`, `blocking-and-coverage.md` |
 | Break a scene into shots and choose coverage | `blocking-and-coverage.md`, `shot-continuity.md`, `third-person-camera.md` |
@@ -40,7 +42,7 @@ and only the second one binds.
 | Receive or deliver a public protocol artifact | `visual-contracts.md` section 8, `state-and-trust.md` |
 | Write a start frame, boundary frame, or any still | `prompt-composition.md`, `model-facing-artifacts.md`, `morphology-and-species-contracts.md` |
 | Write any text a model will receive | `prompt-composition.md`, `model-facing-artifacts.md`, `scoped-lexicon.md` |
-| Choose a target model, operation, or input mode | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md` |
+| Choose a target model, operation, or input mode | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md`, `model-evidence.md` |
 | Judge a returned take | `shot-continuity.md`, `post-production.md`, `performance-details.md` |
 | Register, accept, or replace a produced file | `state-and-trust.md` sections 4 and 5 |
 | Continue from an accepted endpoint | `continuity-core.md`, `shot-continuity.md` |
@@ -75,12 +77,11 @@ not an inferred installation dependency.
 python skills/series-continuity-director/scripts/submission_gate.py <submission.json> --json
 ```
 
-The gate refuses what can be proved wrong before anything is spent: a declared
-lock surface missing from the text, an exclusion or an absence the surface answers
-unreliably, a permanent feature the frame will show that the text does not name, a
-noun repeated inside one sentence, an input mode combination the target profile
-forbids, and an identity reference too small to hold a likeness. What it cannot
-measure it reports as unmeasured rather than passing.
+The gate verifies current reading records, declared literal locks, permitted
+input combinations, and the identity evidence required for the selected subjects.
+Reference checks bind accepted images, declared influence, and delivered bytes.
+It reports facts that the selected contracts cannot establish as unmeasured.
+The designated reviewer evaluates wording, depicted features, and artistic quality.
 
 It knows no provider. The submission names a target,
 `skills/series-continuity-director/protocols/target/profiles/`
@@ -88,11 +89,13 @@ says which request keys that target exposes and which exclude each other, and th
 gate compares the two. A surface it has never seen is supported by adding a
 profile, not by editing the gate.
 
-Its verdict is evidence for the user's decision to send, and not that decision.
-Present the exact text, each file and the control it occupies, the settings, and
-the number of outputs, and wait for the user to say to send it. When output comes
-back, present it. Do not review your own result unless the user asks, and do not
-generate again on an unrequested self-assessment.
+The author grants execution and adoption authority for their stated scopes.
+Present the exact request, reference controls, settings, output count, and known
+limitations before execution. Record a new authorization for each exact request.
+An existing delegation can authorize a changed request within its recorded scope.
+Ask for a new author decision when the operation exceeds that scope.
+Present returned candidates and perform the review assigned to the responsible
+actor. Each additional run follows the same scope and budget checks.
 
 ## At the start of a session
 
@@ -121,6 +124,25 @@ the cap, reports the body's line count without bounding it, and settles that eve
 reference is reachable from `SKILL.md` and that every command is documented
 somewhere the suite routes to. The routing table is what keeps references one
 level deep.
+
+## Source ownership and change discipline
+
+This repository owns its runtime, documentation, schemas, examples and tests.
+Data exchange follows explicit public artifact contracts.
+Implement the current format directly as the initial product contract.
+Update producers, validators, templates and fixtures together when that contract changes.
+
+- Keep implementation details local to their owning product and generate derived files from their declared sources.
+- Use explicit identifiers, evidence and declared constraints for mechanical checks; the responsible author evaluates meaning and acceptance.
+- Place neutral synthetic examples under `examples/` and preserve the user's project material in its own workspace.
+- Give each text-encoding test one necessary non-ASCII fixture, distributing script coverage across tests.
+- Report executed checks separately from unverified behavior, including incomplete runs and environmental failures.
+
+Prepare a release commit only after local validation and packaging agree.
+Keep its message and changelog focused on the initial product behavior.
+Squash intermediate maintenance edits into that release commit.
+Publish a UTC CalVer version with a push and inspect its matching CI run.
+Tags and hosted releases require a separate instruction.
 
 ## Working on this repository
 

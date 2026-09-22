@@ -89,7 +89,8 @@ def revise(root: Path, run: str, task: str, candidate: str, repair_index: int,
             record=previous[-1]
             if record['data']['intent']!=intent:raise ValueError('reservation already belongs to another revision')
         else:
-            record=w.append_record(directory,prepared,rows,'revision',
-                                   {'intent':intent,'reservation':reserved['sha256'],'child':c.new_run_id()})
+            record=w.lifecycle.commit_effect(root,run,'revision',
+                {'intent':intent,'reservation':reserved['sha256'],'child':c.new_run_id()},
+                [reserved['sha256']],effect='local-action')
         parent={**intent,'reservation':reserved['sha256'],'revision':record['sha256']}
         return w._prepare(root,task,parent=parent,identity=record['data']['child'])

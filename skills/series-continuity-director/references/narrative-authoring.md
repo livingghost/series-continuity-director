@@ -5,7 +5,7 @@
 
 ## 1. Current full forms
 
-Use `scripts/narrative_entity.py --series PROJECT add KIND ID` to create the selected persona, design, location, faction, system, artifact or glossary entry. Persona creation takes `--character ID`; it uses the complete installed form, not an emotion summary. `rename OLD NEW` updates declared references and drops approvals whose actual content changes. `remove ID` refuses live references unless explicitly forced. Do not treat command success as authorial approval.
+Use `scripts/narrative_entity.py --series PROJECT add KIND ID` to create the selected persona, design, location, faction, system, artifact or glossary entry. Persona creation takes `--character ID`; it uses the complete installed form, not an emotion summary. `rename OLD NEW` updates declared references and drops approvals whose actual content changes. `remove ID` refuses live references unless explicitly forced. Do not treat command success as authorial approval. A person the agent proposes is a candidate in the design record until the author admits them; create the persona entity and the narrative entry after that decision, once. [Story Structure](story-structure.md) section 6 owns the candidate, the scope of a confirmation and the depth a use needs.
 
 The `design/` records retain portrayal aims, source applicability, permitted variation, intentional departures and disclosure boundaries. Persona describes an individual's enduring and conditional patterns; world records describe non-agent conditions without invented psychology. Empty cast and theme collections are valid. Select the current applicable information without copying a full private dossier into a model-facing request.
 

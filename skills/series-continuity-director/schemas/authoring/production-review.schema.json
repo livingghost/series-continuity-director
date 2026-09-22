@@ -291,6 +291,64 @@
     "conclusion": {
       "type": "string",
       "minLength": 1
+    },
+    "visual_assessment": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "subjects": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "character_id": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    ]
+                  },
+                  "continuity": {
+                    "enum": [
+                      "recurring",
+                      "one-off",
+                      "undecided"
+                    ]
+                  }
+                },
+                "required": [
+                  "character_id",
+                  "continuity"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "observation_indices": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "required": [
+            "subjects",
+            "observation_indices"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   },
   "required": [

@@ -28,6 +28,10 @@ For a scene involving individualized behavior, read [Scene Persona](references/s
 
 For existing text, read [Source Material](references/source-material.md): preserve originals and keep evidence-bound extraction candidates separate from adoption. For measured host use, read [Agent Evaluation](references/agent-evaluation.md); missing observations remain unknown. For repeated candidate failures, read [Repair Analysis](references/repair-analysis.md) and reuse existing reviews rather than adding a new ledger or retrying blindly. Each operation is available in this installation and exchanges only neutral public artifacts; no external implementation is discovered or assumed.
 
+## Consult reusable directing knowledge
+
+Use [Craft consultation](references/tactic-consultation.md) while choosing a direction, solving a local problem, or examining a failed take. Search the directing vocabulary and read explicit project tactics in full. Connect borrowed relationships, preserved constraints, and deliberate changes to existing sources and review criteria. The agent judges their fit; the reviewer judges their effect on actual results.
+
 ## Explore without adopting
 
 For competing creative directions or possible continuations, read [Creative Alternatives](references/creative-options.md). Pin source bytes, distinguish durable intent from current focus, and keep all alternatives outside accepted work. Recording a plan choice never grants production permission or changes canon. Re-check the bound source content before choosing.
@@ -72,9 +76,11 @@ Find the action about to be performed and read those files before performing it.
 | About to do this | Read first |
 |---|---|
 | Make a saved deliverable, choose its depiction or delegate a bounded action | `production-direction.md`, `production-execution.md` |
+| Look up a craft method while planning, composing, or repairing | `tactic-consultation.md` |
 | Revise a reviewed candidate or recover a retained output | `production-repair.md`, `production-execution.md` |
 | Build, inspect or revise timed material and an assembled interval | `timed-production.md`, `production-execution.md` |
 | Create or rename a full persona, world or intent record | `narrative-authoring.md`, `story-structure.md` |
+| Add a person to the cast, or decide how much of a persona a scene needs | `story-structure.md` section 6, `scene-persona.md` |
 | Settle or revise what the series is about, its arcs, chapters, characters, promises, questions, or who knows what | `story-structure.md` section 6, `continuity-core.md` |
 | Plan or revise a scene or episode | `story-structure.md` sections 6 and 7, `continuity-core.md`, `blocking-and-coverage.md` |
 | Break a scene into shots and choose coverage | `blocking-and-coverage.md`, `shot-continuity.md`, `third-person-camera.md` |
@@ -83,7 +89,7 @@ Find the action about to be performed and read those files before performing it.
 | Receive or deliver a public protocol artifact | `visual-contracts.md` section 8, `state-and-trust.md` |
 | Write a start frame, boundary frame, or any still | `prompt-composition.md`, `model-facing-artifacts.md`, `morphology-and-species-contracts.md` |
 | Write any text a model will receive | `prompt-composition.md`, `model-facing-artifacts.md`, `scoped-lexicon.md` |
-| Choose a target model, operation, or input mode | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md` |
+| Choose a target model, operation, or input mode | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md`, `model-evidence.md` |
 | Judge a returned take | `shot-continuity.md`, `post-production.md`, `performance-details.md` |
 | Register, accept, or replace a produced file | `state-and-trust.md` sections 4 and 5 |
 | Continue from an accepted endpoint | `continuity-core.md`, `shot-continuity.md` |
@@ -101,9 +107,11 @@ not from the working directory, which belongs to the project.
 
 ## Artifact-bearing production
 
-Read [Production Direction](references/production-direction.md), [Production Execution](references/production-execution.md), and the selected route's references before building a saved deliverable. `scripts/execution_routes.py inspect ROUTE` selects those reads without relying on another product.
+Read [Production Direction](references/production-direction.md), [Production Execution](references/production-execution.md), and the selected route's references before building a saved deliverable. `scripts/execution_routes.py read ROUTE --root PROJECT` outputs the complete selected sources. Retain the key and author each required application; use the returned cursor for paged reads.
 
 Prepare a task with the full applicable sources, purpose, meaningful choices, selected realization, intentional departures and evidence criteria. `scripts/production_workflow.py` connects preparation, handoff, actual candidates, observation review, authorized selection and completion in the same run. Its `status`, `resume` and `impact` expose interrupted work and changed dependencies. Complete the linked work task only after that run completes.
+
+Use `production_workflow.py inspect-inputs`, `draft-inputs`, and `build-inputs` to assemble authored choices. The [input example](examples/input-assembly/README.md) records public command results.
 
 For time-dependent uncertainties, read [Timed Production](references/timed-production.md). `scripts/timed_sequence.py` validates four distinct clocks, renders playable roughs from declared materials, and extracts frames or audio intervals. Use actual timed evidence for pacing and response; proxy materials cannot verify missing expression or sound. Plan construction is a directing decision, not an automatic plot-to-film claim. The Skill also supports other capable tools through the recorded handoff; still-image-to-video is not a mandatory method.
 
@@ -152,6 +160,8 @@ The project has two halves. `media/`, `state/`, `shots/` and the last five files
 - `narrative/scenes/`: one scene plot per scene, approved before any shot text exists.
 
 These five, and the four above them, sit in the project workspace and not in the suite.
+
+A one-off answer needs no project. Work whose decisions a later step reuses gets its project before the first draft that will be revised, whatever the turn count and before any model is chosen; `work/README.md` in the project states where checkpoints are written and the order a session resumes in.
 
 - `series-state.md`: approved canon, chronology, series format, scene and episode ledger.
 - `character-profiles.md`: stable identity pointers, behavior, voice, performance, relationship boundaries.

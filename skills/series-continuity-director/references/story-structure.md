@@ -196,6 +196,22 @@ able to notice somebody in a scene three chapters after they left.
 `narrative_coverage.py` reports a scene whose cast names a character outside that span as an error,
 because the scene and the narrative disagree about whether that person is in the series.
 
+A person the agent proposes is a candidate until the author admits them. Record the candidate in
+the project's design record as `proposed`, with its revision, role, own purpose, use scope, name and
+appearance basis, and create the persona and the narrative entry only after that decision, once. A
+confirmation covers what it names: existence and role, the name, the appearance and the history are
+separate decisions, and a request to think about supporting people permits proposals only. A person
+the author names directly is an anchor and needs no such question. Consider an existing character,
+an unnamed functional participant or an impersonal condition before a new person; a recurring
+unnamed individual still holds a stable character ID, and naming them later keeps it.
+
+Every character uses the same complete persona form at the depth their use needs. A mention needs
+identity and the mentioned facts; a bounded scene needs that scene's judgment, appearance, voice and
+knowledge; recurring appearances need prior outcomes and the person's own purposes; a consequential
+choice needs the values and constraints behind it. The verified [Scene Persona](scene-persona.md)
+document is the record that a persona is ready for one use, and the form's completion rule governs
+a release.
+
 ### What a character never does
 
 Each character in the narrative names its persona document and may declare prohibitions. There are
@@ -227,6 +243,21 @@ When a scene is accepted, carry back what it settled:
   climax is shot;
 - `state_changes` and `relationship_delta` are what the next scene inherits, and belong in the
   state the project already keeps.
+
+A scene also produces things about a person that no record holds. Classify each before it is
+written anywhere:
+
+| Difference | Handling |
+|---|---|
+| An existing rule realized | Reference the rule; add no duplicate. |
+| A temporary outfit, fatigue, place or prop | State, not the persona. |
+| Information the person acquired | A `knowledge` entry with the chapter and the effective time. |
+| A new habit, preference, history or tie | A proposal for the persona's Design Ledger, applied under actual adoption. |
+| A contradiction with the persona | Repair the scene within scope, or a separately scoped redesign. |
+| An inferred inner state | An inference; an observed cue establishes no hidden truth. |
+
+One line proves no habitual voice, one action proves no value, and a rendered detail adopts no
+visual canon.
 
 Then approve the narrative again. Its `content_sha256` covers what it now says, so a scene plot
 approved against the version before it is approved against a document that no longer exists. Run

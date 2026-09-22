@@ -1,0 +1,29 @@
+{
+  "submission_id": "e02-s01-video",
+  "kind": "shot",
+  "scene_plot": "fixtures/scene-plot.json",
+  "shot_id": "CLEAN-VIDEO",
+  "target": "minimax-h3",
+  "text": "The badger stays asleep on the bunk with his eyes closed, the white stripe from brow to nape catching the light. His near ear turns about thirty degrees toward the hatch and stops there. [Static shot] The camera holds the close framing it begins with for the whole shot.",
+  "inputs": [
+    {
+      "role": "first_frame",
+      "path": "fixtures/large.jpg",
+      "request_key": "inputs.frameImages"
+    }
+  ],
+  "obligations": {
+    "locks": [],
+    "permanent_features": [
+      "white stripe from brow to nape"
+    ],
+    "identity_reference_roles": [
+      "first_frame"
+    ]
+  },
+  "expected_status": "admitted",
+  "narrative": "fixtures/narrative.json",
+  "characters": [
+    "C01"
+  ]
+}

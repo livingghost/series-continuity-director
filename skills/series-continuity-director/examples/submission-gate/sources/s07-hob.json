@@ -1,0 +1,23 @@
+{
+  "submission_id": "e02-s07-frame",
+  "kind": "shot",
+  "scene_plot": "fixtures/scene-plot.json",
+  "shot_id": "S07-HOB",
+  "target": "xai-grok-imagine-2",
+  "text": "The anthro badger stands close to the bench edge working over the lantern where a wick sits in the well of the lantern with a flame on it.",
+  "inputs": [
+    {
+      "role": "reference",
+      "path": "fixtures/large.jpg"
+    }
+  ],
+  "obligations": {
+    "locks": [],
+    "permanent_features": []
+  },
+  "expected_status": "admitted",
+  "narrative": "fixtures/narrative.json",
+  "characters": [
+    "C01"
+  ]
+}

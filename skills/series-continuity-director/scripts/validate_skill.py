@@ -44,6 +44,7 @@ EXPECTED_KNOWLEDGE_SOURCES = [
     "references/evidence-review.md",
     "references/production-direction.md",
     "references/production-execution.md",
+    "references/tactic-consultation.md",
     "references/production-repair.md",
     "references/timed-production.md",
 
@@ -475,33 +476,17 @@ def main() -> int:
             except py_compile.PyCompileError as exc:
                 errors.append(f"{path.relative_to(ROOT)}: Python compile failed: {exc.msg}")
 
-    # The suite runs on a bare interpreter. A maintainer's machine carries
-    # whatever it has accumulated, so an import of a package that happens to be
-    # in a checkout passes every repository check and fails only where the suite
-    # actually has to run.
+    # Declared optional imports belong to media operations. Core imports stay
+    # available on a bare interpreter; the executable dependency test checks it.
+    from dependencies import source_import_errors, declaration
     local_modules = {path.stem for path in (ROOT / "scripts").glob("*.py")}
+    dependency_rules = declaration()
     for path in sorted((ROOT / "scripts").glob("*.py")):
-        try:
-            tree = ast.parse(path.read_text(encoding="utf-8"))
-        except SyntaxError:
-            continue  # already reported by the compile pass above
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                names = [alias.name.split(".")[0] for alias in node.names]
-            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-                names = [node.module.split(".")[0]]
-            else:
-                continue
-            for name in names:
-                if name in sys.stdlib_module_names or name in local_modules or (name == 'PIL' and path.name in {'media_evidence.py','production_direction_smoke_test.py','timed_test_support.py'}):
-                    continue
-                errors.append(
-                    f"scripts/{path.name} imports {name!r}, which is outside the standard library; "
-                    "declare and isolate media dependencies; core readers must run on the interpreter alone"
-                )
+        errors.extend(source_import_errors(path, dependency_rules, local_modules))
 
     # Generated outputs and protocol validators.
     commands = [
+        [sys.executable, "scripts/dependencies_smoke_test.py"],
         [sys.executable, "scripts/release_management_smoke_test.py"],
         [sys.executable, "scripts/release_contract.py"],
         [sys.executable, "scripts/readme_smoke_test.py"],
@@ -513,6 +498,23 @@ def main() -> int:
         [sys.executable, "scripts/dependencies.py", "--scope", "media"],
         [sys.executable, "scripts/production_direction_smoke_test.py"],
         [sys.executable, "scripts/production_workflow_smoke_test.py"],
+        [sys.executable, "scripts/production_resume_smoke_test.py"],
+        [sys.executable, "scripts/production_inputs_smoke_test.py"],
+        [sys.executable, "scripts/tactic_consultation_smoke_test.py"],
+        [sys.executable, "examples/tactic-consultation/build_example.py", "--check"],
+        [sys.executable, "scripts/production_input_model_smoke_test.py"],
+        [sys.executable, "scripts/dispatch_preview_smoke_test.py"],
+        [sys.executable, "scripts/schema_observation_smoke_test.py"],
+        [sys.executable, "examples/model-evidence/build_example.py", "--check"],
+        [sys.executable, "scripts/production_variation_smoke_test.py"],
+        [sys.executable, "scripts/route_reading_smoke_test.py"],
+        [sys.executable, "scripts/visual_continuity_smoke_test.py"],
+        [sys.executable, "scripts/request_contract_smoke_test.py"],
+        [sys.executable, "scripts/request_validation_smoke_test.py"],
+        [sys.executable, "scripts/reservation_lifecycle_smoke_test.py"],
+        [sys.executable, "examples/input-assembly/build_example.py", "--check"],
+        [sys.executable, "examples/submission-gate/build_example.py", "--check"],
+        [sys.executable, "examples/resume-recording/build_example.py", "--check"],
         [sys.executable, "scripts/production_integrity_smoke_test.py"],
         [sys.executable, "scripts/production_dispatch_smoke_test.py"],
         [sys.executable, "scripts/timed_sequence_smoke_test.py"],

@@ -292,6 +292,13 @@ def analyze(root: Path, runs: list[str], output: str, hypotheses_path: str | Non
         m.exact(value, {"hypotheses"}, label="hypotheses input")
         hypotheses = value["hypotheses"]
     result = summarize(reports, hypotheses)
+    lookup_actions = []
+    for report in reports:
+        lookup_actions.append({'operation': 'consult-tactics', 'script': 'scripts/production_workflow.py',
+            'args': {'root': str(root), 'task': report['task_path']},
+            'required_args': ['query', 'out-dir'], 'external_effect': False, 'budget_effect': 'none',
+            'question_owner': 'Translate the observed issue into a craft question and inspect fitting prior knowledge.'})
+
     files = {
         "analysis.json": m.encoded(result),
         "analysis.md": render(result).encode("utf-8"),
@@ -299,6 +306,7 @@ def analyze(root: Path, runs: list[str], output: str, hypotheses_path: str | Non
     return {
         "ok": True,
         "content_sha256": result["content_sha256"],
+        "next_actions": lookup_actions,
         **m.publish(root, output, files),
     }
 

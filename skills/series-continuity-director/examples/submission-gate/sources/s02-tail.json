@@ -1,0 +1,27 @@
+{
+  "submission_id": "e02-s02-frame",
+  "kind": "shot",
+  "scene_plot": "fixtures/scene-plot.json",
+  "shot_id": "S02-TAIL",
+  "target": "xai-grok-imagine-2",
+  "text": "The broad anthro badger lies on his side under a pale blanket with his head on the bunk roll, wearing black boxer briefs.",
+  "inputs": [
+    {
+      "role": "reference",
+      "path": "fixtures/large.jpg"
+    }
+  ],
+  "obligations": {
+    "locks": [
+      "black boxer briefs"
+    ],
+    "permanent_features": [
+      "one short thick tail"
+    ]
+  },
+  "expected_status": "admitted",
+  "narrative": "fixtures/narrative.json",
+  "characters": [
+    "C01"
+  ]
+}

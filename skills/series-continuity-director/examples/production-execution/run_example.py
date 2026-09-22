@@ -34,6 +34,8 @@ def run(out: Path) -> dict:
           'delivery':{'path':'delivery.txt','transport':'authored-rendition','translation_notes':'Minimal declared-world fixture.'},
           'criteria':[{'id':'world','strength':'hard','text':'One lamp, no added characters.','evidence':'text'}], 'sequence_plan':None}
     spec['direction']=support.direction(spec,(out/'delivery.txt').read_text().strip())
+    from reading_fixtures import task_reading
+    task_reading(out,spec)
     write('task.json',spec)
     result=command('production_workflow.py','prepare','--root',out,'--task','task.json'); rid=result['run']
     def workflow(op,*args): return command('production_workflow.py',op,'--root',out,'--run',rid,*args)
@@ -46,7 +48,7 @@ def run(out: Path) -> dict:
     write('review.json',review); workflow('review','--file','review.json')
     grant=workflow('draft-authorization','--out','grant.json')
     (out/'authority.txt').write_text('SYNTHETIC TEST AUTHORITY; NOT A HUMAN APPROVAL.\n')
-    grant.update(principal='synthetic test',actor='synthetic-test-selector',purpose='Exercise a delivery-only selection.',permissions=[{'operation':'select','scopes':['task'],'max_calls':1,'max_outputs':0,'max_cost':'0','currency':'none'}],evidence={'path':'authority.txt','locator':'whole'})
+    grant.update(principal='synthetic test',actor='synthetic-test-selector',purpose='Exercise a delivery-only selection.',permissions=[{'operation':'select','scopes':['task'],'max_calls':1,'max_outputs':0,'max_cost':'0','currency':'none','request_scope':None,'submission_validation_modes':[]}],evidence={'path':'authority.txt','locator':'whole'})
     write('grant.json',grant);authority=workflow('authorize','--file','grant.json')
     selection=workflow('draft-selection','--candidate',candidate['sha256'],'--out','selection.json')
     selection.update(selector='synthetic-test-selector',reason='Exercise the delivery-only path.',authorization=authority['sha256'])

@@ -3,11 +3,11 @@ from pathlib import Path
 import math
 import struct
 import wave
-from PIL import Image
 import execution_contract as c
 
 
 def inputs(root: Path) -> dict:
+    from PIL import Image
     root.mkdir(parents=True, exist_ok=True)
     Image.new('RGB',(160,90),(16,16,16)).save(root/'field.png')
     Image.new('RGBA',(16,16),(220,40,30,255)).save(root/'form.png')

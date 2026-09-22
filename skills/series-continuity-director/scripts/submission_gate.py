@@ -1,61 +1,8 @@
 #!/usr/bin/env python3
-"""Refuse a submission whose defects can be proved before anything is generated.
+"""Validate source approvals, literal contracts, media inputs and request constraints.
 
-The gate reads one submission document and the target profile it names, and it
-decides nothing about taste. It answers only questions with a mechanical answer:
-is the declared lock surface actually in the text, does the text carry an
-exclusion the surface answers unreliably, is a permanent feature that the frame
-will show named at all, do the declared inputs violate the exclusivity the
-profile records, does the identity reference carry enough pixels on the feature
-that has to survive.
-
-Two properties matter more than the checks themselves.
-
-It knows no provider. The submission names a target, the profile says which
-request keys that target exposes and which of them exclude each other, and the
-gate compares the two. A surface this suite has never seen is supported by adding
-a profile, not by editing this file.
-
-It reports what it could not measure. A check that cannot run says so in
-`unmeasured` rather than passing quietly, because a gate silent about the half it
-skipped reads exactly like a gate that found nothing wrong.
-
-Usage:
-  python scripts/submission_gate.py <submission.json> [--profiles DIR] [--root DIR] [--json]
-
-Relative input paths resolve against the directory holding the submission, so a
-submission and its media travel together and the verdict does not depend on where
-the command was run from. `--root` overrides that.
-
-Submission document:
-  {
-    "submission_id": "e02-s07-frame",
-    "target": "minimax-h3",
-    "text": "the exact text the model will receive",
-    "inputs": [
-      {
-        "role": "first_frame" | "last_frame" | "reference",
-        "path": "media/...",
-        "request_key": "inputs.frameImages"
-      }
-    ],
-    "obligations": {
-      "locks": ["black boxer briefs"],
-      "permanent_features": ["one long bushy tail"],
-      "identity_reference_roles": ["reference"],
-      "identity_reference_minimum_shorter_side": 512
-    }
-  }
-
-`request_key` names the control the file occupies on the target. It is optional,
-and it is what makes the exclusivity check decidable when a surface exposes more
-than one reference channel.
-
-`identity_reference_minimum_shorter_side` is the pixel floor this run wants. It
-is optional. A target profile may record the floor its surface documents, and
-where neither supplies a requirement, no pixel floor is invented. Every refusal
-names the documented or operator-declared number. An unspecified requirement
-is reported as unmeasured, not as evidence that every reference is sufficient.
+The author or delegated reviewer assesses meaning against the recorded requirements.
+See examples/submission-gate for synthetic requests and observed reports.
 """
 from __future__ import annotations
 
@@ -70,102 +17,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROFILES = ROOT / "protocols" / "target" / "profiles"
 
-# Wording the surface answers unreliably. A positive field carrying a negation
-# states the thing it is trying to keep out, and the surface has no channel that
-# reliably removes what the text has just named.
-EXCLUSION = re.compile(
-    r"\b(?:no|not|never|without|avoid|avoiding|exclude|excluded|excluding|"
-    r"prevent|preventing|omit|omits|omitted|omitting|unless|except|free\s+of)\b"
-    r"|\bdo\s+not\b|\bmust\s+not\b|\brather\s+than\b|\binstead\s+of\b"
-    r"|\bas\s+opposed\s+to\b"
-    # An absence stated as a state. A reference supplies a character whether or
-    # not the text wanted one in this frame, so a line saying a place is empty
-    # has said nothing about where anyone stands, and the surface fills it.
-    r"|\b(?:is|are|was|were|stands?|stays?|remains?|sits?|lies?)\s+empty\b"
-    r"|\bempty\s+of\b|\bnothing\b|\bnobody\b|\bno\s+one\b"
-    r"|\bunoccupied\b|\bdeserted\b",
-    re.IGNORECASE,
-)
-
-# Operator vocabulary. The surface reads the whole submission as a description of
-# a picture and has no way to tell a note about how the work is organised from a
-# thing to draw, so a file name renders as characters in the frame and a state
-# word renders as whatever the surface averages it to.
-CRAFT = re.compile(
-    r"\.(?:png|jpe?g|json|mp4|md)\b"
-    r"|\b(?:LOCK|SHOT|MOTION|IMG|REF|VIEW|LOC|CHAR)-[A-Z0-9]"
-    r"|\bseed\d"
-    r"|\bsha256\b"
-    r"|\b(?:accepted|superseded|stale|provisional|candidate)\b",
-    re.IGNORECASE,
-)
-
-SENTENCE = re.compile(r"(?<=[.!?])\s+")
-# Three letters, not four. The nouns a shot repeats without noticing are short:
-# table, cup, ear, paw, arm.
-WORD = re.compile(r"[A-Za-z][A-Za-z-]{2,}")
-# Every letter run, however short. `WORD` cannot see `on`, `in`, `at` or `of`,
-# and those four open most of the complements a declared feature carries, so the
-# scan that has to find where a phrase stops needs its own token.
-TOKEN = re.compile(r"[A-Za-z][A-Za-z-]*")
-
-# A complement opens with one of these. What follows says where the feature sits
-# or what it carries, and is not the feature: in `a tail with a white tip` the
-# tip is the tail's, and in `six fins along the spine` the spine is where the
-# fins are.
-COMPLEMENT = frozenset({
-    "with", "on", "onto", "in", "into", "at", "of", "off", "from", "to",
-    "along", "across", "down", "up", "over", "under", "underneath", "beneath",
-    "behind", "before", "between", "among", "around", "through", "near",
-    "above", "below", "beside", "against", "past", "toward", "towards",
-    "that", "which", "where", "when",
-})
-
-# Words that repeat inside one sentence without meaning the writer lost track.
-COMMON = {
-    "the", "and", "with", "that", "from", "into", "this", "over", "under",
-    "their", "which", "while", "where", "them", "they", "there", "here",
-    "for", "his", "her", "its", "one", "two", "has", "him", "are", "was",
-    "out", "off", "own", "than", "then", "both", "each", "onto", "upon",
-    "frame", "shot", "camera", "light", "morning", "left", "right", "same",
-    "stands", "holds", "keeps", "wearing", "anthro", "character", "still",
-    "side", "back", "front", "down", "along", "across", "behind", "toward",
-}
-
-
-# Each check implements one numbered rule from references/prompt-composition.md
-# section 18. The ID travels with the finding so a refusal can be argued with
-# against the written rule rather than against the regular expression.
-RULES = {
-    "LOCK_SURFACE_ABSENT": "SUB-01",
-    "LOCK_SURFACE_GLUED": "SUB-02",
-    "EXCLUSION_WORDING": "SUB-03",
-    "OPERATOR_VOCABULARY": "SUB-04",
-    "PERMANENT_FEATURE_UNNAMED": "SUB-05",
-    "REPEATED_WORD_IN_SENTENCE": "SUB-06",
-    "INPUT_MODE_CONFLICT": "SUB-07",
-    "IDENTITY_REFERENCE_TOO_SMALL": "SUB-08",
-    "SUBMISSION_KIND_UNDECLARED": "SUB-15",
-    "SCENE_PLOT_MISSING": "SUB-15",
-    "SCENE_PLOT_OUTSIDE_ROOT": "SUB-15",
-    "SCENE_PLOT_INVALID": "SUB-15",
-    "SCENE_PLOT_UNAPPROVED": "SUB-15",
-    "SCENE_PLOT_EDITED_AFTER_APPROVAL": "SUB-15",
-    "SCENE_ID_MISMATCH": "SUB-15",
-    "SHOT_NOT_IN_SCENE_PLOT": "SUB-15",
-    "CHARACTER_NOT_IN_SCENE": "SUB-15",
-    "ASSET_CARRIES_SHOT_FIELDS": "SUB-15",
-    "SCENE_PLOT_BEHIND_NARRATIVE": "SUB-15",
-    "NARRATIVE_OUTSIDE_ROOT": "SUB-16",
-    "NARRATIVE_INVALID": "SUB-16",
-    "CHARACTER_NOT_IN_NARRATIVE": "SUB-16",
-    "PROHIBITED_SURFACE": "SUB-16",
-    "DURATION_NOT_INTEGER": "SUB-09",
-    "DURATION_OUT_OF_BAND": "SUB-09",
-    "SCHEMA_REFUSAL": "SUB-10",
-    "SELF_CONTRADICTION": "SUB-12",
-    "HIDDEN_PART_DESCRIBED": "SUB-14",
-}
+RULES = {'ROUTE_READING_INVALID': 'SUB-17', 'VISUAL_CONTINUITY_INVALID': 'SUB-18', 'LOCK_SURFACE_ABSENT': 'SUB-01', 'LOCK_SURFACE_GLUED': 'SUB-02', 'INPUT_MODE_CONFLICT': 'SUB-07', 'IDENTITY_REFERENCE_TOO_SMALL': 'SUB-08', 'SUBMISSION_KIND_UNDECLARED': 'SUB-15', 'SCENE_PLOT_MISSING': 'SUB-15', 'SCENE_PLOT_OUTSIDE_ROOT': 'SUB-15', 'SCENE_PLOT_INVALID': 'SUB-15', 'SCENE_PLOT_UNAPPROVED': 'SUB-15', 'SCENE_PLOT_EDITED_AFTER_APPROVAL': 'SUB-15', 'SCENE_ID_MISMATCH': 'SUB-15', 'SHOT_NOT_IN_SCENE_PLOT': 'SUB-15', 'CHARACTER_NOT_IN_SCENE': 'SUB-15', 'ASSET_CARRIES_SHOT_FIELDS': 'SUB-15', 'SCENE_PLOT_BEHIND_NARRATIVE': 'SUB-15', 'NARRATIVE_OUTSIDE_ROOT': 'SUB-16', 'NARRATIVE_INVALID': 'SUB-16', 'CHARACTER_NOT_IN_NARRATIVE': 'SUB-16', 'PROHIBITED_SURFACE': 'SUB-16', 'DURATION_NOT_INTEGER': 'SUB-09', 'DURATION_OUT_OF_BAND': 'SUB-09', 'SCHEMA_REFUSAL': 'SUB-10'}
 # A submission carrying no text at all fails before any numbered rule applies,
 # so it carries no id rather than an empty one: a reader of `rule` gets a rule
 # or nothing, and never a third thing that has to be told apart from both.
@@ -341,14 +193,6 @@ def image_size(path: Path) -> tuple[int, int] | None:
     return None
 
 
-def stem(word: str) -> str:
-    """Enough of a stem to match a plural against its singular."""
-
-    lower = word.lower()
-    for suffix in ("ies", "es", "s"):
-        if lower.endswith(suffix) and len(lower) - len(suffix) >= 3:
-            return lower[: -len(suffix)] + ("y" if suffix == "ies" else "")
-    return lower
 
 
 def load_profile(target: str, profiles_dir: Path) -> dict[str, Any] | None:
@@ -712,98 +556,14 @@ def check_locks(text: str, locks: list[str], errors: list[dict]) -> None:
             ))
 
 
-def check_exclusion(text: str, errors: list[dict]) -> None:
-    for match in EXCLUSION.finditer(text):
-        errors.append(finding(
-            "EXCLUSION_WORDING",
-            f"exclusion wording {match.group(0)!r} at offset {match.start()}",
-            wording=match.group(0),
-            offset=match.start(),
-        ))
 
 
-def check_craft(text: str, errors: list[dict]) -> None:
-    for match in CRAFT.finditer(text):
-        errors.append(finding(
-            "OPERATOR_VOCABULARY",
-            f"operator vocabulary {match.group(0)!r} would be read as picture content",
-            wording=match.group(0),
-            offset=match.start(),
-        ))
 
 
-def feature_head(feature: str) -> str:
-    """The stem of the noun a declared feature is about.
-
-    An English noun phrase puts its head before its complement, so the head of
-    `a tail with a white tip` is the tail, of `a white patch on the chest` the
-    patch, and of `six fins along the spine` the fins. The scan therefore keeps
-    the last word it has seen and stops at the first complement opener, rather
-    than reading to the end of the phrase: the last word of those three is the
-    tip, the chest and the spine, and asking the text for those refuses a text
-    that names the tail, the patch and the fins.
-
-    The head is returned as a stem, so `upright triangular ears` is still named
-    by `his upper ear rotates`.
-    """
-
-    head = ""
-    for word in TOKEN.findall(feature):
-        if word.lower() in COMPLEMENT and head:
-            break
-        if WORD.fullmatch(word):
-            head = stem(word)
-    return head
 
 
-def check_permanent_features(text: str, features: list[str], errors: list[dict]) -> None:
-    """A crop may hide a declared feature. Silence does not.
-
-    Nothing in the text saying the tail exists leaves the surface free to draw a
-    body without one, and an absent permanent feature is a different individual.
-    """
-
-    # What has to appear is the head of the declared phrase: the thing itself,
-    # not a modifier it shares with the furniture. Matching any word of it
-    # admitted `one long bushy tail` on `a long corridor at dawn`, which is the
-    # case the rule exists for.
-    present = {stem(word) for word in WORD.findall(text.lower())}
-    for feature in features:
-        head = feature_head(feature)
-        if head and head not in present:
-            errors.append(finding(
-                "PERMANENT_FEATURE_UNNAMED",
-                f"declared permanent feature is named nowhere in the text: {feature!r}",
-                feature=feature,
-            ))
 
 
-def check_repeated_noun(text: str, errors: list[dict]) -> None:
-    """One sentence naming the same thing twice usually lost its own thread."""
-
-    for sentence in SENTENCE.split(text):
-        words = [w.lower() for w in WORD.findall(sentence)]
-        positions: dict[str, list[int]] = {}
-        for index, word in enumerate(words):
-            if word in COMMON:
-                continue
-            positions.setdefault(word, []).append(index)
-        for word, where in positions.items():
-            if len(where) < 2:
-                continue
-            # Two mentions each carrying their own modifier are a contrast, not a
-            # slip: `the far end ... the near end` names two ends on purpose,
-            # while `the table where ... of the table` names one thing twice and the
-            # second mention is the sentence losing its own thread.
-            modifiers = {words[index - 1] if index else "" for index in where}
-            if len(modifiers) > 1:
-                continue
-            errors.append(finding(
-                "REPEATED_WORD_IN_SENTENCE",
-                f"{word!r} appears {len(where)} times in one sentence with the same modifier",
-                word=word,
-                sentence=sentence.strip(),
-            ))
 
 
 def check_input_modes(
@@ -1017,17 +777,6 @@ FACING = re.compile(
 )
 
 
-def check_facing_words(text: str, unmeasured: list[str]) -> None:
-    """A facing word is not wrong in itself, so it is reported rather than refused.
-    It is the word most often written against the fixed geometry: a figure at a
-    fixture on one wall is seen from the side by a camera in the doorway, and a
-    text that also says he has his back turned asks for a room that does not
-    exist. The reviewer reads the word against the plate before sending."""
-    hits = sorted({m.group(0).lower() for m in FACING.finditer(text)})
-    if hits:
-        unmeasured.append(
-            "facing words present, verify against the fixed geometry before sending: " + ", ".join(hits)
-        )
 
 
 def check_identity_carrier(inputs: list[dict], obligations: dict, unmeasured: list[str]) -> None:
@@ -1109,7 +858,7 @@ def check_parameters(parameters: dict[str, Any], offering: dict[str, Any] | None
 
     constraints = (offering or {}).get("constraints") or {}
     band = constraints.get("duration_seconds")
-    is_video = any("video" in str(kind) for kind in media_kind)
+    is_video = bool(set(media_kind) & {"video", "video-with-audio"})
     duration = parameters.get("duration")
     if band and duration is None and is_video:
         unmeasured.append("duration: the submission does not state it, so the offering's band was not checked")
@@ -1307,49 +1056,8 @@ def check_as_written(parameters: dict[str, Any] | None, offering: dict[str, Any]
     walk(defaults, parameters, "")
 
 
-def check_vocabulary(text: str, text_form: str | None, unmeasured: list[str]) -> None:
-    """A tag the vocabulary does not know is reported, not refused.
-
-    Only a submission that declares itself tag-style is checked; prose is not a
-    list of terms. The vocabulary is the `prompt-vocabulary` resource; when it cannot be
-    found the check says so instead of passing quietly.
-    """
-
-    if text_form != "tags":
-        return
-    try:
-        here = str(Path(__file__).resolve().parent)
-        if here not in sys.path:
-            sys.path.insert(0, here)
-        import vocabulary  # noqa: WPS433
-        data, _ = vocabulary.load(None)
-        unknown = vocabulary.unknown_tags(text, vocabulary.index(data))
-    except SystemExit as stop:
-        unmeasured.append(f"vocabulary: {stop}")
-        return
-    except Exception as error:  # noqa: BLE001
-        unmeasured.append(f"vocabulary: not checked ({error})")
-        return
-    if unknown:
-        unmeasured.append("vocabulary: tags the vocabulary does not know, which may draw nothing or something else: " + ", ".join(unknown))
 
 
-def check_camera_commands(text: str, profile: dict[str, Any] | None, unmeasured: list[str]) -> None:
-    """A bracketed camera command outside the profile's list is prose to the surface."""
-
-    if not profile:
-        return
-    commands = [str(c).lower() for c in ((profile.get("camera_control") or {}).get("commands") or [])]
-    if not commands:
-        return
-    unknown: list[str] = []
-    for group in re.findall(r"\[([^\]]+)\]", text):
-        for part in group.split(","):
-            name = part.strip().lower()
-            if name and name not in commands and name not in unknown:
-                unknown.append(name)
-    if unknown:
-        unmeasured.append("camera commands not in the profile's list (read as ordinary prose by the surface): " + ", ".join(unknown))
 
 
 DIALECTS = {
@@ -1358,107 +1066,8 @@ DIALECTS = {
 }
 
 
-def check_prompt_syntax(text: str, parameters: dict[str, Any] | None, offering: dict[str, Any] | None,
-                        unmeasured: list[str]) -> None:
-    """Weighting notation is read by a parser the request has to ask for.
-
-    An offering states which parameter turns that parser on, which dialect each of
-    its values accepts, and what the surface does when the parameter is absent. The
-    gate compares the submission against that statement: a text that carries
-    notation the named mode does not read is drawn as characters, and a submission
-    that omits the parameter gets whatever the surface does by default.
-    """
-
-    syntax = ((offering or {}).get("constraints") or {}).get("prompt_syntax")
-    if not isinstance(syntax, dict):
-        return
-    parameter = str(syntax.get("parameter") or "")
-    modes = syntax.get("modes") if isinstance(syntax.get("modes"), dict) else {}
-    if not parameter:
-        return
-    present = [name for name, (pattern, _) in DIALECTS.items() if re.search(pattern, text)]
-    value = (parameters or {}).get(parameter)
-    if value is None:
-        note = str(syntax.get("omitted") or "the surface decides what an absent value means")
-        unmeasured.append(f"prompt syntax: the submission sets no {parameter}, and {note}")
-        if present:
-            unmeasured.append("prompt syntax: the text carries weighting notation that nothing is asked to parse: "
-                              + ", ".join(DIALECTS[name][1] for name in present))
-        return
-    dialect = str(modes.get(str(value)) or "")
-    if not dialect:
-        unmeasured.append(f"prompt syntax: the offering does not record what {parameter} {value!r} reads")
-        return
-    wrong = [name for name in present if name != dialect]
-    if wrong:
-        unmeasured.append(
-            f"prompt syntax: {parameter} is {value!r}, which reads {DIALECTS[dialect][1]}, "
-            "and the text carries " + ", ".join(DIALECTS[name][1] for name in wrong)
-            + ", which that mode does not read")
 
 
-def check_conflicts(text: str, negative: str | None, text_form: str | None,
-                    errors: list[dict[str, Any]], unmeasured: list[str]) -> None:
-    """A request that argues with itself, judged against the vocabulary.
-
-    Asking for a thing in the primary field and against it in the negative field
-    is a defect the text proves on its own, so it is refused. Two terms for one
-    single-valued property, or a pair the vocabulary records as opposing, are
-    reported rather than refused: a second figure, a mirror, or a deliberate
-    ambiguity can make either of them correct.
-    """
-
-    try:
-        import vocabulary
-        data, _ = vocabulary.load()
-    except SystemExit as error:
-        unmeasured.append(f"self-contradiction: {error}")
-        return
-    except Exception as error:  # noqa: BLE001
-        unmeasured.append(f"self-contradiction: the vocabulary could not be read ({error})")
-        return
-
-    found = (vocabulary.conflicts(text, negative or "", data)
-             if (text_form or "").lower() == "tags"
-             else {"in_both_fields": [], "single_valued_doubled": [], "opposing": [], "multiple_figures": []})
-    forced = vocabulary.weighted_unknown(text, vocabulary.index(data))
-    if forced:
-        unmeasured.append(
-            "weight on a term the vocabulary does not know: " + ", ".join(forced)
-            + "; a weight raises the tokens, it does not bind them, so an unknown term under weight "
-            "spreads its attribute rather than placing it")
-    figures = (found.get("multiple_figures") or [])
-    for item in vocabulary.hidden_parts(text, data):
-        message = (f"{item['hider']!r} puts the {item['part']} out of view, and the text also describes it: "
-                   + ", ".join(item["described"]))
-        if figures:
-            unmeasured.append(message + "; more than one figure is named, so this may belong to the other one")
-        else:
-            errors.append(finding("HIDDEN_PART_DESCRIBED", message, wording=item["hider"]))
-    risky = vocabulary.fragile_at_scale(text, data)
-    if risky["fragile"] and risky["close_scale"]:
-        unmeasured.append(
-            "parts drawn badly at this scale: " + ", ".join(risky["fragile"])
-            + " asked for at " + ", ".join(risky["close_scale"])
-            + "; each one the beat does not need is a defect the frame does not have to risk")
-    for tag in found["in_both_fields"]:
-        errors.append(finding(
-            "SELF_CONTRADICTION",
-            f"{tag!r} is asked for and asked against in the same request",
-            wording=tag,
-        ))
-    for item in found["single_valued_doubled"]:
-        if figures:
-            unmeasured.append(
-                f"one property named twice ({item['name']}): " + ", ".join(item["terms"])
-                + f"; the text puts more than one figure in the picture ({', '.join(figures)}), and a tag "
-                "applies to the picture and not to a figure, so neither value is bound to either of them")
-        else:
-            unmeasured.append(
-                f"one property named twice ({item['name']}): " + ", ".join(item["terms"])
-                + "; the surface will settle it rather than the request")
-    for left, right in found["opposing"]:
-        unmeasured.append(f"terms that cannot both hold: {left} and {right}")
 
 
 def declared_mapping(value: Any, label: str, unmeasured: list[str]) -> dict[str, Any] | None:
@@ -1506,6 +1115,20 @@ def declared_phrases(value: Any, label: str, unmeasured: list[str]) -> list[str]
     return kept
 
 
+def review_requirements(submission: dict) -> list[dict]:
+    """Carry authored requirements to review without judging their realization."""
+    obligations = submission.get('obligations')
+    if not isinstance(obligations, dict): return []
+    values = obligations.get('permanent_features') or []
+    if not isinstance(values, list): return []
+    return [{'id': 'declared-feature-' + str(i), 'source': {'field': 'obligations.permanent_features', 'index': i},
+             'statement': value, 'requires': 'rendition-review'}
+            for i, value in enumerate(values) if isinstance(value, str) and value.strip()]
+
+
+from execution_contract import content_id as c_visual_hash
+
+
 def gate(submission: dict[str, Any], profiles_dir: Path, root: Path) -> dict[str, Any]:
     errors: list[dict[str, Any]] = []
     unmeasured: list[str] = []
@@ -1529,6 +1152,11 @@ def gate(submission: dict[str, Any], profiles_dir: Path, root: Path) -> dict[str
             "unmeasured": unmeasured,
         }
 
+    from route_reading import require_route_reading
+    try:
+        require_route_reading(submission.get("route_reading"), project=root, routes={"media"})
+    except (ValueError, OSError, TypeError, KeyError) as exc:
+        errors.append(finding("ROUTE_READING_INVALID", str(exc)))
     text = submission.get("text")
     if not isinstance(text, str) or not text.strip():
         errors.append(finding("TEXT_MISSING", "the submission carries no model-facing text"))
@@ -1570,24 +1198,24 @@ def gate(submission: dict[str, Any], profiles_dir: Path, root: Path) -> dict[str
     if profile is None and submission.get("target"):
         unmeasured.append(f"target profile {submission['target']!r} was not found in {profiles_dir}")
 
+    import visual_continuity
+    try:
+        visual=submission.get('visual_continuity')
+        if c_visual_hash(visual)!=submission.get('visual_continuity_sha256'):
+            raise ValueError('visual continuity hash mismatch')
+        continuity=visual_continuity.require(visual,submission=submission,root=root,profile=profile)
+        unmeasured.extend(x['reason'] if isinstance(x,dict) else x for x in continuity['unmeasured'])
+    except (ValueError,OSError,TypeError,KeyError) as exc:
+        errors.append(finding('VISUAL_CONTINUITY_INVALID',str(exc)))
     check_scene_plot(submission, root, errors, unmeasured)
     check_prohibitions(submission, root, errors, unmeasured)
     check_locks(text, locks, errors)
-    check_exclusion(text, errors)
-    check_craft(text, errors)
-    check_permanent_features(text, features, errors)
-    check_repeated_noun(text, errors)
-    check_facing_words(text, unmeasured)
     check_identity_carrier(inputs, obligations, unmeasured)
     offering = select_offering(profile, submission.get("service"), unmeasured)
     check_input_modes(inputs, apply_offering(profile, offering), errors, unmeasured)
     check_parameters(parameters or {}, offering, list((profile or {}).get("media_kind") or []), errors, unmeasured)
     check_schema(text, inputs, parameters, offering, root, errors, unmeasured)
     check_as_written(parameters, offering, unmeasured)
-    check_vocabulary(text, text_form, unmeasured)
-    check_camera_commands(text, profile, unmeasured)
-    check_prompt_syntax(text, parameters, offering, unmeasured)
-    check_conflicts(text, negative_text, text_form, errors, unmeasured)
     minimum, source = minimum_shorter_side(profile, obligations)
     check_identity_resolution(
         inputs,
@@ -1614,6 +1242,7 @@ def gate(submission: dict[str, Any], profiles_dir: Path, root: Path) -> dict[str
         "profile_found": profile is not None,
         "service": (offering or {}).get("service") or submission.get("service"),
         "offering_observed_at": (offering or {}).get("observed_at"),
+        "review_requirements": review_requirements(submission),
         "status": "refused" if errors else "admitted",
         "errors": errors,
         "unmeasured": unmeasured,

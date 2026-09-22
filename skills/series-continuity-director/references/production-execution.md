@@ -11,6 +11,28 @@ are in `schemas/authoring/production-*.schema.json`.
 
 ## 1. Working path
 
+### Input assembly
+
+Use [Craft consultation](tactic-consultation.md) while deciding what to write or revise. The lookup, application source, and authored review questions stay connected to the current task. Input inspection provides the concrete entry action.
+
+
+`inspect-inputs` shows declared sources, recorded candidates, and required choices.
+`draft-inputs` creates an unanswered choices document in a new directory.
+The author supplies continuity and acceptance decisions; the operator supplies quotations, applications, and explicit source selections.
+`build-inputs` resolves those selections through the existing contract builders.
+It derives document hashes, image hashes, adoption selectors, and reference positions from recorded evidence.
+
+Each output directory is published after all required judgments and current evidence validate.
+An incomplete selection returns named unresolved fields and preserves existing files.
+The original task and source artifacts remain unchanged.
+Construction returns formal inputs, their provenance, and arguments for the next operation.
+Preparation, final request rendering, review, and authorization follow through their own commands.
+
+Use `--from-run` to name a saved run from the same work task.
+Copied reading applications retain their origin and require assessment for the current work.
+Choose current visual references and validation evidence explicitly.
+The [synthetic input assembly example](../examples/input-assembly/README.md) contains complete commands, choice fields, and actual output.
+
 Begin an ordinary work task. Author `task.json` with its open task ID, an actual
 route, sources (ID/path/role/disposition/locator/reason), delivery path and
 transport, criteria (ID/strength/text/evidence), and a `direction`. Follow the
@@ -30,12 +52,13 @@ python scripts/production_workflow.py select --root PROJECT --run RUN --file sel
 python scripts/production_workflow.py complete --root PROJECT --run RUN
 ```
 
-Drafts deliberately leave substantive review/authority/selection fields empty.
-They are not approvals. `status` and `resume` verify inputs and recorded files;
-`impact` additionally locates changed inputs, recorded artifacts and affected
-declared decisions. Source changes require re-reading and preparing, not an
-in-place rewrite of receipt history. Captured artifacts are not automatically
-selected, and delivery selection never implicitly adopts canonical design.
+Drafts leave substantive review, authority and selection fields for the responsible actor.
+`status` and `resume` first verify frozen inputs and the receipt chain.
+They then report current dependencies separately from acquired artifacts, reservations and execution evidence.
+`impact` locates changed inputs and affected declared decisions.
+A changed source retains uncertain submissions and acquired results in the resume report.
+The author or delegated selector decides which actual candidate to select and adopt.
+See the [synthetic resume example](../examples/resume-recording/README.md) for actual before-and-after reports.
 
 ## 2. Delegation is scoped, not an all-automatic flag
 
@@ -125,7 +148,20 @@ Set a real agreed cost bound and currency for paid operations; zero/none is not 
 
 The grant is reserved and a claim committed before any upload. Each upload identifier, exact request, response, poll response, and downloaded file is durably recorded. Files are uploaded from immutable prepared copies. A claim cannot be sent again. Recovery only polls existing task IDs or retrieves and records known outputs. An exception before a response leaves an uncertain claim that must be reconciled with the provider, not automatically resubmitted. No credential is stored in the journal.
 
-Acquired files become candidates in the same run. Gate admission and successful delivery do not certify direction, acting, or audience response. A changed input prevents later review or completion of that stale preparation; it does not erase the acquired evidence.
+Acquired files become candidates in the same run.
+A changed input requires fresh preparation for later review or completion while preserving acquired evidence.
+`recover-recording` registers already acquired outputs from immutable dispatch records, including after an input change.
+It restores a missing output file from its saved bytes and rejects conflicting bytes at the destination.
+Repeated recovery returns the existing candidate. It uses no network call or new execution reservation.
+
+```text
+python scripts/production_workflow.py recover-recording --root PROJECT --run RUN
+python scripts/production_resume_smoke_test.py
+```
+
+Remote result retrieval uses `production_dispatch.py` and remains distinct from local record recovery.
+A start boundary alone means the external outcome is unconfirmed; the report separates response, output and charge evidence.
+The acting reviewer evaluates direction, acting and the intended audience response from the actual output.
 
 ## 6. Scope-aware repairs and durable output recovery
 
@@ -152,3 +188,43 @@ After capture or review, a requested inspection export uses the same prepared so
 ### Prepared scene material
 
 During the existing prepare stage, build and verify [Scene Persona](scene-persona.md), then include `scene_materials` and the `scene-persona` feature in the task. The snapshot pins the plan, complete originals and derived documents. The `authoring_materials` in `consumer.json` are for the authoring agent only. They do not automatically enter model-facing text or become performer knowledge. Public artifact selectors require explicit acceptance of their exact content and the lack of current-original verification.
+
+## 8. Contract regression checks
+
+The local synthetic suites exercise recorded evidence and structural contracts.
+Run these checks from the skill directory:
+
+- `python scripts/production_inputs_smoke_test.py`
+- `python scripts/production_input_model_smoke_test.py`
+- `python scripts/route_reading_smoke_test.py`
+- `python scripts/visual_continuity_smoke_test.py`
+- `python scripts/request_contract_smoke_test.py`
+- `python scripts/request_validation_smoke_test.py`
+- `python scripts/reservation_lifecycle_smoke_test.py`
+
+Each result measures the exercised contract, separately from creative quality or production approval.
+
+`python scripts/route_reading.py RECORD --root PROJECT` validates an authored reading record against its recorded issuance.
+`ROUTE_READING_INVALID` names a missing or inconsistent reading contract.
+`VISUAL_CONTINUITY_INVALID` names a missing or inconsistent subject, adoption, or delivered-reference contract.
+
+## 9. Model request workflow checks
+
+The dispatcher preview, attributed evidence import, and candidate variation each have a dedicated regression entry point.
+Run `scripts/production_variation_smoke_test.py`, `scripts/schema_observation_smoke_test.py`, `scripts/dispatch_preview_smoke_test.py`.
+Their synthetic providers exercise request recording and recovery separately from image quality or author acceptance.
+
+## 10. Exact request preview and variations
+
+A dispatcher preview uses the same renderer as its sending path and reports each transform's source.
+Use `--preview-out` to retain the sealed request, declared bindings, and validation report in a new file.
+Use `--decision-out` with the prepared run and selected authorization to draft the exact request assessment.
+The draft derives request hashes, reference binding IDs, and the authorization's stop conditions.
+The actor supplies the scope case, approval source, rendition judgment, and stop assessments.
+Pass the completed file as `--request-decision` when sending.
+A new request within an explicit existing delegation receives a new exact authorization under the same cumulative budget.
+A scope change requires the missing principal decision; request equality alone does not authorize work.
+
+`draft-variation` prepares a new input draft from an exact recorded candidate and a structural field change map.
+It preserves the source candidate and prompts reassessment of copied reading applications for the changed work.
+The [model evidence workflow](model-evidence.md) describes schema imports and bounded comparison trials.

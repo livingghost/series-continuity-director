@@ -401,6 +401,10 @@
           }
         ]
       }
+    },
+    "route_reading": {
+      "type": "string",
+      "minLength": 1
     }
   },
   "required": [
@@ -411,7 +415,8 @@
     "delivery",
     "criteria",
     "direction",
-    "sequence_plan"
+    "sequence_plan",
+    "route_reading"
   ],
   "additionalProperties": false
 }

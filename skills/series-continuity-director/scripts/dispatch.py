@@ -99,6 +99,10 @@ def gate_submission(spec: dict[str, Any]) -> dict[str, Any]:
     dispatch before anything else was looked at.
     """
     submission: dict[str, Any] = {
+        "route_reading": spec.get("route_reading"),
+        "visual_continuity": spec.get("visual_continuity"),
+        "visual_continuity_sha256": spec.get("visual_continuity_sha256"),
+        "output_kind": spec.get("output_kind"),
         "submission_id": spec.get("submission_id"),
         "kind": spec.get("kind"),
         "target": spec.get("target"),
@@ -125,11 +129,13 @@ def gate_submission(spec: dict[str, Any]) -> dict[str, Any]:
 def offering_for(spec: dict[str, Any], profiles: Path) -> dict[str, Any]:
     profile = submission_gate.load_profile(str(spec.get("target") or ""), profiles)
     if profile is None:
-        return {}
-    for offering in profile.get("offerings") or []:
-        if not spec.get("service") or offering.get("service") == spec.get("service"):
-            return offering
-    return {}
+        raise ValueError('the selected target profile is absent')
+    matches = [offering for offering in profile.get('offerings', [])
+               if offering.get('service') == spec.get('service')
+               and offering.get('model_identifier') == spec.get('model')]
+    if len(matches) != 1:
+        raise ValueError('select one exact service and model identifier from the target profile')
+    return matches[0]
 
 
 def save(url: str, destination: Path) -> str:
@@ -154,6 +160,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--production-run',help='Prepared production run required for a send')
     parser.add_argument('--authorization',help='Recorded submit authorization')
     parser.add_argument('--actor',help='Actor named in that authorization')
+    parser.add_argument('--preview-out', type=Path, help='New local file for the sealed preview; preview only.')
+    parser.add_argument('--decision-out', type=Path, help='New actor-assessment draft for the exact request; preview only.')
+    parser.add_argument('--request-decision',type=Path,help='Explicit final-request review and authority assessment.')
     parser.add_argument('--outputs',type=int,help='Explicit maximum and requested output count')
     parser.add_argument('--cost-bound',help='Decimal upper bound for this request')
     parser.add_argument('--currency',help='Currency of that bound, or none for zero-cost work')
@@ -179,21 +188,48 @@ def main(argv: list[str] | None = None) -> int:
     service, service_path = service_profile.load_service(service_id, args.service_profiles)
     transport = load_transport(service_id)
 
-    paths = [str((root / p).resolve()) if not Path(p).is_absolute() else p
-             for p in transport.media_paths(spec, offering_for(spec, args.profiles))]
+    import production_dispatch
+    import production_workflow
+    import execution_contract as c
+    consumer = None
+    if args.production_run is not None:
+        consumer = production_workflow.assert_current(root, args.production_run)[2]
     offering = offering_for(spec, args.profiles)
-    preview = transport.build(spec, offering, service, {})
-    print(json.dumps(preview, ensure_ascii=False, indent=2))
-    for path in paths:
-        print(f"  file  {path}")
+    built, report, validation = production_dispatch.render(root, spec, service, offering, transport, args.profiles, consumer=consumer)
+    rendered = built['rendered']
+    print(json.dumps({'request': rendered['request'], 'request_sha256': rendered['request_sha256'],
+                     'request_trace': rendered['request_trace'], 'validation': validation,
+                     'review_requirements': built['review_requirements']}, ensure_ascii=False, indent=2))
     observed = service.get("observed_at")
     print(f"service {service_id} at {(service.get('endpoint') or {}).get('base_url')} (record observed {observed}, read from {service_path})")
+    if args.send and (args.preview_out or args.decision_out):
+        raise ValueError('save preview and assessment files before selecting --send')
+    destinations = [path.absolute() for path in (args.preview_out, args.decision_out) if path is not None]
+    if len(set(destinations)) != len(destinations):
+        raise ValueError('preview and assessment need distinct new files')
+    for path in destinations:
+        if path.exists():
+            raise FileExistsError('preview destination already exists: ' + str(path))
+    decision = None
+    if args.decision_out:
+        if not args.production_run or not args.authorization:
+            raise ValueError('--decision-out requires the prepared run and selected submit authorization')
+        import production_request
+        directory, prepared, _, rows = production_workflow.load_run(root, args.production_run)
+        grant = production_workflow.find(rows, 'authorization', args.authorization)['data']['authorization']
+        decision = production_request.draft_decision(rendered, actor=args.actor, conditions=grant['stop_conditions'])
+    if args.preview_out:
+        c.atomic(args.preview_out, c.encoded({'request_contract': rendered, 'validation': validation,
+            'review_requirements': built['review_requirements'], 'execution_ready': False,
+            'external_effect': False, 'budget_effect': 'none'}))
+    if args.decision_out:
+        c.atomic(args.decision_out, c.encoded(decision))
     if not args.send:
-        print("Dry run. Nothing was sent. Add --send once the user has approved this exact request.")
+        print('Preview recorded. Use the existing delegated scope or obtain the missing explicit authority before --send.')
         return 0
 
-    if not all((args.production_run,args.authorization,args.actor,args.cost_bound,args.currency)) or not args.outputs:
-        raise SystemExit('--send requires a prepared run, submit authorization, actor, output count, cost bound and currency')
+    if not all((args.production_run,args.authorization,args.actor,args.cost_bound,args.currency,args.request_decision)) or not args.outputs:
+        raise SystemExit('--send requires a prepared run, submit authorization, actor, request decision, output count, cost bound and currency')
     if args.poll_seconds<0 or args.poll_limit<0:raise SystemExit('poll limits must be nonnegative')
     # External target profiles must also have been included as pinned task sources.
     import production_dispatch
@@ -205,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
             production_dispatch.pinned(root,directory,prepared,profile_file)
     result=production_dispatch.execute(root,args.production_run,args.spec.resolve(),spec,service_path,
         service,offering,report,transport,api_key(service),authorization=args.authorization,actor=args.actor,
-        outputs=args.outputs,cost=args.cost_bound,currency=args.currency,poll=args.poll,
+        outputs=args.outputs,cost=args.cost_bound,currency=args.currency,profiles=args.profiles,decision=c.load(args.request_decision),rendered=rendered,poll=args.poll,
         poll_seconds=args.poll_seconds,poll_limit=args.poll_limit)
     print(json.dumps(result,ensure_ascii=False,indent=2))
     return 0

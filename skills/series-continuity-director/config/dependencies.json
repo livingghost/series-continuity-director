@@ -7,8 +7,45 @@
     "distributions": {
       "Pillow": {
         "import": "PIL",
-        "minimum_major": 12,
-        "maximum_major_exclusive": 13
+        "minimum_release": [
+          12
+        ],
+        "maximum_release_exclusive": [
+          13
+        ],
+        "requirement": "Pillow>=12,<13"
+      },
+      "CairoSVG": {
+        "import": "cairosvg",
+        "minimum_release": [
+          2,
+          9
+        ],
+        "maximum_release_exclusive": [
+          3
+        ],
+        "requirement": "CairoSVG>=2.9,<3"
+      },
+      "defusedxml": {
+        "import": "defusedxml",
+        "minimum_release": [
+          0,
+          7
+        ],
+        "maximum_release_exclusive": [
+          1
+        ],
+        "requirement": "defusedxml>=0.7,<1"
+      },
+      "tinycss2": {
+        "import": "tinycss2",
+        "minimum_release": [
+          1
+        ],
+        "maximum_release_exclusive": [
+          2
+        ],
+        "requirement": "tinycss2>=1,<2"
       }
     },
     "executables": [

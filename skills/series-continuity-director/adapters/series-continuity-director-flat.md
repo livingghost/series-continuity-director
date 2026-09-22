@@ -28,6 +28,10 @@ For a scene involving individualized behavior, read [Scene Persona](#scene-perso
 
 For existing text, read [Source Material](#original-source-ingestion-and-extraction-proposals): preserve originals and keep evidence-bound extraction candidates separate from adoption. For measured host use, read [Agent Evaluation](#evidence-from-actual-agent-execution); missing observations remain unknown. For repeated candidate failures, read [Repair Analysis](#repeated-failure-analysis-from-existing-reviews) and reuse existing reviews rather than adding a new ledger or retrying blindly. Each operation is available in this installation and exchanges only neutral public artifacts; no external implementation is discovered or assumed.
 
+## Consult reusable directing knowledge
+
+Use [Craft consultation](#consult-and-apply-directing-knowledge) while choosing a direction, solving a local problem, or examining a failed take. Search the directing vocabulary and read explicit project tactics in full. Connect borrowed relationships, preserved constraints, and deliberate changes to existing sources and review criteria. The agent judges their fit; the reviewer judges their effect on actual results.
+
 ## Explore without adopting
 
 For competing creative directions or possible continuations, read [Creative Alternatives](#source-bound-creative-alternatives). Pin source bytes, distinguish durable intent from current focus, and keep all alternatives outside accepted work. Recording a plan choice never grants production permission or changes canon. Re-check the bound source content before choosing.
@@ -72,9 +76,11 @@ Find the action about to be performed and read those files before performing it.
 | About to do this | Read first |
 |---|---|
 | Make a saved deliverable, choose its depiction or delegate a bounded action | `production-direction.md`, `production-execution.md` |
+| Look up a craft method while planning, composing, or repairing | `tactic-consultation.md` |
 | Revise a reviewed candidate or recover a retained output | `production-repair.md`, `production-execution.md` |
 | Build, inspect or revise timed material and an assembled interval | `timed-production.md`, `production-execution.md` |
 | Create or rename a full persona, world or intent record | `narrative-authoring.md`, `story-structure.md` |
+| Add a person to the cast, or decide how much of a persona a scene needs | `story-structure.md` section 6, `scene-persona.md` |
 | Settle or revise what the series is about, its arcs, chapters, characters, promises, questions, or who knows what | `story-structure.md` section 6, `continuity-core.md` |
 | Plan or revise a scene or episode | `story-structure.md` sections 6 and 7, `continuity-core.md`, `blocking-and-coverage.md` |
 | Break a scene into shots and choose coverage | `blocking-and-coverage.md`, `shot-continuity.md`, `third-person-camera.md` |
@@ -83,7 +89,7 @@ Find the action about to be performed and read those files before performing it.
 | Receive or deliver a public protocol artifact | `visual-contracts.md` section 8, `state-and-trust.md` |
 | Write a start frame, boundary frame, or any still | `prompt-composition.md`, `model-facing-artifacts.md`, `morphology-and-species-contracts.md` |
 | Write any text a model will receive | `prompt-composition.md`, `model-facing-artifacts.md`, `scoped-lexicon.md` |
-| Choose a target model, operation, or input mode | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md` |
+| Choose a target model, operation, or input mode | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md`, `model-evidence.md` |
 | Judge a returned take | `shot-continuity.md`, `post-production.md`, `performance-details.md` |
 | Register, accept, or replace a produced file | `state-and-trust.md` sections 4 and 5 |
 | Continue from an accepted endpoint | `continuity-core.md`, `shot-continuity.md` |
@@ -101,9 +107,11 @@ not from the working directory, which belongs to the project.
 
 ## Artifact-bearing production
 
-Read [Production Direction](#purpose-portrayal-and-production-choices), [Production Execution](#production-execution-and-bounded-authority), and the selected route's references before building a saved deliverable. `scripts/execution_routes.py inspect ROUTE` selects those reads without relying on another product.
+Read [Production Direction](#purpose-portrayal-and-production-choices), [Production Execution](#production-execution-and-bounded-authority), and the selected route's references before building a saved deliverable. `scripts/execution_routes.py read ROUTE --root PROJECT` outputs the complete selected sources. Retain the key and author each required application; use the returned cursor for paged reads.
 
 Prepare a task with the full applicable sources, purpose, meaningful choices, selected realization, intentional departures and evidence criteria. `scripts/production_workflow.py` connects preparation, handoff, actual candidates, observation review, authorized selection and completion in the same run. Its `status`, `resume` and `impact` expose interrupted work and changed dependencies. Complete the linked work task only after that run completes.
+
+Use `production_workflow.py inspect-inputs`, `draft-inputs`, and `build-inputs` to assemble authored choices. The [input example](../examples/input-assembly/README.md) records public command results.
 
 For time-dependent uncertainties, read [Timed Production](#time-bearing-realization-and-review). `scripts/timed_sequence.py` validates four distinct clocks, renders playable roughs from declared materials, and extracts frames or audio intervals. Use actual timed evidence for pacing and response; proxy materials cannot verify missing expression or sound. Plan construction is a directing decision, not an automatic plot-to-film claim. The Skill also supports other capable tools through the recorded handoff; still-image-to-video is not a mandatory method.
 
@@ -152,6 +160,8 @@ The project has two halves. `media/`, `state/`, `shots/` and the last five files
 - `narrative/scenes/`: one scene plot per scene, approved before any shot text exists.
 
 These five, and the four above them, sit in the project workspace and not in the suite.
+
+A one-off answer needs no project. Work whose decisions a later step reuses gets its project before the first draft that will be revised, whatever the turn count and before any model is chosen; `work/README.md` in the project states where checkpoints are written and the order a session resumes in.
 
 - `series-state.md`: approved canon, chronology, series format, scene and episode ledger.
 - `character-profiles.md`: stable identity pointers, behavior, voice, performance, relationship boundaries.
@@ -375,7 +385,10 @@ repairs or session resumption. The `scene-persona` feature (section 3) selects
 this mode; it removes the repeated full-template read, while the preparation
 itself must still have happened. Ordinary wording changes inside the reviewed
 scene scope proceed on the existing reading. The code validates integrity and
-declared links; understanding the scene stays the reader's work.
+declared links; understanding the scene stays the reader's work. The verified
+bundle is also the record that the Persona is ready for this use, at this phase
+and in this medium; it says nothing about the Persona's completeness elsewhere,
+which the Persona Template's completion rule governs for a release.
 
 An intact source digest proves the sources unchanged and nothing about a
 creative direction the scene has yet to record. Reopen preparation for a
@@ -554,6 +567,8 @@ A case describes what the host receives and which deliverables must be present w
 
 The trial uses the verified input copy as its prompt; a later edit to the original leaves the approved prompt as it was. Other input files and an optional skill copy are checked against the inspected plan before copying.
 
+For a trial of unprompted creative depth, cast admission or persistence, the prompt carries no reminder to add an origin, to consider the surroundings, to save, or to ask before naming a person. The author's answer to an admission request the agent raises correctly is a scripted response among the case inputs, not a correction. [Story Structure](#story-structure-scene-function-retention-and-series-rhythm) section 6 owns cast admission.
+
 ### Host conditions
 
 A condition describes an actual executable and how to invoke it. A host name in a label is a description; it says nothing about whether the host is installed or supported.
@@ -690,6 +705,10 @@ They establish nothing about a real host's performance or about improvement in a
 
 The approved condition owns its optional timeout and log budget; a default byte ceiling is absent, and logs are kept whole. `timeout_seconds: null` disables the application deadline; `max_log_bytes` may be omitted or set to null. See [Resource handling](../references/resource-handling.md) for budget failures, complete evidence retention and host-level containment.
 
+## 9. Evaluate craft reuse
+
+Use [Craft consultation](#consult-and-apply-directing-knowledge) to connect consulted knowledge to the task. Evaluate the search scope, complete-source reading, and the fit of the borrowed relationship. Inspect actual outputs for preserved constraints, deliberate changes, and unrelated material introduced by adaptation. Treat an appropriate nonuse decision as valid. Measure useful reuse and avoided repeated work; lookup counts and preset counts do not establish quality.
+
 ---
 
 <!-- Source: references/repair-analysis.md -->
@@ -772,6 +791,10 @@ A repeated failure proves nothing about whether the scene is too complex, whethe
 
 The report analyzes the latest review per candidate; earlier review receipts remain in the original run, untouched by the summary. Inspect them when the history of changing judgments matters.
 
+## 6. Consult reusable corrections
+
+Use the returned consultation action to investigate a craft question drawn from the recorded failure. Read [Craft consultation](#consult-and-apply-directing-knowledge) for complete sources, scoped application, and reviewer questions. Preserve the observed evidence and protected requirements when choosing a correction.
+
 ---
 
 <!-- Source: references/narrative-authoring.md -->
@@ -783,7 +806,7 @@ The report analyzes the latest review per candidate; earlier review receipts rem
 
 ## 1. Current full forms
 
-Use `scripts/narrative_entity.py --series PROJECT add KIND ID` to create the selected persona, design, location, faction, system, artifact or glossary entry. Persona creation takes `--character ID`; it uses the complete installed form, not an emotion summary. `rename OLD NEW` updates declared references and drops approvals whose actual content changes. `remove ID` refuses live references unless explicitly forced. Do not treat command success as authorial approval.
+Use `scripts/narrative_entity.py --series PROJECT add KIND ID` to create the selected persona, design, location, faction, system, artifact or glossary entry. Persona creation takes `--character ID`; it uses the complete installed form, not an emotion summary. `rename OLD NEW` updates declared references and drops approvals whose actual content changes. `remove ID` refuses live references unless explicitly forced. Do not treat command success as authorial approval. A person the agent proposes is a candidate in the design record until the author admits them; create the persona entity and the narrative entry after that decision, once. [Story Structure](#story-structure-scene-function-retention-and-series-rhythm) section 6 owns the candidate, the scope of a confirmation and the depth a use needs.
 
 The `design/` records retain portrayal aims, source applicability, permitted variation, intentional departures and disclosure boundaries. Persona describes an individual's enduring and conditional patterns; world records describe non-agent conditions without invented psychology. Empty cast and theme collections are valid. Select the current applicable information without copying a full private dossier into a model-facing request.
 
@@ -1107,6 +1130,28 @@ are in `schemas/authoring/production-*.schema.json`.
 
 ## 1. Working path
 
+### Input assembly
+
+Use [Craft consultation](#consult-and-apply-directing-knowledge) while deciding what to write or revise. The lookup, application source, and authored review questions stay connected to the current task. Input inspection provides the concrete entry action.
+
+
+`inspect-inputs` shows declared sources, recorded candidates, and required choices.
+`draft-inputs` creates an unanswered choices document in a new directory.
+The author supplies continuity and acceptance decisions; the operator supplies quotations, applications, and explicit source selections.
+`build-inputs` resolves those selections through the existing contract builders.
+It derives document hashes, image hashes, adoption selectors, and reference positions from recorded evidence.
+
+Each output directory is published after all required judgments and current evidence validate.
+An incomplete selection returns named unresolved fields and preserves existing files.
+The original task and source artifacts remain unchanged.
+Construction returns formal inputs, their provenance, and arguments for the next operation.
+Preparation, final request rendering, review, and authorization follow through their own commands.
+
+Use `--from-run` to name a saved run from the same work task.
+Copied reading applications retain their origin and require assessment for the current work.
+Choose current visual references and validation evidence explicitly.
+The [synthetic input assembly example](../examples/input-assembly/README.md) contains complete commands, choice fields, and actual output.
+
 Begin an ordinary work task. Author `task.json` with its open task ID, an actual
 route, sources (ID/path/role/disposition/locator/reason), delivery path and
 transport, criteria (ID/strength/text/evidence), and a `direction`. Follow the
@@ -1126,12 +1171,13 @@ python scripts/production_workflow.py select --root PROJECT --run RUN --file sel
 python scripts/production_workflow.py complete --root PROJECT --run RUN
 ```
 
-Drafts deliberately leave substantive review/authority/selection fields empty.
-They are not approvals. `status` and `resume` verify inputs and recorded files;
-`impact` additionally locates changed inputs, recorded artifacts and affected
-declared decisions. Source changes require re-reading and preparing, not an
-in-place rewrite of receipt history. Captured artifacts are not automatically
-selected, and delivery selection never implicitly adopts canonical design.
+Drafts leave substantive review, authority and selection fields for the responsible actor.
+`status` and `resume` first verify frozen inputs and the receipt chain.
+They then report current dependencies separately from acquired artifacts, reservations and execution evidence.
+`impact` locates changed inputs and affected declared decisions.
+A changed source retains uncertain submissions and acquired results in the resume report.
+The author or delegated selector decides which actual candidate to select and adopt.
+See the [synthetic resume example](../examples/resume-recording/README.md) for actual before-and-after reports.
 
 ## 2. Delegation is scoped, not an all-automatic flag
 
@@ -1221,7 +1267,20 @@ Set a real agreed cost bound and currency for paid operations; zero/none is not 
 
 The grant is reserved and a claim committed before any upload. Each upload identifier, exact request, response, poll response, and downloaded file is durably recorded. Files are uploaded from immutable prepared copies. A claim cannot be sent again. Recovery only polls existing task IDs or retrieves and records known outputs. An exception before a response leaves an uncertain claim that must be reconciled with the provider, not automatically resubmitted. No credential is stored in the journal.
 
-Acquired files become candidates in the same run. Gate admission and successful delivery do not certify direction, acting, or audience response. A changed input prevents later review or completion of that stale preparation; it does not erase the acquired evidence.
+Acquired files become candidates in the same run.
+A changed input requires fresh preparation for later review or completion while preserving acquired evidence.
+`recover-recording` registers already acquired outputs from immutable dispatch records, including after an input change.
+It restores a missing output file from its saved bytes and rejects conflicting bytes at the destination.
+Repeated recovery returns the existing candidate. It uses no network call or new execution reservation.
+
+```text
+python scripts/production_workflow.py recover-recording --root PROJECT --run RUN
+python scripts/production_resume_smoke_test.py
+```
+
+Remote result retrieval uses `production_dispatch.py` and remains distinct from local record recovery.
+A start boundary alone means the external outcome is unconfirmed; the report separates response, output and charge evidence.
+The acting reviewer evaluates direction, acting and the intended audience response from the actual output.
 
 ## 6. Scope-aware repairs and durable output recovery
 
@@ -1248,6 +1307,123 @@ After capture or review, a requested inspection export uses the same prepared so
 ### Prepared scene material
 
 During the existing prepare stage, build and verify [Scene Persona](#scene-persona-material-prepare-once-reuse-within-scope), then include `scene_materials` and the `scene-persona` feature in the task. The snapshot pins the plan, complete originals and derived documents. The `authoring_materials` in `consumer.json` are for the authoring agent only. They do not automatically enter model-facing text or become performer knowledge. Public artifact selectors require explicit acceptance of their exact content and the lack of current-original verification.
+
+## 8. Contract regression checks
+
+The local synthetic suites exercise recorded evidence and structural contracts.
+Run these checks from the skill directory:
+
+- `python scripts/production_inputs_smoke_test.py`
+- `python scripts/production_input_model_smoke_test.py`
+- `python scripts/route_reading_smoke_test.py`
+- `python scripts/visual_continuity_smoke_test.py`
+- `python scripts/request_contract_smoke_test.py`
+- `python scripts/request_validation_smoke_test.py`
+- `python scripts/reservation_lifecycle_smoke_test.py`
+
+Each result measures the exercised contract, separately from creative quality or production approval.
+
+`python scripts/route_reading.py RECORD --root PROJECT` validates an authored reading record against its recorded issuance.
+`ROUTE_READING_INVALID` names a missing or inconsistent reading contract.
+`VISUAL_CONTINUITY_INVALID` names a missing or inconsistent subject, adoption, or delivered-reference contract.
+
+## 9. Model request workflow checks
+
+The dispatcher preview, attributed evidence import, and candidate variation each have a dedicated regression entry point.
+Run `scripts/production_variation_smoke_test.py`, `scripts/schema_observation_smoke_test.py`, `scripts/dispatch_preview_smoke_test.py`.
+Their synthetic providers exercise request recording and recovery separately from image quality or author acceptance.
+
+## 10. Exact request preview and variations
+
+A dispatcher preview uses the same renderer as its sending path and reports each transform's source.
+Use `--preview-out` to retain the sealed request, declared bindings, and validation report in a new file.
+Use `--decision-out` with the prepared run and selected authorization to draft the exact request assessment.
+The draft derives request hashes, reference binding IDs, and the authorization's stop conditions.
+The actor supplies the scope case, approval source, rendition judgment, and stop assessments.
+Pass the completed file as `--request-decision` when sending.
+A new request within an explicit existing delegation receives a new exact authorization under the same cumulative budget.
+A scope change requires the missing principal decision; request equality alone does not authorize work.
+
+`draft-variation` prepares a new input draft from an exact recorded candidate and a structural field change map.
+It preserves the source candidate and prompts reassessment of copied reading applications for the changed work.
+The [model evidence workflow](../references/model-evidence.md) describes schema imports and bounded comparison trials.
+
+---
+
+<!-- Source: references/tactic-consultation.md -->
+
+# Consult and apply directing knowledge
+
+Use the `craft-consultation` route feature to include these rules in the selected route reading.
+
+## 1. Ask during production
+
+Use `production_workflow.py consult-tactics --help` while planning, revising, or reviewing a scene or asset.
+The agent selects the craft question, relevant source passage, and application.
+Existing knowledge may be reused within its approved scope; production and canonical adoption retain their separate authority.
+
+`inspect-inputs`, `draft-variation`, and `repair-analysis` provide concrete consultation actions for the current task.
+`consult-tactics` uses the selected directing vocabulary and the project's explicit production sources.
+It reads `production-state.md` when present, and task sources with the production-state or production-tactics role.
+Prior application records appear in a separate source list. Use `--source` to open one or another explicit project-relative source.
+These records describe intended uses; actual results remain in the production review and scoped production-state entries.
+This keeps successive consultations from recursively copying every earlier report.
+
+Vocabulary search returns lexical candidates, then opens their complete entries.
+Project sources are returned in full with their file hashes and line counts.
+Source order does not rank a tactic or establish its approval.
+An empty vocabulary result describes that query, not all knowledge in the project.
+
+The command saves `consultation.json` and an unanswered `decisions.json` in a new project directory.
+The public [consultation example](../examples/tactic-consultation/README.md) runs the CLI and records the observed output.
+
+## 2. Select a source and its application
+
+A passage selector contains `kind: passage`, a consulted `path`, and inclusive `start_line` and `end_line`.
+The tool extracts the chosen text and retains the complete source for context.
+A vocabulary selector contains `kind: vocabulary`, the exact `category`, and the exact `term`.
+The tool rechecks the consulted vocabulary bytes and full entry.
+
+Supply `source_id`, `reason`, `uses`, and `not_used` in the decision file.
+Each use records:
+
+- the selected `source`, relationship `borrowed`, conditions `preserved`, and intended scope `changed`;
+- an existing task source ID as `target_source`, or `@delivery`, with a `target_locator`;
+- existing `review_criteria` IDs and the authored `review_question`.
+
+A nonuse decision records its source selector and reason.
+Select none when no consulted tactic fits.
+Describe an unchanged application honestly, without manufacturing a change or a new approval.
+
+`apply-tactics` snapshots the selected source and the authored target file.
+It adds a `tactic-application` source to a copied task and links it through the existing translation notes.
+It leaves the original task, target text, project state, and authority unchanged.
+Author the actual direction or rendition in its normal source; the tool records that relationship rather than rewriting it.
+
+The copied task continues through the existing input builders and preparation.
+Publication is atomic into a new directory.
+A stale source or task, unknown criterion or target, invalid line range, or existing output path is reported before publication.
+Reconsult changed sources or correct the explicit choice and rebuild.
+
+## 3. Judge the resulting work
+
+Preparation captures the application through the existing source dependencies.
+`draft-review` carries authored questions into their criterion reasons, leaving verdicts and observations unassessed.
+The reviewer replaces those prompts with observations and judgments about the actual result.
+
+Compare the source relationship with the authored direction and actual camera, contact, continuity, or sound behavior.
+Check whether required constraints survived and unrelated material was kept out.
+Separate planned improvements from observed effects and audience evidence.
+
+Use `repair-analysis` to organize recorded failures, then ask a focused question before choosing another tactic.
+After a successful result, retain the exact operation, observation, and usable scope in the existing production-state record.
+Reuse that scoped knowledge without treating one result as proof of every future outcome.
+
+## 4. Verification
+
+`scripts/tactic_consultation_smoke_test.py` covers complete sources, explicit selectors, stale input, atomic publication, and review transfer.
+The public CLI example uses synthetic local source material.
+These operational checks remain distinct from model quality and author acceptance.
 
 ---
 
@@ -1640,7 +1816,7 @@ The files under [`assets/project-templates/`](../assets/project-templates/) are 
 | `asset-registry.md` | [Asset Registry template](../assets/project-templates/asset-registry.md) | Role, status, visible or audible support, unsupported facts, effective story range, derivation, supersession, actual uses, consent and licensing notes, and known limitations for character, scene, prop, video, audio, and performance assets. |
 | `production-state.md` | [Production State template](../assets/project-templates/production-state.md) | Localization policy, target evidence, operation cards, exact submissions, direct observations, scoped tactics, and rejection diagnostics. |
 | `state/events.jsonl` | [State Event Ledger template](../assets/project-templates/state/events.jsonl) | Approved variable-state events in story order. |
-| `work/` | [Work template](../assets/project-templates/work/README.md) | The open task and the trail of tasks, written by `scripts/work_ledger.py` and read first by every session. |
+| `work/` | [Work template](../assets/project-templates/work/README.md) | The open task and the trail of tasks, written by `scripts/work_ledger.py` and read first by every session. The template states the checkpoint boundaries and the order a session resumes in. |
 | `narrative/narrative.json` | [Narrative template](../assets/project-templates/narrative/narrative.json) | Applicable themes, arcs, chapters and cast, each of which may be empty; declared references and order must agree. Persona in force and prohibitions remain explicit when applicable, as do promises, questions and knowledge. A held condition needs no invented turn. |
 | `narrative/personas/` | [Persona form](../assets/project-templates/narrative/personas/persona-template.md) | One phase of one life, with what is attested separated from what is inferred, and what the character would never do explained here and declared in the narrative. |
 
@@ -1970,6 +2146,22 @@ able to notice somebody in a scene three chapters after they left.
 `narrative_coverage.py` reports a scene whose cast names a character outside that span as an error,
 because the scene and the narrative disagree about whether that person is in the series.
 
+A person the agent proposes is a candidate until the author admits them. Record the candidate in
+the project's design record as `proposed`, with its revision, role, own purpose, use scope, name and
+appearance basis, and create the persona and the narrative entry only after that decision, once. A
+confirmation covers what it names: existence and role, the name, the appearance and the history are
+separate decisions, and a request to think about supporting people permits proposals only. A person
+the author names directly is an anchor and needs no such question. Consider an existing character,
+an unnamed functional participant or an impersonal condition before a new person; a recurring
+unnamed individual still holds a stable character ID, and naming them later keeps it.
+
+Every character uses the same complete persona form at the depth their use needs. A mention needs
+identity and the mentioned facts; a bounded scene needs that scene's judgment, appearance, voice and
+knowledge; recurring appearances need prior outcomes and the person's own purposes; a consequential
+choice needs the values and constraints behind it. The verified [Scene Persona](#scene-persona-material-prepare-once-reuse-within-scope)
+document is the record that a persona is ready for one use, and the form's completion rule governs
+a release.
+
 ### What a character never does
 
 Each character in the narrative names its persona document and may declare prohibitions. There are
@@ -2001,6 +2193,21 @@ When a scene is accepted, carry back what it settled:
   climax is shot;
 - `state_changes` and `relationship_delta` are what the next scene inherits, and belong in the
   state the project already keeps.
+
+A scene also produces things about a person that no record holds. Classify each before it is
+written anywhere:
+
+| Difference | Handling |
+|---|---|
+| An existing rule realized | Reference the rule; add no duplicate. |
+| A temporary outfit, fatigue, place or prop | State, not the persona. |
+| Information the person acquired | A `knowledge` entry with the chapter and the effective time. |
+| A new habit, preference, history or tie | A proposal for the persona's Design Ledger, applied under actual adoption. |
+| A contradiction with the persona | Repair the scene within scope, or a separately scoped redesign. |
+| An inferred inner state | An inference; an observed cue establishes no hidden truth. |
+
+One line proves no habitual voice, one action proves no value, and a rendered detail adopts no
+visual canon.
 
 Then approve the narrative again. Its `content_sha256` covers what it now says, so a scene plot
 approved against the version before it is approved against a document that no longer exists. Run
@@ -3447,7 +3654,7 @@ The gate checks a submission's stated `parameters` against the offering's constr
 
 An offering whose service rewrites the text unless told not to declares `as_written`: the request keys and values under which the text reaches the model as sent. `dispatch.py` sets them unless the submission's own parameters set them, so the text travels as written by default, and the gate reports a submission that sets them to anything else.
 
-An offering may also point at an **observed parameter schema**: the service's own schema for the model, stored as returned under `protocols/target/observed-schemas/` with its date and source (`scripts/observe_schema.py`). The gate builds the request the submission describes (text, declared inputs by request key, stated parameters) and evaluates it against that schema, so geometry pairs, duration bands, dependent parameters, and input-mode exclusivity are refused from the service's own rules rather than from hand-written constraints. Hand-written constraints remain for what a schema does not state (behaviour, limits enforced only at run time). Refresh the snapshot when the service's documentation changes; the date on the file is the record of when it was last read.
+An offering may point at an **observed parameter schema**: the service's acquired schema for its exact model. The gate validates declared inputs and parameters against those constraints. Local evidence catalogs retain original responses, source identities, and separate envelope overlays. Use the [model evidence workflow](../references/model-evidence.md) to import schemas, record reference sources, or attach an existing authorized trial. Each request states its validation mode and unmeasured conditions.
 
 ---
 

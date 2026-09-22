@@ -9,6 +9,7 @@ import os
 import re
 import tempfile
 import time
+import threading
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterator
 
@@ -142,8 +143,47 @@ def publish_directory(staging: Path, target: Path, *, patience: float = 10.0) ->
             time.sleep(0.1)
 
 
+_thread_locks: dict[str, Any] = {}
+_lock_registry_guard = threading.Lock()
+_held_locks = threading.local()
+
+
+def _reset_process_locks() -> None:
+    global _thread_locks, _lock_registry_guard, _held_locks
+    _thread_locks = {}
+    _lock_registry_guard = threading.Lock()
+    _held_locks = threading.local()
+
+
+if hasattr(os, 'register_at_fork'):
+    os.register_at_fork(after_in_child=_reset_process_locks)
+
+
 @contextlib.contextmanager
 def lock(root: Path) -> Iterator[None]:
+    """Hold one project lock across nested calls, threads and processes."""
+    root = root.absolute()
+    root.mkdir(parents=True, exist_ok=True)
+    key = str(root.resolve())
+    with _lock_registry_guard:
+        mutex = _thread_locks.setdefault(key, threading.RLock())
+    with mutex:
+        held = getattr(_held_locks, 'roots', None)
+        if held is None:
+            held = _held_locks.roots = set()
+        if key in held:
+            yield
+            return
+        with _os_lock(root):
+            held.add(key)
+            try:
+                yield
+            finally:
+                held.remove(key)
+
+
+@contextlib.contextmanager
+def _os_lock(root: Path) -> Iterator[None]:
     """Cross-process advisory lock; a process crash releases the OS lock."""
     root.mkdir(parents=True, exist_ok=True)
     path = local(root, ".production.lock", exists=False)
