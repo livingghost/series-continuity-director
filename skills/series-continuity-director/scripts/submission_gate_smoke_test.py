@@ -586,6 +586,26 @@ def check_feature_review(results: list[dict], errors: list[str]) -> None:
             errors.append("declared feature lost its statement or source in review requirements")
 
 
+def check_figure_review(results: list[dict], errors: list[str]) -> None:
+    """Two or more figures in a visual block become one review requirement; one figure or none, nothing."""
+
+    def block(*names: str) -> dict:
+        return {"visual_continuity": {"subjects": {name: {} for name in names}}}
+
+    cases = [
+        ("two figures", block("C01", "C02"), ["the frame holds 2 figures (C01, C02)"]),
+        ("three figures", block("C01", "C02", "C03"), ["the frame holds 3 figures (C01, C02, C03)"]),
+        ("one figure", block("C01"), []),
+        ("a placeholder block", {"visual_continuity": {"placeholder": "the visual continuity block"}}, []),
+    ]
+    for name, submission, wanted in cases:
+        found = [item["statement"] for item in review_requirements(submission) if item["id"] == "figure-count"]
+        valid = len(found) == len(wanted) and all(found[i].startswith(wanted[i]) for i in range(len(wanted)))
+        results.append({"case": f"figure review: {name}", "passed": valid})
+        if not valid:
+            errors.append(f"figure review {name!r}: expected {wanted}, got {found}")
+
+
 # The prohibition surface the shipped narrative fixture carries: once standing
 # on its own, then each of the two ways a longer word can swallow it.
 # name, text, how many PROHIBITED_SURFACE refusals it must draw
@@ -1276,6 +1296,7 @@ def check_all() -> int:
     check_second_service(results, errors)
     check_resolution_floor(results, errors)
     check_feature_review(results, errors)
+    check_figure_review(results, errors)
     check_prohibition_boundary(results, errors)
     check_untrusted_fields(results, errors)
     check_exit_codes(results, errors)

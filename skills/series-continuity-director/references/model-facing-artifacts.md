@@ -257,4 +257,5 @@ Rules:
   regenerated before the sheet is.
 - A shot's reference count is part of its plan. Two characters in one frame divide the same limit, so each
   character is supported by fewer images than a solo frame would give it, and the prompt states what the
-  images then cannot.
+  images then cannot. [prompt-composition.md](prompt-composition.md) section 21 gives the text and the
+  carriers for such a frame.

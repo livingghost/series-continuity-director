@@ -1,6 +1,6 @@
 # Changelog
 
-## [2026.09.23.6] - 2026-09-23
+## [2026.09.23.7] - 2026-09-23
 
 Initial release.
 
@@ -37,3 +37,4 @@ Initial release.
 - Name scenes, shots and transitions with one id shape across scene plots, cameras, requests and state, and open a production line under its id as given.
 - Draft request settings with `submission_draft.py new --parameter NAME VALUE`. The dispatch dry run names each field a send reads beyond the submission, with the values that fill it. `vocabulary.py read` reads a prose text for the listed terms inside it.
 - Keep a project's working inputs, such as reading applications and state requests, under `work/`, where validation checks only their syntax. `seal_contract.py` also seals the public contract manifest after a schema changes.
+- Write a frame of two or more figures so they stay apart: the count and their relation first, each figure in its own passage, a difference the camera can see, and a carrier that holds each identity (an adopted image per figure, a regional control, or one generation per figure composed). Contact that merges two figures is repaired by rebuilding it, and the gate carries the figures a visual block names to review.

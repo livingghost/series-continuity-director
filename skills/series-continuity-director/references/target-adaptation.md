@@ -46,6 +46,8 @@ Possible routes include:
 - source edit or restyle for timing and camera;
 - extension for continuation from accepted output;
 - performance transfer for body, face, gesture, or speech;
+- a regional control, where the target documents one, for two figures that must not share attributes;
+- one generation per figure composed into one frame, for two recurring figures no single pass keeps apart;
 - conventional edit and post when one pass is not appropriate.
 
 Choose the operation that carries the hardest evidence, then route remaining requirements to compatible media, text, another pass, neighboring shots, or post-production.
@@ -73,6 +75,10 @@ References carry visible appearance. Text must still establish external camera, 
 ### Source video edit or restyle
 
 Source carries timing, camera, motion, and existing contact. Text states what remains and what changes.
+
+### One figure per pass, composed
+
+Each pass carries one figure at the planned scale, camera, light and placement, against the plate or a plain ground. Its text describes that figure and leaves room for the relation the composite completes. The composite carries placement, occlusion and contact, and is registered with both passes in its lineage.
 
 ### Extension
 

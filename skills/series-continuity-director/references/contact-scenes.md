@@ -179,6 +179,7 @@ These are editorial starting points, not universal model limits. Update target-s
 ## 11. Contact continuity review
 
 - limb, hand, paw, wing, or manipulator ownership stays stable;
+- each figure keeps its own complete outline where the two touch;
 - digit count and orientation remain readable where required;
 - object ownership changes only at the intended phase;
 - contact produces pressure, deformation, balance, movement, or sound;
@@ -188,3 +189,26 @@ These are editorial starting points, not universal model limits. Update target-s
 - reaction follows cause;
 - the end pose is stable;
 - subsequent shots use the accepted contact outcome.
+
+## 12. Figures that merge where they touch
+
+Close contact is where a surface joins two figures into one. Recognize the failure by its shape:
+
+- a limb that belongs to neither figure, or an arm whose path to its shoulder breaks;
+- two faces, muzzles or heads that share one contour at the contact point;
+- a small figure absorbed into the larger one's arm, chest or lap;
+- a smaller figure whose scale or species drifts toward the larger one's.
+
+Rebuild the contact rather than naming the defect:
+
+- describe two complete figures, each limb following one continuous path to a visible shoulder or hip;
+- choose one controlled contact point, such as the forehead, the nose, a cheek or a supporting forearm, and keep
+  a narrow gap of air or material along every other contour;
+- place the two bodies on separate depth layers, with the nearer limb clearly in front;
+- keep each figure's face, ears and supporting hand readable;
+- state the smaller figure's scale against something in the frame, such as the larger one's forearm or hip, and
+  restate its species features in its own passage.
+
+A negative field can back this up, but the repair is the construction, as
+[prompt-composition.md](prompt-composition.md) section 16 states. Section 21 there sets out how the text keeps
+two figures apart before they touch.

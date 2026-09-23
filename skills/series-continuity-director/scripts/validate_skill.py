@@ -870,6 +870,7 @@ def static_checks(repo: Path, manifest: dict) -> tuple[list[str], list[str], dic
             "State, inventory, and canon",
             "Contact risk and camera choice",
             "Contact continuity review",
+            "Figures that merge where they touch",
         ],
         "references/model-facing-artifacts.md": [
             "Keep production artifacts distinct",

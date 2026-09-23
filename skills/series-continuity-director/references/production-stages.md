@@ -26,7 +26,7 @@ Use when the target operation is inspectable, with any real media the submission
 3. Revise the first action or camera plan when the real opening conflicts with the plan.
 4. Write the full director package, including state, shot function, camera geometry, action chain, performance, sound, and landing.
 5. Map real files to real controls or request keys.
-6. Transfer every critical requirement to the strongest available carrier.
+6. Transfer every critical requirement to the strongest available carrier. For two or more figures in one frame, [prompt-composition.md](prompt-composition.md) section 21 ranks the carriers that keep them apart.
 7. Preserve exact primary and auxiliary field contents separately from production notes. For every shot, write two statements and keep both: the scene as the world has it (who stands where, facing what) and the shot as the lens sees it from the placed camera (what fills the frame, in what facing to the camera). Only the second is sent; the first is what it is checked against.
 8. Validate scene viewpoint artifacts, state artifacts, shot continuity, and target packaging.
 9. Draft the submission with `scripts/submission_draft.py` and run the submission gate on the exact text and inputs. Report every refusal and everything it could not measure.

@@ -348,6 +348,12 @@ Before a shot package is complete, every critical requirement is assigned a carr
 - a neighboring shot that carries the requirement more clearly;
 - an accepted variation the author agrees to leave open.
 
+Two figures described in one text trade species, colour and garments. A frame of two or more figures states their count and relation first and describes each figure apart. Their identities ride on an adopted image per figure, a regional control, or one generation per figure composed into the frame; [Prompt Composition](skills/series-continuity-director/references/prompt-composition.md) section 21 ranks them. The gate lists the figures for review:
+
+```text
+review  figure-count (rendition-review): the frame holds 2 figures (C01, C02): the text states the count and their relation before either figure and describes each figure in its own passage
+```
+
 The transfer table of the worked example's director package:
 
 ```text

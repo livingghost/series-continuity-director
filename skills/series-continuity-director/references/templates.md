@@ -222,6 +222,7 @@ When a template changes, update its validator, canonical example, contributor in
 - [ ] Character positions, scale, facing, support, and path are camera-readable.
 - [ ] Axis, screen direction, entrance, exit, and eyelines are coherent or deliberately changed.
 - [ ] Moving limbs and contact ownership are unambiguous.
+- [ ] A frame of two or more figures states their count and relation first, describes each figure apart, and names the carrier that keeps them apart.
 - [ ] Prop owner, carrier, hand, orientation, damage, and destination are recorded.
 - [ ] Cross-entity transfers are atomic.
 - [ ] Wardrobe, equipment, injury, wetness, and environment state match story time.

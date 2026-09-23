@@ -1407,15 +1407,33 @@ def declared_phrases(value: Any, label: str, unmeasured: list[str]) -> list[str]
     return kept
 
 
+def figure_requirement(submission: dict) -> list[dict]:
+    """The figures a visual block names, when there are two or more, for the writer's review.
+
+    The count a text states cannot be read reliably from prose, so it is carried
+    to review rather than compared.
+    """
+    block = submission.get('visual_continuity')
+    subjects = block.get('subjects') if isinstance(block, dict) else None
+    if not isinstance(subjects, dict) or len(subjects) < 2:
+        return []
+    names = ', '.join(str(name) for name in subjects)
+    return [{'id': 'figure-count', 'source': {'field': 'visual_continuity.subjects'},
+             'statement': (f'the frame holds {len(subjects)} figures ({names}): the text states the count and their '
+                           'relation before either figure and describes each figure in its own passage'),
+             'requires': 'rendition-review'}]
+
+
 def review_requirements(submission: dict) -> list[dict]:
     """Carry authored requirements to review without judging their realization."""
+    figures = figure_requirement(submission)
     obligations = submission.get('obligations')
-    if not isinstance(obligations, dict): return []
+    if not isinstance(obligations, dict): return figures
     values = obligations.get('permanent_features') or []
-    if not isinstance(values, list): return []
-    return [{'id': 'declared-feature-' + str(i), 'source': {'field': 'obligations.permanent_features', 'index': i},
-             'statement': value, 'requires': 'rendition-review'}
-            for i, value in enumerate(values) if isinstance(value, str) and value.strip()]
+    if not isinstance(values, list): return figures
+    return figures + [{'id': 'declared-feature-' + str(i), 'source': {'field': 'obligations.permanent_features', 'index': i},
+                       'statement': value, 'requires': 'rendition-review'}
+                      for i, value in enumerate(values) if isinstance(value, str) and value.strip()]
 
 
 def verdict(submission: Any, profile: dict[str, Any] | None, offering: dict[str, Any] | None,

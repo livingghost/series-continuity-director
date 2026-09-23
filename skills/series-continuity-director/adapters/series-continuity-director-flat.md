@@ -1255,7 +1255,7 @@ Use when the target operation is inspectable, with any real media the submission
 3. Revise the first action or camera plan when the real opening conflicts with the plan.
 4. Write the full director package, including state, shot function, camera geometry, action chain, performance, sound, and landing.
 5. Map real files to real controls or request keys.
-6. Transfer every critical requirement to the strongest available carrier.
+6. Transfer every critical requirement to the strongest available carrier. For two or more figures in one frame, [prompt-composition.md](#prompt-composition-and-shot-direction) section 21 ranks the carriers that keep them apart.
 7. Preserve exact primary and auxiliary field contents separately from production notes. For every shot, write two statements and keep both: the scene as the world has it (who stands where, facing what) and the shot as the lens sees it from the placed camera (what fills the frame, in what facing to the camera). Only the second is sent; the first is what it is checked against.
 8. Validate scene viewpoint artifacts, state artifacts, shot continuity, and target packaging.
 9. Draft the submission with `scripts/submission_draft.py` and run the submission gate on the exact text and inputs. Report every refusal and everything it could not measure.
@@ -5140,6 +5140,7 @@ Choose a repair at the responsible layer. Isolate a change when useful for causa
 - target-facing text contains no private bookkeeping shorthand;
 - the landing matches supplied endpoint media when present;
 - all omitted requirements have another carrier.
+- a frame of two or more figures states their count and relation first, gives each figure its own passage, and names the carrier that keeps them apart (section 21).
 
 ## 18. Rules a machine can settle
 
@@ -5205,7 +5206,8 @@ assumed to be large enough.
 
 `scripts/submission_gate.py` refuses under `SUB-01`, `SUB-02`, `SUB-07` to
 `SUB-10` and `SUB-15` to `SUB-18`, and cites the ID in every finding. It carries
-the features `SUB-05` names into its review requirements. The designated reviewer
+the features `SUB-05` names into its review requirements, and the figures a visual
+block names when there are two or more, for the review section 21 describes. The designated reviewer
 settles the other rules. Two refusals carry no ID, because they come before any
 rule applies: `TEXT_MISSING` for a submission with no text, and
 `PLACEHOLDER_UNFILLED` for a draft field nobody filled. A rule that moves into
@@ -5282,6 +5284,41 @@ string there would be a third thing a reader has to tell apart from a rule and f
 
 What the gate cannot settle it reports as `unmeasured` rather than passing it, and those
 carry no code because they are not refusals: they are the questions nobody answered.
+
+## 21. Two or more figures in one frame
+
+A surface reads every figure of a frame from one text. What the text says about one figure leaks into the
+other: species, colour, markings and garments cross between two figures described in one run, and the frame
+comes back as two people averaged. The writer's job is to keep the figures apart in the text and to choose a
+carrier that keeps them apart in the picture.
+
+Write the text this way:
+
+- State how many figures the frame holds, early, in the form the target reads: a count word or tag for a
+  tag-reading surface, a plain clause for a prose-reading one. A frame of one figure says so too, because a
+  surface left to itself adds a second figure or duplicates the first.
+- State the relation between the figures before either figure is described: who faces whom, who holds what,
+  where they touch. A surface that meets the pairing first places both figures around it.
+- Describe each figure in its own passage, and open that passage with the figure's name or count word. Keep its
+  identity, body, wardrobe and pose inside that passage, so no attribute sits between two figures.
+- Give the figures a difference the camera can see, such as a coat colour, a marking, a height or a garment.
+  Two figures with nothing to tell them apart are the first to merge.
+- Expect a figure of one species to drift toward a similar species, most on a side view. Restate its species
+  features in its own passage, and name the rival species in the negative field when the target has one and
+  the drift has been observed.
+
+Text alone does not hold two recurring identities apart. The carriers that do, strongest first where the
+target offers them:
+
+- an adopted identity image per figure, which `SUB-18` requires for recurring figures;
+- a regional control that confines each figure's description to one part of the frame, where the target
+  documents one;
+- a single-figure generation per figure, composed into one frame and registered as its own asset with both
+  sources in its lineage.
+
+Plan the carrier with the shot's reference allocation in
+[model-facing-artifacts.md](#model-facing-artifacts-and-requirement-transfer) section 12, because two figures divide one reference
+limit. [contact-scenes.md](#physical-contact-across-viewpoints) section 12 covers figures that merge where they touch.
 
 ---
 
@@ -5831,7 +5868,8 @@ Rules:
   regenerated before the sheet is.
 - A shot's reference count is part of its plan. Two characters in one frame divide the same limit, so each
   character is supported by fewer images than a solo frame would give it, and the prompt states what the
-  images then cannot.
+  images then cannot. [prompt-composition.md](#prompt-composition-and-shot-direction) section 21 gives the text and the
+  carriers for such a frame.
 
 ---
 
@@ -5885,6 +5923,8 @@ Possible routes include:
 - source edit or restyle for timing and camera;
 - extension for continuation from accepted output;
 - performance transfer for body, face, gesture, or speech;
+- a regional control, where the target documents one, for two figures that must not share attributes;
+- one generation per figure composed into one frame, for two recurring figures no single pass keeps apart;
 - conventional edit and post when one pass is not appropriate.
 
 Choose the operation that carries the hardest evidence, then route remaining requirements to compatible media, text, another pass, neighboring shots, or post-production.
@@ -5912,6 +5952,10 @@ References carry visible appearance. Text must still establish external camera, 
 ### Source video edit or restyle
 
 Source carries timing, camera, motion, and existing contact. Text states what remains and what changes.
+
+### One figure per pass, composed
+
+Each pass carries one figure at the planned scale, camera, light and placement, against the plate or a plain ground. Its text describes that figure and leaves room for the relation the composite completes. The composite carries placement, occlusion and contact, and is registered with both passes in its lineage.
 
 ### Extension
 
@@ -6221,6 +6265,7 @@ These are editorial starting points, not universal model limits. Update target-s
 ## 11. Contact continuity review
 
 - limb, hand, paw, wing, or manipulator ownership stays stable;
+- each figure keeps its own complete outline where the two touch;
 - digit count and orientation remain readable where required;
 - object ownership changes only at the intended phase;
 - contact produces pressure, deformation, balance, movement, or sound;
@@ -6230,6 +6275,29 @@ These are editorial starting points, not universal model limits. Update target-s
 - reaction follows cause;
 - the end pose is stable;
 - subsequent shots use the accepted contact outcome.
+
+## 12. Figures that merge where they touch
+
+Close contact is where a surface joins two figures into one. Recognize the failure by its shape:
+
+- a limb that belongs to neither figure, or an arm whose path to its shoulder breaks;
+- two faces, muzzles or heads that share one contour at the contact point;
+- a small figure absorbed into the larger one's arm, chest or lap;
+- a smaller figure whose scale or species drifts toward the larger one's.
+
+Rebuild the contact rather than naming the defect:
+
+- describe two complete figures, each limb following one continuous path to a visible shoulder or hip;
+- choose one controlled contact point, such as the forehead, the nose, a cheek or a supporting forearm, and keep
+  a narrow gap of air or material along every other contour;
+- place the two bodies on separate depth layers, with the nearer limb clearly in front;
+- keep each figure's face, ears and supporting hand readable;
+- state the smaller figure's scale against something in the frame, such as the larger one's forearm or hip, and
+  restate its species features in its own passage.
+
+A negative field can back this up, but the repair is the construction, as
+[prompt-composition.md](#prompt-composition-and-shot-direction) section 16 states. Section 21 there sets out how the text keeps
+two figures apart before they touch.
 
 ---
 
@@ -8053,6 +8121,7 @@ When a template changes, update its validator, canonical example, contributor in
 - [ ] Character positions, scale, facing, support, and path are camera-readable.
 - [ ] Axis, screen direction, entrance, exit, and eyelines are coherent or deliberately changed.
 - [ ] Moving limbs and contact ownership are unambiguous.
+- [ ] A frame of two or more figures states their count and relation first, describes each figure apart, and names the carrier that keeps them apart.
 - [ ] Prop owner, carrier, hand, orientation, damage, and destination are recorded.
 - [ ] Cross-entity transfers are atomic.
 - [ ] Wardrobe, equipment, injury, wetness, and environment state match story time.

@@ -270,6 +270,7 @@ Choose a repair at the responsible layer. Isolate a change when useful for causa
 - target-facing text contains no private bookkeeping shorthand;
 - the landing matches supplied endpoint media when present;
 - all omitted requirements have another carrier.
+- a frame of two or more figures states their count and relation first, gives each figure its own passage, and names the carrier that keeps them apart (section 21).
 
 ## 18. Rules a machine can settle
 
@@ -335,7 +336,8 @@ assumed to be large enough.
 
 `scripts/submission_gate.py` refuses under `SUB-01`, `SUB-02`, `SUB-07` to
 `SUB-10` and `SUB-15` to `SUB-18`, and cites the ID in every finding. It carries
-the features `SUB-05` names into its review requirements. The designated reviewer
+the features `SUB-05` names into its review requirements, and the figures a visual
+block names when there are two or more, for the review section 21 describes. The designated reviewer
 settles the other rules. Two refusals carry no ID, because they come before any
 rule applies: `TEXT_MISSING` for a submission with no text, and
 `PLACEHOLDER_UNFILLED` for a draft field nobody filled. A rule that moves into
@@ -412,3 +414,38 @@ string there would be a third thing a reader has to tell apart from a rule and f
 
 What the gate cannot settle it reports as `unmeasured` rather than passing it, and those
 carry no code because they are not refusals: they are the questions nobody answered.
+
+## 21. Two or more figures in one frame
+
+A surface reads every figure of a frame from one text. What the text says about one figure leaks into the
+other: species, colour, markings and garments cross between two figures described in one run, and the frame
+comes back as two people averaged. The writer's job is to keep the figures apart in the text and to choose a
+carrier that keeps them apart in the picture.
+
+Write the text this way:
+
+- State how many figures the frame holds, early, in the form the target reads: a count word or tag for a
+  tag-reading surface, a plain clause for a prose-reading one. A frame of one figure says so too, because a
+  surface left to itself adds a second figure or duplicates the first.
+- State the relation between the figures before either figure is described: who faces whom, who holds what,
+  where they touch. A surface that meets the pairing first places both figures around it.
+- Describe each figure in its own passage, and open that passage with the figure's name or count word. Keep its
+  identity, body, wardrobe and pose inside that passage, so no attribute sits between two figures.
+- Give the figures a difference the camera can see, such as a coat colour, a marking, a height or a garment.
+  Two figures with nothing to tell them apart are the first to merge.
+- Expect a figure of one species to drift toward a similar species, most on a side view. Restate its species
+  features in its own passage, and name the rival species in the negative field when the target has one and
+  the drift has been observed.
+
+Text alone does not hold two recurring identities apart. The carriers that do, strongest first where the
+target offers them:
+
+- an adopted identity image per figure, which `SUB-18` requires for recurring figures;
+- a regional control that confines each figure's description to one part of the frame, where the target
+  documents one;
+- a single-figure generation per figure, composed into one frame and registered as its own asset with both
+  sources in its lineage.
+
+Plan the carrier with the shot's reference allocation in
+[model-facing-artifacts.md](model-facing-artifacts.md) section 12, because two figures divide one reference
+limit. [contact-scenes.md](contact-scenes.md) section 12 covers figures that merge where they touch.
