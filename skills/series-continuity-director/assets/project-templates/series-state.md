@@ -19,7 +19,7 @@ continuity_status: continuity-unverified
 - none
 
 ## Current timeline and setting
-- timeline ID: main
+- timeline ID: undecided (the `timeline_id` of `narrative/narrative.json` once one is declared)
 - story order: 0
 - current location: undecided
 - active objective: undecided

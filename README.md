@@ -256,6 +256,25 @@ This covers real species, ordinary animals, anthropomorphic animals, fictional c
 
 Changing the camera changes the visible obligations and the reference selection, and leaves stable identity untouched.
 
+`shot_chain.py` builds the state a shot stands on and writes those hashes. One chain file names the approved scene plot, the story point, the state inputs, and each shot's camera, projection and request. The command derives the state, seals the three shot records and checks each shot complete:
+
+```sh
+python skills/series-continuity-director/scripts/shot_chain.py PROJECT/work/state-inputs/SC01.chain.json --project PROJECT
+```
+
+The report from a trial project with two characters, trimmed:
+
+```json
+{
+  "ok": true,
+  "scene_id": "SC01",
+  "written": ["state/snapshots/SC01-110-world.json", "state/scene-contexts/SC01-110.json", "shots/sc01/SH01.request.json"],
+  "shots": {"SH01": {"complete": true, "errors": []}}
+}
+```
+
+A frame that shows two recurring characters needs an image adopted for each one's identity first. The agent drafts each character's sheet as a single-subject `asset` submission, and the author adopts one returned image per character. `session_entry_points.py --next` lists the sheets still missing, then the next shot's camera and request.
+
 ### Shot continuity and finishing
 
 Third-person coverage adds the continuity work of a cut:

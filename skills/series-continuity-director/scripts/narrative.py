@@ -283,7 +283,8 @@ def validate_narrative(value: Any) -> dict[str, Any]:
         phases = character.get("phases")
         if phases is not None:
             if not isinstance(phases, list) or not phases:
-                errors.append(f"{label}.phases must be a non-empty array when it is present")
+                errors.append(f"{label}.phases must be a non-empty array of earlier phases when it is "
+                              "present; leave it out for a character with one phase")
             else:
                 seen: list[str] = []
                 for position, phase in enumerate(phases):
@@ -414,7 +415,8 @@ def validate_narrative(value: Any) -> dict[str, Any]:
         depicts = chapter.get("depicts")
         if not isinstance(depicts, list) or not depicts:
             errors.append(
-                f"{label}.depicts must name what this chapter presents or holds"
+                f"{label}.depicts must be a non-empty array of strings naming what this chapter "
+                "presents or holds"
             )
         # A chapter is a unit of telling and story order is a unit of happening.
         # A chapter that names its span makes the difference between them

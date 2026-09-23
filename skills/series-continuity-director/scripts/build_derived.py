@@ -8,7 +8,8 @@ A change to a source reaches its derived files only in this order:
 
 1. the directing vocabulary, from the cinematic lexicon;
 2. the narrative contract's corpus, from the case tables of its smoke tests;
-3. the narrative contract's seal, over the readers and the corpus;
+3. the narrative contract's seal, over the readers and the corpus, and the
+   public contract manifest's, over the schemas;
 4. the one-file adapter, from the references and the protocol documents;
 5. the worked continuity example;
 6. the host files, from SKILL.md and the package manifest;

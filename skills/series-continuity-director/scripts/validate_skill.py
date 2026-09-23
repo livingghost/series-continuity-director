@@ -240,6 +240,7 @@ CHECKS: tuple[Check, ...] = (
     command("scripts/production_variation_smoke_test.py"),
     command("scripts/route_reading_smoke_test.py"),
     command("scripts/visual_continuity_smoke_test.py"),
+    command("scripts/shot_chain_smoke_test.py"),
     command("scripts/request_contract_smoke_test.py"),
     command("scripts/request_validation_smoke_test.py"),
     command("scripts/reservation_lifecycle_smoke_test.py"),
@@ -429,6 +430,11 @@ def read_text(path: Path, errors: list[str]) -> str:
     except UnicodeDecodeError:
         errors.append(f"{path.relative_to(ROOT)}: text file is not UTF-8")
         return ""
+
+
+SUITE_PATH_SPAN = re.compile(
+    r"`((?:references|scripts|protocols|config|assets|examples|adapters|agents)/[A-Za-z0-9._/-]+\.[A-Za-z0-9]+)`"
+)
 
 
 def markdown_links(text: str) -> list[str]:
@@ -684,6 +690,11 @@ def static_checks(repo: Path, manifest: dict) -> tuple[list[str], list[str], dic
                 if not target.exists():
                     errors.append(f"{path.relative_to(repo)}: broken repository-relative link: {raw}")
                     repository_link_errors += 1
+            # A suite file named as a bare code span is a pointer too.
+            if path.is_relative_to(ROOT):
+                for named in SUITE_PATH_SPAN.findall(text):
+                    if not (ROOT / named).exists():
+                        errors.append(f"{path.relative_to(repo)}: names a suite file that does not exist: {named}")
 
     # JSON and JSONL parsing.
     json_files = 0

@@ -24,7 +24,9 @@ def main() -> int:
         project = require_project(Path(args.project))
     except ValueError as exc:
         raise SystemExit(str(exc)) from exc
-    line_id = args.line.lower()
+    # The line id is the directory name exactly as given, the form the
+    # submissions and shot records under it cite.
+    line_id = args.line
     root = project / "media" / "episodes" / line_id
     if root.exists():
         raise SystemExit(f"line already exists: {root}")

@@ -187,6 +187,74 @@ def task_summary(project: Path) -> str:
 
 
 
+def identity_sheet_action(project: Path, plots: list[dict], roles: dict[str, list[str]]) -> str | None:
+    """The identity sheets a shared frame waits on, once any approved scene holds two characters.
+
+    A frame that shows a recurring character beside another subject binds an
+    image adopted for that character's `ID/identity` role, so those sheets come
+    before the first shared frame is written.
+    """
+
+    waiting: list[str] = []
+    for plot in plots:
+        cast = [c for c in plot.get("characters") or [] if isinstance(c, str)]
+        if len(cast) < 2:
+            continue
+        for character in cast:
+            if roles.get(f"{character}/identity", []).count("accepted") != 1 and character not in waiting:
+                waiting.append(character)
+    if not waiting:
+        return None
+    draft = ROOT / "scripts" / "submission_draft.py"
+    first = waiting[0]
+    return (
+        f"Make and adopt the identity sheet of {', '.join(waiting)} before a frame shows two of them: "
+        f"{draft} new --project {project} --kind asset --out media/characters/{first}-sheet.submission.json "
+        f"--target <target> --purpose sheet-panel --basis character-profiles.md --basis-locator {first} "
+        f"--subject {first} recurring {first} drafts one, and the "
+        f"author adopts one returned image per character for the role ID/identity "
+        f"({ROOT / 'references' / 'model-facing-artifacts.md'} section 12)"
+    )
+
+
+def shot_record_actions(project: Path, plots: list[dict]) -> list[str]:
+    """The first shot of an approved screen plot that has no camera, and the first with no request."""
+
+    held: dict[str, set[tuple[str, str]]] = {"shot-camera-spec": set(), "shot-request": set()}
+    shots = project / "shots"
+    for path in sorted(shots.rglob("*.json")) if shots.is_dir() else []:
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(value, dict) and value.get("artifact_type") in held:
+            held[value["artifact_type"]].add((str(value.get("scene_id")), str(value.get("shot_id"))))
+    units = [(str(plot.get("scene_id")), str(unit.get("id"))) for plot in plots
+             if (plot.get("realization") or {}).get("kind") == "shots"
+             for unit in (plot.get("realization") or {}).get("units") or [] if isinstance(unit, dict)]
+    actions: list[str] = []
+    camera = next((unit for unit in units if unit not in held["shot-camera-spec"]), None)
+    if camera:
+        scene, shot = camera
+        actions.append(
+            f"Place the camera for {scene} {shot}: fill "
+            f"{ROOT / 'protocols' / 'viewpoint' / 'templates' / 'shot-camera-spec.template.json'} as "
+            f"shots/{scene}/{shot}.camera.json with scene_id {scene!r} and shot_id {shot!r}, then "
+            f"{ROOT / 'scripts' / 'viewpoint_protocol.py'} seal it"
+        )
+    request = next((unit for unit in units if unit in held["shot-camera-spec"]
+                    and unit not in held["shot-request"]), None)
+    if request:
+        scene, shot = request
+        actions.append(
+            f"Write the shot request for {scene} {shot} as shots/{scene}/{shot}.request.json, with its "
+            f"shot projection and a chain file naming the state inputs; "
+            f"{ROOT / 'scripts' / 'shot_chain.py'} CHAIN --project {project} builds the state, "
+            "binds and seals the shot's records and checks them complete"
+        )
+    return actions
+
+
 def next_actions(project: Path) -> list[str]:
     """The next thing to do, in the order the layers depend on each other.
 
@@ -228,7 +296,14 @@ def next_actions(project: Path) -> list[str]:
         ]
 
     blanks = json_placeholders(document)
-    if blanks:
+    if not any(document.get(key) for key in ("themes", "characters", "arcs", "chapters")):
+        # A fresh narrative is empty tables, not blanks, and there is nothing to approve yet.
+        actions.append(
+            f"Write what the series is about in {narrative_path}: its themes, characters, arcs and "
+            f"chapters, in the shape {ROOT / 'protocols' / 'narrative' / 'README.md'} gives, then have "
+            "the author approve it"
+        )
+    elif blanks:
         more = len(blanks) - 3
         actions.append(
             f"Settle what the series is about: {narrative_path} still carries what "
@@ -269,7 +344,9 @@ def next_actions(project: Path) -> list[str]:
             break
 
     scenes = project / "narrative" / "scenes"
+    approved: list[dict] = []
     if scenes.is_dir():
+        waiting = None
         for path in sorted(scenes.glob("*.json")):
             try:
                 value = json.loads(path.read_text(encoding="utf-8"))
@@ -278,13 +355,20 @@ def next_actions(project: Path) -> list[str]:
             if not isinstance(value, dict) or value.get("artifact_type") != "scene-plot":
                 continue
             plot = validate_scene_plot(value)
-            if plot["ok"] and not plot["approved"]:
-                actions.append(
-                    f"Approve the scene plot {path.name} before any shot text exists. Once the "
-                    f"author approves it, {ROOT / 'scripts' / 'scene_plot.py'} approve {path} "
-                    f"--by <name> records that."
-                )
-                break
+            if plot["ok"] and plot["approved"]:
+                approved.append(value)
+            elif plot["ok"] and waiting is None:
+                waiting = path
+        if waiting is not None:
+            actions.append(
+                f"Approve the scene plot {waiting.name} before any shot text exists. Once the "
+                f"author approves it, {ROOT / 'scripts' / 'scene_plot.py'} approve {waiting} "
+                f"--by <name> records that."
+            )
+    sheets = identity_sheet_action(project, approved, registry_roles(project))
+    if sheets:
+        actions.append(sheets)
+    actions.extend(shot_record_actions(project, approved))
 
     # `index["gaps"]` is one list of unlike findings: a file still carrying the
     # blank form, a persona document the narrative names and nobody wrote, and
@@ -297,8 +381,9 @@ def next_actions(project: Path) -> list[str]:
         count = placeholders(path.read_text(encoding="utf-8"))
         if count:
             actions.append(
-                f"Fill in the form: {path.relative_to(project).as_posix()} still carries "
-                f"{count} blank(s) nobody has filled"
+                f"Fill in the form as far as its use needs: {path.relative_to(project).as_posix()} "
+                f"still carries {count} blank(s); {ROOT / 'references' / 'scene-persona.md'} says how "
+                "much of a persona a scene needs"
             )
             break
     unreached = sorted(

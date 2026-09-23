@@ -29,10 +29,13 @@ Spec:
    "obligations": {"locks": [], "permanent_features": []},
    "output": {"dir", "basename", "suffix"}}
 
-`kind` is "shot" or "asset", and the gate refuses a submission that declares
-neither. A shot also carries the approved `scene_plot` it was written from, its
-own `shot_id`, the `narrative` above that plot, and the `characters` in it; an
-asset belongs to no scene and carries none of those. Everything the gate reads
+`kind` is "shot", "page", "passage" or "asset", and the gate refuses any
+other. A shot, page or passage also carries the approved `scene_plot` it was
+written from, its unit, the `narrative` above that plot, and the `characters`
+in it; an asset belongs to no scene and carries none of those. `model` and
+`operation` select the offering and the service operation, and
+`production_workflow.py build-inputs` adds `request_validation` and
+`input_snapshots`. Everything the gate reads
 is passed to it unchanged, so the run is refused or admitted on what the spec
 actually declares.
 
@@ -110,6 +113,33 @@ def gate_submission(spec: dict[str, Any]) -> dict[str, Any]:
     return submission
 
 
+def service_models(spec: dict[str, Any], profiles: Path) -> list[str]:
+    """The model identifiers the target's offerings record for the spec's service."""
+    profile = submission_gate.load_profile(str(spec.get("target") or ""), profiles)
+    return [str(offering.get('model_identifier')) for offering in (profile or {}).get('offerings', [])
+            if offering.get('service') == spec.get('service')]
+
+
+def dispatch_fields(spec: dict[str, Any], service: dict[str, Any], profiles: Path) -> None:
+    """Name each field a dispatch reads beyond the submission, with what fills it."""
+    problems = []
+    if spec.get('model') is None:
+        models = service_models(spec, profiles)
+        problems.append('"model", the model_identifier of the offering: '
+                        + (' or '.join(map(repr, models)) or f'no offering of {spec.get("target")!r} '
+                           f'on {spec.get("service")!r} records one'))
+    if spec.get('operation') is None:
+        operations = list(service.get('operations') or {})
+        problems.append('"operation", one the service record declares: '
+                        + (', '.join(map(repr, operations)) or 'it declares none'))
+    lacking = [name for name in ('request_validation', 'input_snapshots') if name not in spec]
+    if lacking:
+        problems.append(' and '.join(lacking) + ', which production_workflow.py build-inputs writes '
+                        'from the validation choices (examples/input-assembly/README.md)')
+    if problems:
+        raise ValueError('the spec lacks what a dispatch reads beyond the submission: ' + '; '.join(problems))
+
+
 def offering_for(spec: dict[str, Any], profiles: Path) -> dict[str, Any]:
     profile = submission_gate.load_profile(str(spec.get("target") or ""), profiles)
     if profile is None:
@@ -118,7 +148,10 @@ def offering_for(spec: dict[str, Any], profiles: Path) -> dict[str, Any]:
                if offering.get('service') == spec.get('service')
                and offering.get('model_identifier') == spec.get('model')]
     if len(matches) != 1:
-        raise ValueError('select one exact service and model identifier from the target profile')
+        models = service_models(spec, profiles)
+        raise ValueError(f'the spec names model {spec.get("model")!r} on service {spec.get("service")!r}; '
+                         f'the profile {profile.get("target_id")} records '
+                         + (' or '.join(map(repr, models)) or 'no offering on that service'))
     return matches[0]
 
 
@@ -181,8 +214,10 @@ def run(args: argparse.Namespace) -> int:
     service_id = str(spec.get("service") or report.get("service") or "")
     if not service_id:
         raise ValueError("the spec names no service, and the target profile does not supply one")
-    service, service_path = service_profile.load_service(service_id, args.service_profiles)
+    service, service_path = service_profile.load_service(service_id, args.service_profiles,
+                                                         flag="--service-profiles")
     transport = transport_contract.load(service)
+    dispatch_fields(spec, service, args.profiles)
 
     import production_dispatch
     import production_workflow

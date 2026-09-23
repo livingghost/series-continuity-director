@@ -264,6 +264,25 @@ def describe(text: str, data: dict) -> list[dict]:
     return out
 
 
+def text_form(rows: list[dict]) -> str:
+    """`prose` when most pieces are phrases longer than a tag, `tags` otherwise.
+
+    A tag is a few words between commas. A sentence split at its commas gives
+    pieces no vocabulary lists, so prose is read for the listed terms inside it.
+    """
+
+    phrases = sum(1 for row in rows if len(row["term"].split()) > 4)
+    return "prose" if rows and phrases * 2 > len(rows) else "tags"
+
+
+def terms_inside(rows: list[dict], data: dict) -> list[dict]:
+    """The listed terms found inside prose pieces, each once, with what it draws."""
+
+    found = list(dict.fromkeys(term for row in rows for term in row.get("contains") or []))
+    found += [row["term"] for row in rows if row["known"] and row["term"] not in found]
+    return [row for row in describe(", ".join(found), data) if row["known"]] if found else []
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Search or check against the prompt vocabulary")
     parser.add_argument("command", choices=["search", "check", "categories", "read"])
@@ -318,12 +337,25 @@ def main() -> int:
         if risky["fragile"] and risky["close_scale"]:
             notices.append("parts drawn badly at this scale: " + ", ".join(risky["fragile"])
                            + " at " + ", ".join(risky["close_scale"]))
+        forms = {"text": text_form(rows), "negative": text_form(negative_rows)}
         if args.json:
-            print(json.dumps({"text": rows, "negative": negative_rows, "notices": notices,
-                              "vocabulary": str(path)}, ensure_ascii=False, indent=2))
+            print(json.dumps({"text": rows, "negative": negative_rows, "forms": forms,
+                              "inside_prose": {label: terms_inside(block, data)
+                                               for label, block in (("text", rows), ("negative", negative_rows))
+                                               if forms[label] == "prose"},
+                              "notices": notices, "vocabulary": str(path)}, ensure_ascii=False, indent=2))
             return 0
         for label, block in (("text", rows), ("negative", negative_rows)):
             if not block:
+                continue
+            if forms[label] == "prose":
+                inside = terms_inside(block, data)
+                print(f"{label} (prose, {len(block)} phrases): the vocabulary lists "
+                      + (f"{len(inside)} term(s) found inside it" if inside else "no term found inside it"))
+                for row in inside:
+                    print("   " + row["term"])
+                    print("      [" + str(row["category"]) + "] " + str(row["description"]))
+                print()
                 continue
             print(label + " (" + str(len(block)) + " terms)")
             for row in block:

@@ -4,6 +4,8 @@
 
 Every JSON file under `state/` is a managed protocol artifact and must declare `artifact_type`. The ledger is the only format exception: each non-comment line in `events.jsonl` must be a `state-event` object. Keep unrelated notes or application configuration outside managed artifact directories.
 
+The requests the state commands read and do not seal carry no `artifact_type`: the world-state base, the scene-context request and each projection request. Keep them under `work/state-inputs/`. A scene context takes its scene's id, so the request's `scene_context_id` and the `--scene-context-id` given to `resolve-world` are the `scene_id` the scene's shots name.
+
 Every initialized project also contains these canonical state subdirectories:
 
 - `processes/` for approved progressive changes and their milestones;

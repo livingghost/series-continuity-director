@@ -639,6 +639,14 @@ def build_projection(
         raise ValueError("individual morphology contract belongs to another character")
     if request.get("character_id") != identity_contract.get("character_id"):
         raise ValueError("projection request character_id differs from identity contract")
+    # These are copied into the projection as they stand, and its schema holds
+    # each entry as an object, so the request is the place to name the shape.
+    for field in ("performance_cues", "relationship_blocking_cues", "environmental_body_responses",
+                  "reference_asset_requirements"):
+        items = request.get(field, [])
+        if not isinstance(items, list) or not all(isinstance(item, dict) for item in items):
+            raise ValueError(f'projection request {field} must be an array of objects, such as '
+                             f'[{{"cue": "shoulders drop as the parcel leaves his paws"}}]; got {items!r}')
 
     character_id = identity_contract["character_id"]
     if state_snapshot.get("character_id") != character_id or state_snapshot.get("identity_contract_sha256") != artifact_hash(identity_contract):

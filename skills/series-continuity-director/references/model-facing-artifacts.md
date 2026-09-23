@@ -239,8 +239,12 @@ How a reference image is generated belongs to whatever seals the visual-contract
 Order of work:
 
 1. Complete the reference sheet before any line is shot: one character per image, plain background, even
-   light, the framings the coverage needs, in the outfit the episode uses.
-2. Register each reference image, and record which of them holds the character's identity role.
+   light, the framings the coverage needs, in the outfit the episode uses. The agent drafts each sheet as an
+   `asset` submission with `--purpose sheet-panel` and one subject; it is text only unless an adopted image
+   already exists.
+2. Register each reference image, and record which of them holds the character's identity role. The author
+   adopts one image per character for the role `ID/identity`. The visual block refuses a frame that shows a
+   recurring character beside another subject until that character's adopted image is bound to it.
 3. Decide each shot's reference allocation before its text is written.
 4. On a canonical change, regenerate the sheet from the new identity, then the shots derived from it.
 

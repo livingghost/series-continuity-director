@@ -250,9 +250,9 @@ itself. What it can do is compare its own against the hash published here, of th
 endings normalised:
 
 ```text
-scripts/narrative.py           93361366ff298230222db8f76f94e5ecae4dbda84c25f29ae837e5214c284322
-scripts/scene_plot.py          d1eae95bcd27845c7158b60acb35b4203330f5c58381fcd74d09c24fb5e414d0
-scripts/narrative_corpus.json  9539d8351eb614127aedd74b00c9f34124d420e5873a8c7299da74cc9b4d030a
+scripts/narrative.py           f1e928c456353daf5ed810582750ee629759bbd1898470e72ee4f318750c0655
+scripts/scene_plot.py          0800f853d227a0352c098f6200c901c813f5fc7535b4b0b035ee2743f7100e2a
+scripts/narrative_corpus.json  f6991daea87e2c310df679c6c1e06c8b6ab8f0680045cadce72a5911767f979e
 ```
 
 An edit to a reader that does not travel with this document fails against it. That is the most a

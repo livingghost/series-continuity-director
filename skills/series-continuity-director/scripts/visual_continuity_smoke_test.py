@@ -31,7 +31,10 @@ class SubjectTests(unittest.TestCase):
     def test_recurring_needs_character(self):
         with self.assertRaises(ValueError):self.check(self.visual({'subject-a':self.subject('recurring')}))
     def test_multiple_recurring_needs_identity(self):
-        with self.assertRaises(ValueError):self.check(self.visual({'subject-a':self.subject('recurring','CHAR-A'),'subject-b':self.subject()}))
+        with self.assertRaises(ValueError) as caught:self.check(self.visual({'subject-a':self.subject('recurring','CHAR-A'),'subject-b':self.subject()}))
+        # The refusal names the sheet that comes first and the role it is adopted for.
+        self.assertIn('--kind asset --purpose sheet-panel --subject subject-a recurring CHAR-A',str(caught.exception))
+        self.assertIn('CHAR-A/identity',str(caught.exception))
     def test_one_off_pair(self):self.check(self.visual({'subject-a':self.subject(),'subject-b':self.subject()}))
     def test_sheet_is_one_subject(self):
         with self.assertRaises(ValueError):self.check(self.visual({'subject-a':self.subject(),'subject-b':self.subject()},'sheet-panel'))

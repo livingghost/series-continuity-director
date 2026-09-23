@@ -237,14 +237,20 @@ def main() -> int:
         if problem:
             errors.append(problem)
             continue
+        typed_root = relative.split("/")[0] in ARTIFACT_JSON_ROOTS
         if not isinstance(value, dict):
-            errors.append(f"{relative}: expected JSON object")
+            # Outside the typed roots a JSON file is the project's own working
+            # data, such as a list of reading applications, and only its syntax
+            # is checked.
+            if typed_root:
+                errors.append(f"{relative}: JSON under a managed artifact directory must be an object with artifact_type")
             continue
         artifact_type = value.get("artifact_type")
         if not artifact_type:
-            if relative.split("/")[0] in ARTIFACT_JSON_ROOTS:
+            if typed_root:
                 errors.append(
-                    f"{relative}: JSON under a managed artifact directory requires artifact_type"
+                    f"{relative}: JSON under a managed artifact directory requires artifact_type; "
+                    "keep command inputs such as state requests under work/"
                 )
             continue
         if artifact_type == "narrative":

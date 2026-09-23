@@ -207,11 +207,11 @@
     },
     {
       "schema": "viewpoint/scene-viewpoint-plan.schema.json",
-      "sha256": "df196bacc504353049f05bdef2c4755bbcb6e4494e9a609b7259a73fa228916f"
+      "sha256": "59f06d0812659ef6e3234a7fa5fa9f653e727c654405f52d0835aeb0159d7fcd"
     },
     {
       "schema": "viewpoint/shot-camera-spec.schema.json",
-      "sha256": "3c9a44ab15814451da5e4d787b4a8a9a6b90f22abc2cf71c6bada3694cbd1e83"
+      "sha256": "e9bbf6c56ec0755064f117472b8ff64f454671188ac22872a1d94bfee3df1467"
     },
     {
       "schema": "viewpoint/shot-continuity-ledger.schema.json",
@@ -231,7 +231,7 @@
     },
     {
       "schema": "viewpoint/viewpoint-transition.schema.json",
-      "sha256": "752fed4d55d6d59fa68eedd348ea327e5e58d615bef3e40cb7fd429262a1098c"
+      "sha256": "91db332609d7820c603a4b1cd10ef672f838822d501c35ef272a72f754f4e61d"
     }
   ],
   "artifacts": {
@@ -416,5 +416,5 @@
     "path": "protocols/semantics.md",
     "sha256": "c5b7cf3f0770e05f90f8c5f8f52f4994557e328c2c8590ad73b019082664d261"
   },
-  "contract_set_sha256": "5f26960f3b5b6cbc18805b836897e0d8d84cd169f38d01691c43cdb673d694f6"
+  "contract_set_sha256": "4afbf958e6294ae0b0a61a86b97e87538c976daa1255eb3f015f08c779fb3afe"
 }

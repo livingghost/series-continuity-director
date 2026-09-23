@@ -13,13 +13,13 @@ Use when required media, state, or target evidence is missing.
 5. Compose the needed views, durations, repetitions, omissions and sounds. Each has a purpose, but need not add a new event or differ in scale.
 6. Define the axis of action, screen direction, eyelines, prop ownership, contact, and state visibility.
 7. Add per-shot overrides and viewpoint transitions with concrete triggers and bridges.
-8. Create missing character, scene, prop, start, end, boundary, or reference media briefs.
-9. Write a shot-request per shot when visual state, visible morphology, camera angle, crop, contact, or reference needs differ. Carry species, individual, identity, and state hashes plus visible morphology feature refs.
+8. Create missing character, scene, prop, start, end, boundary, or reference media briefs. A frame that shows two or more recurring characters needs each one's identity sheet adopted first, as [model-facing-artifacts.md](model-facing-artifacts.md) section 12 orders it, so brief the sheets before the shared frames.
+9. Write a shot-request per shot when visual state, visible morphology, camera angle, crop, contact, or reference needs differ. Carry species, individual, identity, and state hashes plus visible morphology feature refs. `scripts/shot_chain.py` builds the state from a chain file and writes those hashes into the camera, shot projection and request.
 10. Stop before claiming inspection of media that does not exist.
 
 ## 2. Stage B: Inspect, direct, and rewrite for the target
 
-Use when the real media and target operation are inspectable.
+Use when the target operation is inspectable, with any real media the submission sends. A text-only submission, such as a first identity sheet, has no media to inspect and starts here once its brief exists.
 
 1. Register every submitted file with an immutable asset ID, content hash, and lineage.
 2. Inspect actual composition, identity, camera, state, props, contacts, light, and occlusions.

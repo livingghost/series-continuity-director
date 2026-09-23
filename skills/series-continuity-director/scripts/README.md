@@ -1,6 +1,6 @@
 # Command-line interface reference
 
-Commands require Python 3.11 or later. Exit code `0` indicates success; a nonzero code indicates an input, validation or write failure. Reports go to standard output as UTF-8. A command whose report a person also reads (`init_project.py`, `init_line.py`, `validate_project.py`, `dependencies.py`, `narrative.py`, `scene_plot.py`, `narrative_entity.py`, `submission_draft.py`, `visual_continuity.py`, `observe_schema.py`) prints readable text in a terminal and JSON when its output goes to a pipe or a file; `--json` prints JSON anywhere. The other commands print JSON, or text where their row says so. Each command's table below specifies its side effects.
+Commands require Python 3.11 or later. Exit code `0` indicates success; a nonzero code indicates an input, validation or write failure. Reports go to standard output as UTF-8. A command whose report a person also reads (`init_project.py`, `init_line.py`, `validate_project.py`, `dependencies.py`, `narrative.py`, `scene_plot.py`, `narrative_entity.py`, `submission_draft.py`, `visual_continuity.py`, `observe_schema.py`, `shot_chain.py`) prints readable text in a terminal and JSON when its output goes to a pipe or a file; `--json` prints JSON anywhere. The other commands print JSON, or text where their row says so. Each command's table below specifies its side effects.
 
 Examples use `python scripts/<name>.py` from the directory containing `SKILL.md`. For the plugin layout, that directory is `skills/series-continuity-director/`. Maintainer examples use the full script path from the directory containing `package-manifest.toml`.
 
@@ -22,7 +22,7 @@ A path a command records, such as a scene plot or an input a submission names, i
 | `init_line.py` | Existing `--project`, new `--line` | Creates the five media stages of one production line under `media/episodes/<line>/` (an episode, or a second cut of one in another register) | Rejects a directory that is not a project or is inside the installed suite, an invalid line id, or a line that already exists |
 | `service_profile.py` | `<service-id>` `[--profiles <file>] [--json]` | Resolves how a service is called (endpoint, auth shape, envelope, operations, delivery, errors, limits) from an explicitly supplied `service-profiles` record and prints its transport, network deadline and observation date | Exits when no record can be found, the service is not in it, or the record names no valid transport |
 | `observe_schema.py` | `schema`, `reference` or `attach-probe`, each with `--root PROJECT --profile FILE --service SERVICE --model ID --operation OPERATION --out-dir DIR`; `schema` and `reference` add `--acquisition FILE`, and `schema` takes optional `--profiles DIR` | Publishes a new evidence directory in the project and leaves the selected profile unchanged. With `--profiles DIR`, `schema` also writes the project's copy of the profile into DIR, its offering pointing at the published schema, for `submission_gate.py --profiles DIR` | Exits when the profile or offering is missing, the evidence directory exists, or DIR is outside the project or inside an installed suite |
-| `vocabulary.py` | `search <query>` `[--category] [--limit]`, `read <file or ->` `[--negative <file>]`, `check <file or ->`, `categories` `[--vocabulary <file>] [--json]` | `search` finds a term while a text is being written; `read` walks a finished text term by term and prints what the vocabulary says each one draws, marks the terms it does not know, and ends with the notices (a weight on an unknown term, a term in both fields, a property named twice, terms that cannot both hold, a fragile part asked for at close scale); `check` lists only the unknown tags | Exits when the vocabulary cannot be resolved |
+| `vocabulary.py` | `search <query>` `[--category] [--limit]`, `read <file or ->` `[--negative <file>]`, `check <file or ->`, `categories` `[--vocabulary <file>] [--json]` | `search` finds a term while a text is being written; `read` walks a finished tag text term by term and prints what the vocabulary says each one draws, marks the terms it does not know, lists for a prose text only the listed terms found inside it, and ends with the notices (a weight on an unknown term, a term in both fields, a property named twice, terms that cannot both hold, a fragile part asked for at close scale); `check` lists only the unknown tags | Exits when the vocabulary cannot be resolved |
 | `dispatch.py` | `<spec.json>` `[--send] [--poll] [--service-profiles <file>] [--profiles <dir>] [--root <dir>]` | Runs the gate on a dispatch spec, builds the exact request the named service accepts, prints it and sends nothing; with `--send` it registers the spec's files, sends, saves what came back and writes a run record | Stops on a gate refusal, on a service refusal, when no service record exists, when the record names no valid transport, when the endpoint is not https, when no network deadline is configured, or when the credential is not in the environment |
 | `transport_contract.py` | (module) | The transport interface every service implements: the required functions, the outcomes accepted, refused and unknown, and the network rules (no redirect followed, https only, a deadline on every wait). `load` resolves the transport a service record names and `check` refuses a module missing a function, both before anything is claimed | |
 | `transport_runware.py` | (module) | One implementation of `transport_contract.py`, for Runware: which keys a task carries, how a file is registered, how a refusal and a result are read, how a pending task is polled. Any other service is supported by its own `transport_<name>.py` against the same contract, named by the service record's `transport` | |
@@ -67,6 +67,14 @@ python scripts/scene_plot.py behind --project PROJECT
 ### Prepare a submission
 
 Write the submission with `submission_draft.py new` (see Submission gate) and supply the selected service's configuration before using these commands. Inspect the printed request and gate findings. Sending is a separate decision requiring confirmation of that exact request.
+
+A gate-admitted submission becomes a dispatch spec with four more fields:
+
+- `model`: the `model_identifier` of the target's offering on the named service.
+- `operation`: an operation the service record declares.
+- `request_validation` and `input_snapshots`: `production_workflow.py build-inputs` writes both from the validation choices, as [`examples/input-assembly/README.md`](../examples/input-assembly/README.md) shows.
+
+The dry run names each missing field and the values that fill it.
 
 ```text
 python scripts/service_profile.py SERVICE --profiles PROJECT/service-profiles.json
@@ -132,7 +140,7 @@ refuses each one as `placeholder not filled: FIELD` until it is filled.
 
 | Command | Inputs | Output and side effects | Failure boundary |
 |---|---|---|---|
-| `submission_draft.py new` | `--project`, `--out`, `--kind`, `--target`; `--scene-plot`, `--unit` and optional `--panel` for a scene-linked kind; optional `--text-file`, `--input ROLE PATH [MODE]` or `--no-inputs`, `--character`, `--narrative`, `--service`, `--submission-id`, `--reading-key` with `--applied`, or `--route-reading`, and the choices `visual_continuity.py build` takes | Writes one new submission, fills `scene_id` from the plot, and prints the placeholders left and the gate command | Refuses a unit the approved plot does not declare and names the ones it does, a target no profile records, a mode or service the profile does not record, a character the scene does not contain, an existing file, and a path under `state/`, `shots/` or `narrative/` |
+| `submission_draft.py new` | `--project`, `--out`, `--kind`, `--target`; `--scene-plot`, `--unit` and optional `--panel` for a scene-linked kind; optional `--text-file`, `--input ROLE PATH [MODE]` or `--no-inputs`, `--parameter NAME VALUE` per request setting, `--character`, `--narrative`, `--service`, `--submission-id`, `--reading-key` with `--applied`, or `--route-reading`, and the choices `visual_continuity.py build` takes | Writes one new submission, fills `scene_id` from the plot, and prints the placeholders left and the gate command | Refuses a unit the approved plot does not declare and names the ones it does, a target no profile records, a mode or service the profile does not record, a character the scene does not contain, an existing file, and a path under `state/`, `shots/` or `narrative/` |
 | `submission_draft.py reading SUBMISSION --project PROJECT` | `--reading-key KEY` with optional `--applied FILE`, or `--route-reading FILE` | Replaces `route_reading` in the submission. With a key alone, `applied` becomes a placeholder naming each document that needs a quotation | Refuses a key issued for another route, and applications the reading contract refuses |
 | `visual_continuity.py build SUBMISSION --root PROJECT` | `--basis PATH` and `--basis-locator TEXT`, one `--subject SUBJECT_ID CONTINUITY [CHARACTER_ID]` per depicted subject, `--shot-camera` and `--shot-request` for a shot, optional `--reference-activation` and `--purpose`; or `--choices FILE` with the block fields, for identity references | Prints the block and its hash; `--write` replaces both in the submission | Refuses a missing or changed file, a camera or request of another shot, subjects that differ from the camera's visible subjects, and an identity reference without its adoption |
 | `visual_continuity.py verify SUBMISSION --root PROJECT` | A submission carrying the block | Report on stdout; no writes | Refuses a missing block, a block changed after it was built, and anything `build` refuses |
@@ -244,12 +252,48 @@ The suite ships `assets/resources/prompt-vocabulary.json`, deterministically ext
 | `propose-environment-adaptations` | Character state schema and environment snapshot | Writes a sealed proposal | Invalid input contract or unresolved adaptation condition |
 | `select-references` | Binding collection, identity and optional state contracts, story order | Writes sealed reference selection | Wrong artifact type, invalid binding, story-range mismatch, or unresolved required feature |
 
+The world-state base, the scene-context request and the projection requests are inputs without an `artifact_type`, kept under `work/state-inputs/`. A scene context takes its scene's id: `--scene-context-id` and the request's `scene_context_id` equal the `scene_id` of the shots, which `shot_request.py` checks.
+
 Character State Schema currently enforces declared path, value type, and allowed persistence. Nonempty `state_machines` are rejected until the protocol defines explicit path and event-trigger bindings.
 
 Example world resolution:
 
 ```text
-python scripts/state_protocol.py resolve-world --base-state PROJECT/world-base.json --events PROJECT/state/events.jsonl --character-state-schema PROJECT/state/character-C01.schema.json --timeline main --scene-context-id SCENE-20 --story-order 20 --story-time story:20 --snapshot-id WORLD-main-20 --out PROJECT/state/snapshots/world-20.json
+python scripts/state_protocol.py resolve-world --base-state PROJECT/work/state-inputs/world-base.json --events PROJECT/state/events.jsonl --character-state-schema PROJECT/state/character-C01.schema.json --timeline main --scene-context-id SC01 --story-order 20 --story-time story:20 --snapshot-id WORLD-main-20 --out PROJECT/state/snapshots/world-20.json
+```
+
+### Build a shot's state chain
+
+`shot_chain.py CHAIN --project PROJECT` runs the chain above for the shots of one approved scene plot and binds each shot's records to it. The chain file names what the author wrote:
+
+- `scene_plot`, `timeline_id`, `story_order`, `story_time`, `world_base`, `scene_context_request`, and optionally `events` (default `state/events.jsonl`) and `processes`;
+- `characters`: per character, its `species_profile`, `individual_morphology`, `identity_contract` and `state_schema`;
+- `shots`: per shot the plot declares, its `camera`, `projection` and `request`, and `character_projections` naming one projection request per character the shot shows.
+
+It resolves the world with the scene's id as the scene context, extracts each character, builds the scene context and each projection, writes them under `state/`, fills every hash the camera, shot projection and request bind, seals the three, and runs the complete binding check. The report lists each file written and whether each shot is complete. It refuses a plot that is not approved or not realized as shots, a shot or character the plot does not declare, a scene-context request named for another scene, and a camera placed at another scene or shot.
+
+`shot_chain_smoke_test.py` builds a two-character shot's chain from the worked example's sources, runs it twice to the same bytes, and refuses a chain that disagrees with its plot, its scene or its camera.
+
+```text
+python scripts/shot_chain.py work/state-inputs/SC01.chain.json --project PROJECT
+```
+
+A synthetic chain file, trimmed to one character:
+
+```json
+{
+  "scene_plot": "narrative/scenes/SC01-plot.json",
+  "timeline_id": "main", "story_order": 110, "story_time": "story:110",
+  "world_base": "work/state-inputs/world-base.json",
+  "scene_context_request": "work/state-inputs/SC01.context-request.json",
+  "characters": {"C01": {"species_profile": "state/contracts/species-fox.json",
+                         "individual_morphology": "state/contracts/individual-C01.json",
+                         "identity_contract": "state/contracts/identity-C01.json",
+                         "state_schema": "state/contracts/state-schema-C01.json"}},
+  "shots": {"SH01": {"camera": "shots/SC01/SH01.camera.json", "projection": "shots/SC01/SH01.projection.json",
+                     "request": "shots/SC01/SH01.request.json",
+                     "character_projections": {"C01": "work/state-inputs/SH01-C01.projection-request.json"}}}
+}
 ```
 
 `select_state_references.py` is a convenience entry point for the same reference selection operation. It validates identity, era, appearance, and state artifacts before hashing them. `issue_adoption_receipt.py` validates a Candidate Manifest plus an explicit decision JSON and writes a separate sealed Adoption Receipt; it never edits the Candidate Manifest.
@@ -343,7 +387,7 @@ python scripts/reference_activation_gate.py PROJECT/handoff/SH04.activation.json
 | `validate_viewpoint_protocol.py` | Read-only protocol and fixture validation. |
 | `validate_integration.py` | Read-only bundled declarations and explicitly supplied public payload validation. |
 | `refusal_coverage.py <reader> <suite>...` | Read-only. Lists every refusal a reader can make that no case in the named suites asserts a fragment of. A refusal nothing names can be deleted with every suite still green, which is the one failure a suite cannot report about itself. `validate_skill.py` runs it over `narrative.py` and `scene_plot.py`. |
-| `seal_contract.py [--check]` | Seals `protocols/narrative/README.md` against the files it publishes: writes the digest of the prose into `narrative.py`, then republishes the hash of every file the contract's block lists. Run it after editing the contract, a published reader, or the corpus; `--check` says whether sealing would move anything and writes nothing. |
+| `seal_contract.py [--check]` | Seals `protocols/narrative/README.md` against the files it publishes: writes the digest of the prose into `narrative.py`, then republishes the hash of every file the contract's block lists. Also rewrites `protocols/contract-manifest.json` with the byte hash of each registered schema and of the semantics document, and the digest of the set. Run it after editing the contract, a published reader, the corpus or a public schema; `--check` says whether sealing would move anything and writes nothing. |
 | `narrative_corpus.py [--check]` | Writes `narrative_corpus.json`: the documents in the case tables of the narrative and scene plot suites, each with the verdict the contract requires of it, so that an implementation elsewhere is checked against the verdicts and not against a resemblance to the readers. `--check` refuses a corpus that is not what those tables write, or a verdict in it the readers here do not reach. `validate_skill.py` runs the check. |
 | `validate_test_cases.py` | Executes and classifies the numbered regression catalog. |
 | `validate_knowledge_integrity.py` | Read-only knowledge and template integrity validation. |

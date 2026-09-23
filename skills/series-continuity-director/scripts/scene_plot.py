@@ -489,8 +489,10 @@ def _realization(value: Any, beats: dict[str, str], errors: list[str],
         if extra:
             errors.append(f"{label} has keys {kind!r} does not have: {extra}")
         unit_id = unit.get("id")
-        if not isinstance(unit_id, str) or not unit_id.strip():
-            errors.append(f"{label}.id must be a non-empty string")
+        if not isinstance(unit_id, str) or not LOCATION_ID.fullmatch(unit_id):
+            # A shot's id is also the shot_id of its camera and request.
+            errors.append(f"{label}.id must be an id, letters, digits and . _ - starting with a "
+                          f"letter or digit, got {unit_id!r}")
         elif unit_id in ids:
             errors.append(f"{label}.id repeats {unit_id!r}")
         else:
@@ -622,6 +624,9 @@ def validate_scene_plot(value: Any) -> dict[str, Any]:
     if value.get("artifact_type") != ARTIFACT_TYPE:
         errors.append(f"artifact_type must be {ARTIFACT_TYPE!r}, got {value.get('artifact_type')!r}")
     report["scene_id"] = _text(value.get("scene_id"), "scene_id", errors)
+    if report["scene_id"] and not SCENE_ID.fullmatch(report["scene_id"]):
+        errors.append(f"scene_id must be an id, letters, digits and . _ - starting with a letter or "
+                      f"digit, got {report['scene_id']!r}")
     report["chapter"] = _text(value.get("chapter"), "chapter", errors)
     # Which narrative this was approved against. A change above invalidates what
     # was approved below it, and without this nothing could tell which version

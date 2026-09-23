@@ -117,6 +117,20 @@ def input_modes(profile: dict[str, Any]) -> list[str]:
             if isinstance(mode, dict) and isinstance(mode.get("mode"), str)]
 
 
+def parameters(entries: list[list[str]]) -> dict[str, Any]:
+    """The request settings the arguments state, each value read as JSON when it parses."""
+
+    settings: dict[str, Any] = {}
+    for name, raw in entries:
+        if name in settings:
+            raise ValueError(f"--parameter {name} is given twice")
+        try:
+            settings[name] = json.loads(raw)
+        except ValueError:
+            settings[name] = raw
+    return settings
+
+
 def draft(args: argparse.Namespace) -> dict[str, Any]:
     root = Path(args.project)
     if not root.is_dir():
@@ -208,6 +222,8 @@ def draft(args: argparse.Namespace) -> dict[str, Any]:
         submission["inputs"] = gate.placeholder(
             'a list of the files sent with the text, each {"role", "path", "mode"}, or [] for text only; '
             "mode is one the profile records: " + (", ".join(modes) or "none") + keys)
+    if args.parameter:
+        submission["parameters"] = parameters(args.parameter)
     submission["obligations"] = {
         "locks": gate.placeholder(
             "a list of the lock surfaces this frame shows, copied verbatim from the approved sheet, or []"),
@@ -299,6 +315,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="ROLE PATH [MODE], once per file sent with the text; MODE is an input mode "
                              "the target profile records")
     inputs.add_argument("--no-inputs", action="store_true", help="Send the text alone")
+    new.add_argument("--parameter", action="append", nargs=2, metavar=("NAME", "VALUE"),
+                     help="A request setting, such as width 1024, once per setting. VALUE is read as JSON "
+                          "when it parses and as text otherwise; the gate checks each against the offering")
     new.add_argument("--narrative", metavar="PATH",
                      help=f"Project-relative narrative. Defaults to {CANONICAL_FILES['narrative']} when present")
     new.add_argument("--character", action="append", metavar="ID", help="A character this submission depicts")

@@ -56,12 +56,14 @@ def oldest_observation(value) -> str | None:
     return min(dates) if dates else None
 
 
-def load_service(service: str, explicit: str | None = None) -> tuple[dict, Path]:
+def load_service(service: str, explicit: str | None = None, *, flag: str = "--profiles") -> tuple[dict, Path]:
+    """The record of one service, from the file `flag` names or the configured resource."""
     path = resolve_path(explicit)
     if path is None or not path.is_file():
         raise ValueError(
-            "service profiles not found: pass --profiles, set SERVICE_PROFILES_PATH, "
-            "or declare service-profiles in the SERIES_RESOURCES configuration"
+            f"service profiles not found: pass {flag} FILE, set SERVICE_PROFILES_PATH, "
+            "or declare service-profiles in the SERIES_RESOURCES configuration; "
+            "assets/project-templates/service-profiles.template.json is the shape to fill"
         )
     data = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict) or not isinstance(data.get("services"), dict):

@@ -54,7 +54,21 @@ class PreviewTests(unittest.TestCase):
         self.assertFalse((self.root/'decision.json').exists())
     def test_target_model_selection_is_exact(self):
         self.prepare();value=dict(self.spec,model='wrong-model')
-        with self.assertRaises(ValueError):dispatch.offering_for(value,self.profiles)
+        with self.assertRaises(ValueError) as caught:dispatch.offering_for(value,self.profiles)
+        self.assertIn(repr(self.spec['model']),str(caught.exception))
+    def test_missing_dispatch_fields_are_named_with_their_values(self):
+        self.prepare()
+        value={k:v for k,v in self.spec.items() if k not in ('model','operation','request_validation','input_snapshots')}
+        with self.assertRaises(ValueError) as caught:dispatch.dispatch_fields(value,self.service,self.profiles)
+        message=str(caught.exception)
+        self.assertIn(repr(self.spec['model']),message);self.assertIn(repr(self.spec['operation']),message)
+        self.assertIn('production_workflow.py build-inputs',message)
+    def test_missing_service_data_names_the_dispatch_flag(self):
+        with patch.dict(os.environ):
+            os.environ.pop('SERVICE_PROFILES_PATH',None);os.environ.pop('SERIES_RESOURCES',None)
+            with self.assertRaises(ValueError) as caught:
+                service_profile.load_service('synthetic',None,flag='--service-profiles')
+        self.assertIn('pass --service-profiles FILE',str(caught.exception))
     def test_expected_failure_prints_one_error(self):
         result,out,err=self.main([str(self.root/'absent-spec.json')])
         self.assertEqual(result,1);self.assertEqual(out,'')

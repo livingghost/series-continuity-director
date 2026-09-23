@@ -16,7 +16,7 @@ SCRIPTS = Path(__file__).resolve().parent
 # Commands whose report a person runs directly; each takes --json.
 COMMANDS = ("init_project.py", "init_line.py", "validate_project.py", "dependencies.py", "narrative.py",
             "scene_plot.py", "narrative_entity.py add", "submission_draft.py new", "visual_continuity.py build",
-            "observe_schema.py schema")
+            "observe_schema.py schema", "shot_chain.py")
 REPORT = {"ok": False, "errors": ["names chapter 'ch01'; did you mean 'ch1'?"], "warnings": [],
           "project": "fixture", "plots": [{"plot": "sc01", "approved": True}],
           "next": [{"run": "python scripts/session_entry_points.py --project fixture --next",

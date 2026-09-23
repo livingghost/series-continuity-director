@@ -37,6 +37,14 @@ class ProjectWorkflow(unittest.TestCase):
         return subprocess.run([sys.executable,str(ROOT/'scripts'/script),*map(str,args)],cwd=self.root,env=os.environ.copy(),capture_output=True,encoding='utf-8',timeout=30)
     def test_bundled_vocabulary_without_user_state(self):
         data,path=vocabulary.load();self.assertEqual(path,ROOT/'assets/resources/prompt-vocabulary.json');self.assertIn('close-up',vocabulary.index(data))
+    def test_prose_is_read_for_the_terms_inside_it(self):
+        data,_=vocabulary.load()
+        prose=('A wide shot at eye level from across the wet lane, the courier small at frame left and walking '
+               'toward the lit stall, lanterns strung overhead and receding into the rain beyond the awning.')
+        rows=vocabulary.describe(prose,data)
+        self.assertEqual(vocabulary.text_form(rows),'prose')
+        self.assertIn('eye level',[row['term'] for row in vocabulary.terms_inside(rows,data)])
+        self.assertEqual(vocabulary.text_form(vocabulary.describe('close-up, eye level, rain',data)),'tags')
     def test_vocabulary_source_is_reproducible(self):
         self.assertEqual(build_resources.build(),json.loads((ROOT/build_resources.OUTPUT).read_text()))
     def test_explicit_resource_file(self):
@@ -110,6 +118,30 @@ class ProjectWorkflow(unittest.TestCase):
         self.assertNotEqual(result.returncode,0);self.assertIn('inside the installed suite',result.stderr);self.assertFalse(inside.exists())
         result=self.command('init_line.py','--project',ROOT,'--line','E01')
         self.assertNotEqual(result.returncode,0);self.assertIn('inside the installed suite',result.stderr);self.assertFalse((ROOT/'media').exists())
+    def test_next_asks_for_the_story_before_its_approval(self):
+        import session_entry_points as entry
+        project,_=self.init()
+        actions=entry.next_actions(project)
+        self.assertTrue(actions[0].startswith('Write what the series is about'),actions)
+        self.assertFalse(any(action.startswith('Approve the narrative') for action in actions))
+    def test_next_names_identity_sheets_and_shot_records(self):
+        import session_entry_points as entry
+        project,_=self.init()
+        plot={'scene_id':'SC01','characters':['C01','C02'],'realization':{'kind':'shots','units':[{'id':'SH01'},{'id':'SH02'}]}}
+        sheets=entry.identity_sheet_action(project,[plot],{'C01/identity':['accepted']})
+        self.assertIn('identity sheet of C02 before',sheets);self.assertIn('--subject C02 recurring C02',sheets)
+        self.assertIsNone(entry.identity_sheet_action(project,[dict(plot,characters=['C01'])],{}))
+        (project/'shots'/'SC01').mkdir(parents=True,exist_ok=True)
+        (project/'shots'/'SC01'/'SH01.camera.json').write_text(json.dumps({'artifact_type':'shot-camera-spec','scene_id':'SC01','shot_id':'SH01'}))
+        actions=entry.shot_record_actions(project,[plot])
+        self.assertIn('Place the camera for SC01 SH02',actions[0]);self.assertIn('Write the shot request for SC01 SH01',actions[1])
+    def test_line_keeps_the_id_as_given(self):
+        project,_=self.init()
+        result=self.command('init_line.py','--project',project,'--line','E01','--json')
+        self.assertEqual(result.returncode,0,result.stderr)
+        report=json.loads(result.stdout)
+        self.assertEqual(report['line'],'E01')
+        self.assertIn('media/episodes/E01/prompts',report['created'])
     def test_concurrent_steps_all_land(self):
         # Two sessions marking steps at once both land: every writer holds the
         # project lock and replaces the open task in one step.

@@ -1242,13 +1242,13 @@ Use when required media, state, or target evidence is missing.
 5. Compose the needed views, durations, repetitions, omissions and sounds. Each has a purpose, but need not add a new event or differ in scale.
 6. Define the axis of action, screen direction, eyelines, prop ownership, contact, and state visibility.
 7. Add per-shot overrides and viewpoint transitions with concrete triggers and bridges.
-8. Create missing character, scene, prop, start, end, boundary, or reference media briefs.
-9. Write a shot-request per shot when visual state, visible morphology, camera angle, crop, contact, or reference needs differ. Carry species, individual, identity, and state hashes plus visible morphology feature refs.
+8. Create missing character, scene, prop, start, end, boundary, or reference media briefs. A frame that shows two or more recurring characters needs each one's identity sheet adopted first, as [model-facing-artifacts.md](#model-facing-artifacts-and-requirement-transfer) section 12 orders it, so brief the sheets before the shared frames.
+9. Write a shot-request per shot when visual state, visible morphology, camera angle, crop, contact, or reference needs differ. Carry species, individual, identity, and state hashes plus visible morphology feature refs. `scripts/shot_chain.py` builds the state from a chain file and writes those hashes into the camera, shot projection and request.
 10. Stop before claiming inspection of media that does not exist.
 
 ## 2. Stage B: Inspect, direct, and rewrite for the target
 
-Use when the real media and target operation are inspectable.
+Use when the target operation is inspectable, with any real media the submission sends. A text-only submission, such as a first identity sheet, has no media to inspect and starts here once its brief exists.
 
 1. Register every submitted file with an immutable asset ID, content hash, and lineage.
 2. Inspect actual composition, identity, camera, state, props, contacts, light, and occlusions.
@@ -5168,7 +5168,7 @@ argued with, revised, or retired.
 | `SUB-15` | A submission says what it is, and one that depicts part of a scene depicts a unit its approved scene plot declares. | A scene proposition and a blocking table say what happens and where people stand; neither records which beat put a given thing in a given frame, and neither is agreed before the text exists. Without that stop the first thing anyone sees is a finished submission, and every correction after it is made one unit at a time. `kind` is `shot`, `page` or `passage` for a submission that depicts part of a scene, and `asset` for a reference, a sheet panel, a plate or a probe; any other kind is refused as `SUBMISSION_KIND_UNDECLARED`. A scene-linked submission names its `scene_plot`, its `scene_id` and its unit: `shot_id` for a shot, `page_id` and optionally a `panel` of that page for a page, and `passage_id` for the passage an image illustrates. A plot that is absent, outside the project, unreadable, invalid, unapproved, edited after its approval, or behind its narrative is refused. A unit the plot does not declare, a kind its realization does not have, and a panel beyond the page's declared count are refused as `UNIT_NOT_IN_SCENE_PLOT`, and the refusal lists what the plot declares. A character the submission depicts, in `characters` or in its visual subjects, whom the scene does not contain is refused. A field naming the unit of another kind is refused as `FIELD_OF_ANOTHER_KIND`. An asset belongs to no scene, so the plot rules do not apply to it; an asset naming a scene plot, a scene or a unit is refused the same way, and one that does not is admitted with the skipped rules reported as unmeasured. |
 | `SUB-16` | The text a model receives does not break what its characters are declared never to do. | Lock surfaces and permanent features are about what the frame shows; a persona also declares what a person would never say or do, and a gate that reads only the visual obligations admits a line in which a guarded character accounts for himself. The submission names its `narrative` and the `characters` present. A `surface` prohibition names a phrase and is refused when the text carries it; a `judgement` prohibition names a behaviour, which no string search settles, and is reported with the text rather than passed in silence. A narrative outside the project, unreadable or invalid, or a character the narrative does not carry, is refused. |
 | `SUB-17` | The submission carries a current reading of the media route. | A text written without the procedure it depends on. The record names the documents as they stand now and the key issued when they were read, and quotes each document the route requires. A missing, stale or unquoted reading is refused as `ROUTE_READING_INVALID`. |
-| `SUB-18` | The submission's visual continuity block binds what it depicts to current bytes. | A subject chosen from memory, or a reference that is not the adopted one. The block names each depicted subject and its continuity, the document that decides them, any identity reference with its adoption, and for a shot the camera and request of that shot. A missing block, a block changed after it was built, and a file whose bytes changed are refused as `VISUAL_CONTINUITY_INVALID`. |
+| `SUB-18` | The submission's visual continuity block binds what it depicts to current bytes. | A subject chosen from memory, or a reference that is not the adopted one. The block names each depicted subject and its continuity, the document that decides them, any identity reference with its adoption, and for a shot the camera and request of that shot. A missing block, a block changed after it was built, and a file whose bytes changed are refused as `VISUAL_CONTINUITY_INVALID`. So is a recurring subject shown with another subject and bound to no adopted identity image: two characters in one frame divide the reference limit, so each arrives with an image already adopted for its `ID/identity` role. An `undecided` subject is generated alone. |
 
 The kind decides which rules apply:
 
@@ -5813,8 +5813,12 @@ How a reference image is generated belongs to whatever seals the visual-contract
 Order of work:
 
 1. Complete the reference sheet before any line is shot: one character per image, plain background, even
-   light, the framings the coverage needs, in the outfit the episode uses.
-2. Register each reference image, and record which of them holds the character's identity role.
+   light, the framings the coverage needs, in the outfit the episode uses. The agent drafts each sheet as an
+   `asset` submission with `--purpose sheet-panel` and one subject; it is text only unless an adopted image
+   already exists.
+2. Register each reference image, and record which of them holds the character's identity role. The author
+   adopts one image per character for the role `ID/identity`. The visual block refuses a frame that shows a
+   recurring character beside another subject until that character's adopted image is bound to it.
 3. Decide each shot's reference allocation before its text is written.
 4. On a canonical change, regenerate the sheet from the new identity, then the shots derived from it.
 

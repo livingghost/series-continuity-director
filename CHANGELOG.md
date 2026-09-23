@@ -1,6 +1,6 @@
 # Changelog
 
-## [2026.09.23.5] - 2026-09-23
+## [2026.09.23.6] - 2026-09-23
 
 Initial release.
 
@@ -32,3 +32,8 @@ Initial release.
 - Count a media dependency as present only when its smallest operation runs, print the command that installs each missing one, and run those commands with `--install` once the user confirms. Python packages go through the running Python's installer, pip or uv, or into a virtual environment with `--venv` where the system manages that Python; FFmpeg comes from the platform's package manager. Each media version is written once, in `requirements-media.txt`, so a dependency update needs no second edit. The media scope requires Pillow 12.3.0, defusedxml 0.7.1 and tinycss2 1.5.1 or later within their major versions.
 - Load a SKILL.md under the specification's 5,000-token cap: the stage checklists, the project files and the command details live in the references and `scripts/README.md`, which the routing table names, and validation refuses a body over the cap.
 - Validate with one aggregate check that runs its commands concurrently and names each one as it finishes; CI runs every check once per platform and publishes a release only from a commit on main whose CI succeeded.
+- Build a shot's state from one chain file with `shot_chain.py`: the world at the story point with the scene's id as the scene context, each character's state, the scene context and each projection, then every hash the camera, shot projection and request bind, each sealed and checked complete.
+- Show two recurring characters in one frame once each has an image adopted for its `ID/identity` role. The refusal names the single-subject sheet that comes first, and `session_entry_points.py --next` lists what a series still lacks in order: its story, the identity sheets, the camera of the next shot and that shot's request.
+- Name scenes, shots and transitions with one id shape across scene plots, cameras, requests and state, and open a production line under its id as given.
+- Draft request settings with `submission_draft.py new --parameter NAME VALUE`. The dispatch dry run names each field a send reads beyond the submission, with the values that fill it. `vocabulary.py read` reads a prose text for the listed terms inside it.
+- Keep a project's working inputs, such as reading applications and state requests, under `work/`, where validation checks only their syntax. `seal_contract.py` also seals the public contract manifest after a schema changes.

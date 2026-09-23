@@ -88,7 +88,14 @@ def validate_content(value: Any, *, kind: str) -> None:
         if item['continuity'] == 'recurring' and item['character_id'] is None: raise ValueError(ident + ': a recurring subject needs its character ID')
         if not isinstance(item['identity_refs'], list): raise ValueError(ident + ': identity_refs must be an array')
         if count > 1 and item['continuity'] == 'recurring' and not item['identity_refs']:
-            raise ValueError(ident + ': select an adopted identity before a multiple-subject generation')
+            character = item['character_id'] or ident
+            raise ValueError(
+                f'{ident}: a recurring subject shown with another subject needs an adopted identity image '
+                f'in identity_refs. Make the identity sheet first: a single-subject asset submission '
+                f'(submission_draft.py new --kind asset --purpose sheet-panel --subject {ident} recurring {character}), '
+                f'one returned image adopted for the role {character}/identity '
+                '(references/production-execution.md section 4), then --choices FILE naming it; '
+                'references/prompt-composition.md SUB-18 states the rule')
         seen = set()
         for ref in item['identity_refs']:
             c.exact(ref, {'registry','file','activation_reference','adoption'}, 'identity selector')

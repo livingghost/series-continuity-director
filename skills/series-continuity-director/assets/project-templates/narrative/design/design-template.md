@@ -77,17 +77,6 @@ unexamined drafts, not adopted defaults. Declared statuses are author records, n
 - **review_basis**:
   <!-- Inspected sources and span, examples, counterexamples, actual findings and remaining uncertainty. Early drafting may explicitly defer the review. -->
 
-## Reusable principle bindings
-
-Optional aid, not a required personality classification. Read complete relevant records in the
-installed `references/portrayal-principles.json` before selecting a pattern. The governing intent
-owns adoption; this table records the application, not a duplicate status or rule. Do not infer a
-species, gender, age, backstory, genre or emotion from a pattern. Empty unused rows may be removed.
-
-| Principle ID | Governing intent ID | Why it applies here | Local interpretation and non-applicability | Owning persona/world rule and review |
-|---|---|---|---|---|
-| | | | | |
-
 ## World interfaces
 
 - **world_authorities**:

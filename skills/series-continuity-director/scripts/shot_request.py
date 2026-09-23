@@ -184,7 +184,11 @@ def validate_bundle(
         context = load_json(scene_context) if scene_context else None
         if context is not None:
             if context["scene_context_id"] != request["scene_id"]:
-                errors.append("request scene_id differs from scene context")
+                errors.append(
+                    f"the request names scene_id {request['scene_id']!r} and the scene context "
+                    f"{scene_context.name} is {context['scene_context_id']!r}; a scene context "
+                    "takes the scene's id, so build it with --scene-context-id "
+                    f"{request['scene_id']} and scene_context_id {request['scene_id']!r} in its request")
             active = {x["character_id"]: x for x in context["active_character_snapshots"]}
             for cid, expected in state_map.items():
                 if cid not in active or active[cid]["state_snapshot_sha256"] != expected:
@@ -198,14 +202,21 @@ def validate_bundle(
                 continue
             value = load_json(path)
             for field in ("scene_id", "shot_id", "viewpoint_profile_id"):
-                if value[field] != request[field]:
-                    errors.append(f"{label} {field} differs from request")
-            if value["state_snapshot_sha256_by_character"] != state_map:
-                errors.append(f"{label} state bindings differ from request")
+                if value.get(field) != request.get(field):
+                    errors.append(f"{label} {path.name} names {field} {value.get(field)!r} and the "
+                                  f"request names {request.get(field)!r}")
+            # The camera may omit the map, and a request that binds states then
+            # needs the camera to name the same ones.
+            bound = value.get("state_snapshot_sha256_by_character")
+            if bound != state_map:
+                shown = "names none" if bound is None else f"names {sorted(bound)}"
+                errors.append(f"{label} {path.name} {shown} in state_snapshot_sha256_by_character and "
+                              f"the request binds {sorted(state_map)}; copy the request's map into "
+                              "it and seal it again")
             if label == "shot projection":
                 for field in ("camera_spec_sha256", "scene_context_sha256"):
-                    if value[field] != request[field]:
-                        errors.append(f"shot projection {field} differs from request")
+                    if value.get(field) != request.get(field):
+                        errors.append(f"shot projection {path.name} {field} differs from the request's")
     expected = {f"{prefix}:{cid}" for prefix in ("species-profile", "individual-morphology", "identity", "state") for cid in identity_map}
     expected.update({"scene-context", "camera-spec", "shot-projection"})
     unverified = sorted(expected - set(checked))
@@ -293,7 +304,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 require_complete=args.require_complete,
             )
     except (ValueError, OSError, TypeError, KeyError, AttributeError, UnicodeError) as exc:
-        report = {"validator": "shot-handoff", "ok": False, "errors": [str(exc)], "artistic_quality_evaluated": False}
+        message = f"a bound file lacks the field {exc}" if isinstance(exc, KeyError) else str(exc)
+        report = {"validator": "shot-handoff", "ok": False, "errors": [message], "artistic_quality_evaluated": False}
     notes = plot_link_notes(request) if isinstance(request, dict) else []
     if notes:
         report["unmeasured"] = notes

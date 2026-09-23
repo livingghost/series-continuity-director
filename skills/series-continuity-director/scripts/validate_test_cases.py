@@ -584,11 +584,28 @@ def case_65() -> list[str]:
             [sys.executable, "scripts/validate_project.py", str(project)],
             cwd=ROOT, text=True, encoding='utf-8', stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
         )
+        # A list is the project's own working data under work/, and not an
+        # artifact under state/.
+        type_less.unlink()
+        (project / "work" / "applied.json").write_text("[]\n", encoding="utf-8", newline="\n")
+        third = subprocess.run(
+            [sys.executable, "scripts/validate_project.py", str(project)],
+            cwd=ROOT, text=True, encoding='utf-8', stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+        )
+        (project / "state" / "snapshots" / "listed.json").write_text("[]\n", encoding="utf-8", newline="\n")
+        fourth = subprocess.run(
+            [sys.executable, "scripts/validate_project.py", str(project)],
+            cwd=ROOT, text=True, encoding='utf-8', stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+        )
     findings: list[str] = []
     if first.returncode == 0 or "project manifest missing fields" not in first.stdout:
         findings.append("case 65 project manifest: incomplete manifest was not rejected correctly")
     if second.returncode == 0 or "requires artifact_type" not in second.stdout:
         findings.append("case 65 project artifacts: managed type-less JSON was not rejected correctly")
+    if third.returncode != 0:
+        findings.append("case 65 working data: a JSON list under work/ was refused: " + third.stdout[-400:])
+    if fourth.returncode == 0 or "must be an object with artifact_type" not in fourth.stdout:
+        findings.append("case 65 project artifacts: a JSON list under state/ was not rejected correctly")
     return findings
 
 

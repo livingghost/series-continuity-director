@@ -1236,6 +1236,27 @@ def check_draft_refusals(results: list[dict], errors: list[str]) -> None:
                 errors.append(f"draft refusal {name!r}: a refused draft was written")
 
 
+def check_draft_parameters(results: list[dict], errors: list[str]) -> None:
+    """Each --parameter becomes one request setting, its value read as JSON when it parses."""
+
+    with tempfile.TemporaryDirectory(prefix="scd-draft-parameters-") as directory:
+        project = draft_project(Path(directory))
+        out = project / "media" / "draft.submission.json"
+        base = ["scripts/submission_draft.py", "new", "--project", project.as_posix(),
+                "--target", "xai-grok-imagine-2", "--scene-plot", "narrative/scenes/sc01-plot.json",
+                "--kind", "page", "--unit", "PG01", "--out", out.as_posix()]
+        code, output = run_script(base + ["--parameter", "width", "1024", "--parameter", "output_format", "png"])
+        written = json.loads(out.read_text(encoding="utf-8")).get("parameters") if out.exists() else None
+        results.append({"case": "draft parameters", "expected": 0, "actual": code})
+        if code != 0 or written != {"width": 1024, "output_format": "png"}:
+            errors.append(f"draft parameters: expected width 1024 and output_format png; got {code}, {written}: {output[-800:]}")
+        out.unlink(missing_ok=True)
+        code, output = run_script(base + ["--parameter", "width", "1024", "--parameter", "width", "768"])
+        results.append({"case": "draft parameter named twice", "expected": 1, "actual": code})
+        if code != 1 or "--parameter width is given twice" not in output or out.exists():
+            errors.append(f"draft parameter named twice: expected a refusal; got {code}: {output[-800:]}")
+
+
 def check_all() -> int:
     results: list[dict] = []
     errors: list[str] = []
@@ -1250,6 +1271,7 @@ def check_all() -> int:
     check_text_mode(results, errors)
     check_documented_draft(results, errors)
     check_draft_refusals(results, errors)
+    check_draft_parameters(results, errors)
     check_exclusivity(results, errors)
     check_second_service(results, errors)
     check_resolution_floor(results, errors)
