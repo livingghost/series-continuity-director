@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import report_output
 import re
 import sys
 from pathlib import Path
@@ -32,6 +31,7 @@ from project_layout import (  # noqa: E402
     WORK_DIRECTORY,
     read_document,
 )
+import report_output  # noqa: E402
 import run_gallery  # noqa: E402
 import work_ledger  # noqa: E402
 FORBIDDEN_PUNCTUATION = {"\u2014": "Unicode em dash", "\u2013": "Unicode en dash"}

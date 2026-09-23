@@ -250,8 +250,8 @@ itself. What it can do is compare its own against the hash published here, of th
 endings normalised:
 
 ```text
-scripts/narrative.py           adb5de722af6648d5871f0b516a3ba84431f6ac9ec738f05fdd8681062796d09
-scripts/scene_plot.py          da7b1645467ace22a835e40e2e19ae5ca6f1a3de0c2ea93ecd76edcd429f62dd
+scripts/narrative.py           93361366ff298230222db8f76f94e5ecae4dbda84c25f29ae837e5214c284322
+scripts/scene_plot.py          d1eae95bcd27845c7158b60acb35b4203330f5c58381fcd74d09c24fb5e414d0
 scripts/narrative_corpus.json  9539d8351eb614127aedd74b00c9f34124d420e5873a8c7299da74cc9b4d030a
 ```
 

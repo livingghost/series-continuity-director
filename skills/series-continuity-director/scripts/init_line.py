@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import argparse
 import json
-import report_output
 from pathlib import Path
 
+import report_output
 from project_layout import PROJECT_ID_RE, episode_media_directory_paths, require_project
 
 

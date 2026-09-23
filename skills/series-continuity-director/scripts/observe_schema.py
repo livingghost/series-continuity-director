@@ -12,11 +12,11 @@ from __future__ import annotations
 import argparse
 import copy
 import json
-import report_output
 from pathlib import Path
 import execution_contract as c
 from input_evidence import InputEvidence
 import model_observation
+import report_output
 import schema_observation
 import target_protocol
 

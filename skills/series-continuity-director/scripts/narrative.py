@@ -25,12 +25,13 @@ import argparse
 import difflib
 import hashlib
 import json
-import report_output
 import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Sequence
+
+import report_output
 
 ARTIFACT_TYPE = "narrative"
 APPROVED_AT = re.compile(

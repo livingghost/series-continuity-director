@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import report_output
 import os
 import re
 import sys
@@ -36,6 +35,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from narrative_index import ENTITY_ID, FRONT_MATTER, KINDS, scan  # noqa: E402
 from project_layout import require_project  # noqa: E402
+import report_output  # noqa: E402
 
 NL = chr(10)
 

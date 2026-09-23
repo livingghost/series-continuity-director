@@ -389,17 +389,24 @@ class SvgSafetyTests(unittest.TestCase):
             with self.subTest(label=label),self.assertRaises(ValueError):require_embedded_svg(raw)
 
     def test_raster_derivation_checks_the_source_before_rendering(self):
-        from importlib.metadata import version
-        import cairosvg
+        import resvg_py
         import execution_contract as ec
-        from reference_raster import verify_raster
+        import reference_raster as rr
         source=self.safe();size={'width':8,'height':8}
-        derivation={'mode':'svg-rasterization','source_sha256':ec.digest(source),'renderer_id':'cairosvg',
-                    'renderer_release':version('CairoSVG'),'output_dimensions':size}
-        verify_raster(source,cairosvg.svg2png(bytestring=source,output_width=8,output_height=8),derivation)
+        derivation={'mode':'svg-rasterization','source_sha256':ec.digest(source),'renderer_id':rr.RENDERER_ID,
+                    'renderer_release':rr.renderer_release(),'output_dimensions':size}
+        rr.verify_raster(source,rr.render_svg(source,8,8),derivation)
         unsafe=svg('<rect width="1" height="1" fill="url(http://example.invalid/p.svg#x)"/>')
-        with patch.object(cairosvg,'svg2png',side_effect=AssertionError('rendered an unsafe source')),self.assertRaises(ValueError):
-            verify_raster(unsafe,b'',dict(derivation,source_sha256=ec.digest(unsafe)))
+        with patch.object(resvg_py,'svg_to_bytes',side_effect=AssertionError('rendered an unsafe source')),self.assertRaises(ValueError):
+            rr.verify_raster(unsafe,b'',dict(derivation,source_sha256=ec.digest(unsafe)))
+
+    def test_embedded_images_are_drawn(self):
+        from PIL import Image
+        import reference_raster as rr
+        green=Image.new('RGB',(1,1),(0,200,0));stream=io.BytesIO();green.save(stream,'PNG')
+        drawn=rr.render_svg(svg(f'<image width="4" height="4" href="{data_uri("image/png", stream.getvalue())}"/>'),4,4)
+        with Image.open(io.BytesIO(drawn)) as image:
+            self.assertEqual(image.convert('RGBA').getpixel((2,2)),(0,200,0,255))
 
 if __name__=='__main__':
     import stdio_utf8

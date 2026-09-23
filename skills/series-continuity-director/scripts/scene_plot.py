@@ -20,12 +20,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import report_output
 import re
 import sys
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Sequence
 
+import report_output
 from narrative import did_you_mean
 
 ARTIFACT_TYPE = "scene-plot"

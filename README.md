@@ -40,7 +40,7 @@ brief, plus the project's approved narrative, Persona and world
 What you need:
 
 - Python 3.11 or later. Project authoring, state and the public-contract readers use only the standard library.
-- For media work only: Pillow for media inspection, and `ffmpeg` and `ffprobe` on the executable search path for playable roughs and audio or video probing.
+- For media work only: the Python packages in the media requirements, which pip installs on every platform without a system library, and `ffmpeg` and `ffprobe` on the executable search path for playable roughs and audio or video probing.
 - For sending a request only: an account with the generation service you choose. The suite works with any service; planning, writing, the gate and the core examples need none.
 
 The extracted archive is a plugin repository. A plugin-capable host receives the repository with its host metadata. A host that loads individual skills receives the complete [skill directory](skills/series-continuity-director/), whose entry point is [SKILL.md](skills/series-continuity-director/SKILL.md), with its scripts, assets and schemas. The [flat text adapter](skills/series-continuity-director/adapters/series-continuity-director-flat.md) gives a text-only host the instructions in one file; that host still needs Python, media tools and storage of its own to run anything.
@@ -57,14 +57,19 @@ python skills/series-continuity-director/scripts/dependencies.py --scope core
 ```
 <!-- end-readme-example -->
 
-For media work, install the [media requirements](skills/series-continuity-director/requirements-media.txt) and the two executables, then check the media scope:
+For media work, check the media scope:
 
 ```sh
-python -m pip install -r skills/series-continuity-director/requirements-media.txt
 python skills/series-continuity-director/scripts/dependencies.py --scope media
 ```
 
-The check names missing tools. Keep authored projects and generated files outside the installed repository. Initializing a project, writing a scene and running the core examples need no service account.
+The check names what is missing and prints the command that installs it. The Python packages in the [media requirements](skills/series-continuity-director/requirements-media.txt) go to the Python running the check, through pip, or through uv in an environment that has no pip. `ffmpeg` and `ffprobe` come from the platform's package manager: winget, Scoop, Chocolatey, Homebrew, apt, pacman or apk. `--install` runs those commands after you confirm them:
+
+```sh
+python skills/series-continuity-director/scripts/dependencies.py --scope media --install
+```
+
+An agent asks you before it runs the install, then passes `--yes` with your confirmation. A Python whose packages the system manages, such as the one Debian, Ubuntu or Homebrew provides, refuses pip. `--venv DIR` installs the Python packages into a virtual environment at `DIR` instead, and the suite's media commands then run with that environment's Python. Keep authored projects and generated files outside the installed repository. Initializing a project, writing a scene and running the core examples need no service account.
 
 ### Your first project
 
@@ -513,7 +518,7 @@ State files are project data. Project work leaves the installed suite untouched,
 
 **Garbled text on Windows.** The commands write UTF-8. A PowerShell pipeline reads it with the console code page unless `[Console]::OutputEncoding` is UTF-8.
 
-**Missing media tools.** Planning works under the core scope. Media inspection, rendering and the aggregate validation need their declared tools, and the check names which are missing.
+**Missing media tools.** Planning works under the core scope. Media inspection, rendering and the aggregate validation need their declared tools. `dependencies.py --scope media` names what is missing and the command that installs it, and `--install` runs it after you confirm.
 
 ## Validation
 

@@ -15,16 +15,17 @@
         ],
         "requirement": "Pillow>=12,<13"
       },
-      "CairoSVG": {
-        "import": "cairosvg",
+      "resvg-py": {
+        "import": "resvg_py",
         "minimum_release": [
-          2,
-          9
+          0,
+          5
         ],
         "maximum_release_exclusive": [
-          3
+          0,
+          6
         ],
-        "requirement": "CairoSVG>=2.9,<3"
+        "requirement": "resvg-py>=0.5,<0.6"
       },
       "defusedxml": {
         "import": "defusedxml",

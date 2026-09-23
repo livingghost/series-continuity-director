@@ -1,6 +1,6 @@
 # Changelog
 
-## [2026.09.23.1] - 2026-09-23
+## [2026.09.23.2] - 2026-09-23
 
 Initial release.
 
@@ -27,5 +27,7 @@ Initial release.
 - Submit images for comics and prose: a page, a panel of a page, or a passage of the approved scene plot is a unit a submission can depict.
 - Work with any generation service. A target profile describes the model, each service's offering carries its own request keys and request shape, and a service record names its transport, which implements the transport contract. A submission that names no service is checked against the model alone.
 - Send only to https endpoints within an operator-set network deadline, never follow a redirect with a credential, and record a redirect, a server error or a lost connection as an unknown outcome that blocks resending.
-- Write every command's output as UTF-8 whatever the console code page, write project files atomically under the project lock, and refuse to write into a directory that is not a project or lies inside the installed suite.
+- Write every command's output as UTF-8 whatever the console code page, print readable text in a terminal and JSON to a pipe or with `--json`, write project files atomically under the project lock, and refuse to write into a directory that is not a project or lies inside the installed suite.
+- Render SVG references with resvg, which pip installs on every platform without a system library; it draws images a document embeds as data and reads no file or URL the document names.
+- Count a media dependency as present only when its smallest operation runs, print the command that installs each missing one, and run those commands with `--install` once the user confirms. Python packages go through the running Python's installer, pip or uv, or into a virtual environment with `--venv` where the system manages that Python; FFmpeg comes from the platform's package manager.
 - Validate with one aggregate check that runs its commands concurrently and names each one as it finishes; CI runs every check once per platform and publishes a release only from a commit on main whose CI succeeded.

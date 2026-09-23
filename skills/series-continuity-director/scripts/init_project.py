@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import report_output
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
+import report_output
 import run_gallery
 from narrative import MEDIA
 from project_layout import (

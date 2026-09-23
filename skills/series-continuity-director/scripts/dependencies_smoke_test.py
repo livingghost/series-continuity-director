@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -78,6 +79,113 @@ class DependencyTests(unittest.TestCase):
         self.assertTrue(any(message.startswith('ffprobe: missing') and 'affects probing audio' in message
                             for message in report['errors']), report['errors'])
         self.assertTrue(report['summary'].startswith('Not ready for media work'))
+
+    def test_installed_distribution_that_does_not_import_is_not_ready(self):
+        versions = {'Pillow': '12.0.0', 'resvg-py': '0.5.0', 'defusedxml': '0.7.1', 'tinycss2': '1.4.0'}
+        native = 'ImportError: DLL load failed while importing resvg_py'
+        with patch.object(d.importlib.metadata, 'version', side_effect=versions.__getitem__), \
+                patch.object(d, 'probe_error', side_effect=lambda name, module: native if name == 'resvg-py' else None), \
+                patch.object(d.shutil, 'which', return_value=None):
+            report = d.check('media')
+        entry = next(item for item in report['required'] if item['name'] == 'resvg-py')
+        self.assertEqual(entry['status'], 'installed, but does not work: ' + native)
+        self.assertIn('resvg-py', report['missing'])
+        self.assertNotIn('Pillow', report['missing'])
+
+    def test_probe_error_names_the_failure(self):
+        self.assertIsNone(d.probe_error('json', 'json'))
+        self.assertIn('ModuleNotFoundError', d.probe_error('scd-missing', 'scd_module_that_does_not_exist'))
+
+    def test_every_media_distribution_has_a_probe(self):
+        self.assertEqual(sorted(d.PROBES), sorted(d.declaration()['media']['distributions']))
+
+    def test_every_probe_passes_in_the_media_environment(self):
+        for name, rule in d.declaration()['media']['distributions'].items():
+            with self.subTest(distribution=name):
+                self.assertIsNone(d.probe_error(name, rule['import']))
+
+    def missing_report(self) -> dict:
+        return {'ok': False, 'errors': [], 'required': [
+            {'name': 'Python', 'kind': 'interpreter', 'status': 'ok'},
+            {'name': 'resvg-py', 'kind': 'python distribution', 'status': 'missing; install requirements-media.txt'},
+            {'name': 'ffmpeg', 'kind': 'executable', 'status': 'missing from the executable search path'},
+            {'name': 'ffprobe', 'kind': 'executable', 'status': 'missing from the executable search path'}]}
+
+    def test_plan_uses_pip_and_the_platform_package_manager(self):
+        with patch.object(d.platform, 'system', return_value='Windows'), \
+                patch.object(d, 'externally_managed', return_value=False), \
+                patch.object(d.importlib.util, 'find_spec', return_value=object()), \
+                patch.object(d.shutil, 'which', side_effect=lambda name: name if name == 'winget' else None):
+            steps = d.install_plan(self.missing_report())
+        self.assertEqual([step['manager'] for step in steps], ['pip', 'winget'])
+        self.assertEqual(steps[0]['commands'], [[sys.executable, '-m', 'pip', 'install', '-r', str(d.REQUIREMENTS)]])
+        self.assertIn('Gyan.FFmpeg', steps[1]['commands'][0])
+        self.assertEqual(steps[1]['installs'], ['ffmpeg', 'ffprobe'])
+
+    def test_system_managed_python_is_left_alone(self):
+        with patch.object(d, 'externally_managed', return_value=True):
+            step = d.python_step(['resvg-py'], None)
+        self.assertEqual(step['commands'], [])
+        self.assertIn('PEP 668', step['note'])
+        self.assertIn('--venv', step['note'])
+
+    def test_virtual_environment_is_created_then_filled(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary) / 'media-env'
+            step = d.python_step(['resvg-py'], directory)
+        target = str(d.venv_python(directory.absolute()))
+        self.assertEqual(step['commands'], [[sys.executable, '-m', 'venv', str(directory.absolute())],
+                                            [target, '-m', 'pip', 'install', '-r', str(d.REQUIREMENTS)]])
+        self.assertEqual(step['interpreter'], target)
+
+    def test_environment_without_pip_uses_uv(self):
+        with patch.object(d, 'externally_managed', return_value=False), \
+                patch.object(d.importlib.util, 'find_spec', return_value=None), \
+                patch.object(d.shutil, 'which', side_effect=lambda name: name if name == 'uv' else None):
+            step = d.python_step(['resvg-py'], None)
+        self.assertEqual(step['commands'], [['uv', 'pip', 'install', '--python', sys.executable,
+                                             '-r', str(d.REQUIREMENTS)]])
+
+    def test_python_without_an_installer_is_named(self):
+        with patch.object(d, 'externally_managed', return_value=False), \
+                patch.object(d.importlib.util, 'find_spec', return_value=None), \
+                patch.object(d.shutil, 'which', return_value=None):
+            step = d.python_step(['resvg-py'], None)
+        self.assertEqual(step['commands'], [])
+        self.assertIn('no pip', step['note'])
+
+    def test_system_package_manager_runs_through_sudo(self):
+        with patch.object(d.platform, 'system', return_value='Linux'), \
+                patch.object(d.shutil, 'which', side_effect=lambda name: name if name in {'apt-get', 'sudo'} else None), \
+                patch.object(d.os, 'geteuid', return_value=1000, create=True):
+            step = d.executable_step(['ffmpeg'])
+        self.assertEqual(step['commands'], [['sudo', 'apt-get', 'install', '-y', 'ffmpeg']])
+
+    def test_without_a_package_manager_the_plan_names_the_download(self):
+        with patch.object(d.platform, 'system', return_value='Darwin'), \
+                patch.object(d.shutil, 'which', return_value=None):
+            step = d.executable_step(['ffmpeg', 'ffprobe'])
+        self.assertEqual(step['commands'], [])
+        self.assertIn('https://ffmpeg.org/download.html', step['note'])
+
+    def test_install_without_confirmation_runs_nothing(self):
+        steps = [{'installs': ['ffmpeg'], 'manager': 'brew', 'commands': [['brew', 'install', 'ffmpeg']]}]
+        with patch.object(d.sys, 'stdin', SimpleNamespace(isatty=lambda: False)), \
+                patch.object(d.subprocess, 'run', side_effect=AssertionError('a command ran unconfirmed')), \
+                patch.object(d, 'check', side_effect=lambda scope: self.missing_report()):
+            report = d.install(steps, assume_yes=False)
+        self.assertTrue(any(message.startswith('nothing was installed') for message in report['errors']))
+
+    def test_confirmed_install_runs_each_command_then_checks_again(self):
+        steps = [{'installs': ['ffmpeg'], 'manager': 'brew', 'commands': [['brew', 'install', 'ffmpeg']]}]
+        ran = []
+        ready = {'ok': True, 'errors': [], 'required': [{'name': 'Python', 'kind': 'interpreter', 'status': 'ok'}]}
+        with patch.object(d.subprocess, 'run', side_effect=lambda command, **_: ran.append(command) or SimpleNamespace(returncode=0)), \
+                patch.object(d, 'check', side_effect=lambda scope: dict(ready)):
+            report = d.install(steps, assume_yes=True)
+        self.assertEqual(ran, [['brew', 'install', 'ffmpeg']])
+        self.assertEqual(report['installed'], [{'run': d.shown(['brew', 'install', 'ffmpeg']), 'exit_status': 0}])
+        self.assertTrue(report['ok'])
 
     def test_invalid_scope(self):
         with self.assertRaises(ValueError):

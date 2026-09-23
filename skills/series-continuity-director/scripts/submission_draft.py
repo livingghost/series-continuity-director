@@ -15,12 +15,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import report_output
 from pathlib import Path, PurePosixPath
 from typing import Any
 
 import execution_contract as c
 import execution_routes
+import report_output
 import route_reading
 import submission_gate as gate
 import visual_continuity

@@ -161,7 +161,7 @@ def _embedded_image(uri: str) -> None:
         payload = base64.decodebytes(payload)
         header = header[:-len(';base64')]
     declared = header.split(';', 1)[0].strip().lower()
-    # CairoSVG reads any payload that looks like SVG or gzip as SVG, whatever its declared type.
+    # A renderer may read any payload that looks like SVG or gzip as SVG, whatever its declared type.
     sniffed = not payload.startswith(RASTER_SIGNATURES['image/png']) and (
         payload.startswith((b'<svg ', b'<?xml', b'<!DOC', b'\x1f\x8b')) or b'<svg' in payload)
     if declared == 'image/svg+xml' or sniffed:

@@ -8,10 +8,10 @@ from __future__ import annotations
 import argparse
 import copy
 import json
-import report_output
 from pathlib import Path
 from typing import Any
 import execution_contract as c
+import report_output
 
 CONTINUITIES = {'recurring', 'one-off', 'undecided'}
 VISUAL_KINDS = {'image', 'video', 'video-with-audio'}
