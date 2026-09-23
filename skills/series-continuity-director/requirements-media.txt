@@ -1,4 +1,4 @@
 Pillow>=12,<13
 resvg-py>=0.5,<0.6
 defusedxml>=0.7,<1
-tinycss2>=1,<2
+tinycss2>=1.5.1,<2
