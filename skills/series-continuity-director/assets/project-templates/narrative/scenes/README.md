@@ -27,13 +27,24 @@ Target and model stay out of the plot; the interface is chosen after the plot is
 written once the interface is known takes that interface's limits in as though they were story
 decisions, and nothing afterwards can tell the two apart.
 
+Start a plot with `draft` rather than by hand. It fills in what the narrative declares: the
+chapter, the next free place in it, the arcs the chapter carries with their characters and themes,
+the narrative hash and the realization the medium implies. Every other field is a `<fill: ...>`
+value, and the reader refuses each one by name until the author's decision replaces it.
+
 ```
+python <skill>/scripts/scene_plot.py draft --project <project> --scene-id <scene-id> --chapter <chapter-id>
 python <skill>/scripts/scene_plot.py narrative/scenes/<scene-id>-plot.json
-python <skill>/scripts/scene_plot.py narrative/scenes/<scene-id>-plot.json --content-sha256
+python <skill>/scripts/scene_plot.py approve narrative/scenes/<scene-id>-plot.json --by "<name>"
+python <skill>/scripts/scene_plot.py behind --project <project>
 ```
 
-The second prints the hash the approval block has to carry. A shot submission names its scene plot,
-and the gate refuses a submission whose plot is:
+The second lists what is still open. The third records an approval the author gave: it binds the
+plot to the current narrative, writes the approval block, and refuses a plot that fails its checks
+or names an id the narrative does not declare. The fourth lists every plot written against an
+earlier narrative, with the recorded and current hashes; each one needs the author's approval again.
+
+A shot submission names its scene plot, and the gate refuses a submission whose plot is:
 
 - missing;
 - unapproved;

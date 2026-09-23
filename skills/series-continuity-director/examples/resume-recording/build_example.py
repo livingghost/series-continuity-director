@@ -2,6 +2,7 @@
 """Build a deterministic summary from a synthetic, locally prepared production run."""
 from __future__ import annotations
 import argparse
+import difflib
 import json
 import subprocess
 import sys
@@ -25,22 +26,47 @@ def build():
     with tempfile.TemporaryDirectory(prefix='synthetic-resume-example-') as temporary:
         root = Path(temporary)
         started = work_ledger.begin(root, 'Synthetic recovery example', ['inspect retained evidence'])
-        (root / 'delivery.txt').write_text('Synthetic local instructions.\n')
+        (root / 'delivery.txt').write_text('Synthetic local instructions.\n', encoding='utf-8', newline='\n')
         task = {'task_id': started['task_id'], 'route': 'development', 'features': [], 'sources': [],
                 'delivery': {'path': 'delivery.txt', 'transport': 'authored-rendition',
                              'translation_notes': 'Synthetic authored fixture.'},
                 'criteria': [{'id': 'output', 'strength': 'hard', 'text': 'Inspect retained output.'}]}
         run = prepare_fixture(root, task)
         command = [sys.executable, str(ROOT / 'scripts/production_workflow.py'), 'resume', '--root', str(root), '--run', run]
-        before = subprocess.run(command, capture_output=True, text=True, check=False, timeout=30)
+        before = subprocess.run(command, capture_output=True, text=True, encoding='utf-8', check=False, timeout=30)
         if before.returncode != 0:
             raise ValueError(before.stdout + before.stderr)
-        (root / 'delivery.txt').write_text('Revised synthetic local instructions.\n')
-        after = subprocess.run(command, capture_output=True, text=True, check=False, timeout=30)
+        (root / 'delivery.txt').write_text('Revised synthetic local instructions.\n', encoding='utf-8', newline='\n')
+        after = subprocess.run(command, capture_output=True, text=True, encoding='utf-8', check=False, timeout=30)
         if after.returncode != 1:
             raise ValueError('The changed fixture must require updated execution inputs.')
         return {'synthetic': True, 'before_change': summary(json.loads(before.stdout)),
                 'after_change': summary(json.loads(after.stdout))}
+
+
+def difference(expected, path):
+    """A unified diff of the committed file against the rebuilt bytes.
+
+    JSON compares field by field first, then as raw text. A carriage return
+    prints as \\r, so a line-ending difference shows.
+    """
+    if not path.is_file():
+        return f'{path} is missing.'
+    found = path.read_bytes()
+    for structured in (True, False):
+        def lines(raw):
+            text = raw.decode('utf-8', 'replace')
+            if structured:
+                try:
+                    text = json.dumps(json.loads(text), indent=2, sort_keys=True)
+                except ValueError:
+                    pass
+            return text.replace('\r', '\\r').split('\n')
+        shown = '\n'.join(difflib.unified_diff(lines(found), lines(expected), f'{path.name} (committed)',
+                                               f'{path.name} (rebuilt)', lineterm=''))
+        if shown:
+            return shown.encode('ascii', 'backslashreplace').decode('ascii')
+    return f'{path} differs in bytes that do not decode as UTF-8.'
 
 
 def main():
@@ -51,6 +77,7 @@ def main():
     raw = (json.dumps(build(), indent=2, sort_keys=True) + '\n').encode()
     if args.check:
         if not args.out.is_file() or args.out.read_bytes() != raw:
+            print(difference(raw, args.out), file=sys.stderr)
             raise SystemExit('Synthetic report differs; rebuild it with this script.')
     else:
         args.out.write_bytes(raw)
@@ -76,4 +103,6 @@ def prepare_fixture(root, task):
 
 
 if __name__ == '__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

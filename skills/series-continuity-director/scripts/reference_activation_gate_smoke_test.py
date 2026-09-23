@@ -61,4 +61,7 @@ class ActivationTests(unittest.TestCase):
         self.activation['activation_id']='two characters and an overview'
         self.assertEqual(self.verdict()['status'],'admitted')
 
-if __name__=='__main__':unittest.main()
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    unittest.main()

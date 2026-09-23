@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Exercise public craft consultation commands with synthetic local authoring."""
+"""Exercise public tactic consultation commands with synthetic local authoring."""
 from __future__ import annotations
 import argparse
+import difflib
 import json
 import subprocess
 import sys
@@ -14,7 +15,7 @@ import execution_contract as c
 
 def call(root, operation, *args):
     result = subprocess.run([sys.executable, str(ROOT / 'scripts/production_workflow.py'), operation,
-        '--root', str(root), '--task', 'task.json', *args], capture_output=True, text=True, timeout=120)
+        '--root', str(root), '--task', 'task.json', *args], capture_output=True, text=True, encoding='utf-8', timeout=120)
     if result.returncode:
         raise ValueError(result.stdout + result.stderr)
     return json.loads(result.stdout)
@@ -27,14 +28,14 @@ def build(root):
                          'translation_notes': 'Use only the authored synthetic scope.'},
             'criteria': [{'id': 'readability', 'text': 'Keep the declared subject information readable.',
                           'strength': 'hard', 'evidence': 'text'}]}
-    (root / 'delivery.txt').write_text('Synthetic local direction with readable subject information.\n', encoding='utf-8')
+    (root / 'delivery.txt').write_text('Synthetic local direction with readable subject information.\n', encoding='utf-8', newline='\n')
     import production_test_support
     task['sequence_plan'] = None
-    task['direction'] = production_test_support.direction(task, 'Synthetic craft consultation.')
+    task['direction'] = production_test_support.direction(task, 'Synthetic tactic consultation.')
     (root / 'task.json').write_bytes(c.encoded(task))
     original_task = (root / 'task.json').read_bytes()
     tactic = '# Synthetic production knowledge\n\nKeep the near shoulder out of the far subject eyes.\nRetain a readable separation between the two subjects.\n'
-    (root / 'production-state.md').write_text(tactic, encoding='utf-8')
+    (root / 'production-state.md').write_text(tactic, encoding='utf-8', newline='\n')
     original_delivery = (root / 'delivery.txt').read_bytes()
     opened = call(root, 'consult-tactics', '--query', 'over the shoulder', '--out-dir', 'consulted')
     if not opened['vocabulary']['results']:
@@ -65,6 +66,31 @@ def build(root):
             'budget_effect': result['budget_effect']}
 
 
+def difference(expected, path):
+    """A unified diff of the committed file against the rebuilt bytes.
+
+    JSON compares field by field first, then as raw text. A carriage return
+    prints as \\r, so a line-ending difference shows.
+    """
+    if not path.is_file():
+        return f'{path} is missing.'
+    found = path.read_bytes()
+    for structured in (True, False):
+        def lines(raw):
+            text = raw.decode('utf-8', 'replace')
+            if structured:
+                try:
+                    text = json.dumps(json.loads(text), indent=2, sort_keys=True)
+                except ValueError:
+                    pass
+            return text.replace('\r', '\\r').split('\n')
+        shown = '\n'.join(difflib.unified_diff(lines(found), lines(expected), f'{path.name} (committed)',
+                                               f'{path.name} (rebuilt)', lineterm=''))
+        if shown:
+            return shown.encode('ascii', 'backslashreplace').decode('ascii')
+    return f'{path} differs in bytes that do not decode as UTF-8.'
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
@@ -80,6 +106,7 @@ def main():
     raw = c.encoded(result)
     if args.check:
         if not args.out.is_file() or args.out.read_bytes() != raw:
+            print(difference(raw, args.out), file=sys.stderr)
             raise SystemExit('Synthetic output differs. Rebuild this example.')
     else:
         args.out.write_bytes(raw)
@@ -88,4 +115,6 @@ def main():
 
 
 if __name__ == '__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

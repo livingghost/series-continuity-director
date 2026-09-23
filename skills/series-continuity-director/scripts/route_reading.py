@@ -15,7 +15,6 @@ import execution_contract as c
 import execution_routes
 
 ROOT = Path(__file__).resolve().parents[1]
-_NO_MODEL = object()
 
 
 def _hex(value: Any, length: int, label: str) -> str:
@@ -110,39 +109,19 @@ def prose_blocks(document: str) -> list[str]:
     return result
 
 
-RESOURCE_FIELDS: set[str] = set()
-RECORD_RESOURCE_FIELDS: set[str] = set()
-
-
 def ledger_candidates(*, project: Path | None = None, package_root: Path | None = None) -> list[Path]:
     if project is None:
         raise ValueError('the project root is required for its reading ledger')
     return [project.absolute() / 'work/reads.jsonl']
 
 
-def _capture_resources(manifest: dict, bodies: list) -> None:
-    return None
-
-
-def _validate_resources(value: dict) -> None:
-    return None
-
-
-def _require_resource_applications(record: dict, bodies: list, dialect: str | None) -> None:
-    return None
-
-
-def _add_runtime_arguments(parser: argparse.ArgumentParser) -> None:
-    return None
-
-
-def _configure_runtime(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
-    return None
-
-
-def _restore_runtime(runtime: dict | None) -> None:
-    return None
-
+def _ledger_folder(ledger: Path) -> Path:
+    """Create the ledger's own folder inside an existing project and return it."""
+    folder = ledger.absolute().parent
+    if not folder.parent.is_dir():
+        raise ValueError(f'project root is not an existing directory: {folder.parent}')
+    folder.mkdir(exist_ok=True)
+    return folder
 
 
 def ledger_rows(path: Path) -> list[dict[str, Any]]:
@@ -152,7 +131,7 @@ def ledger_rows(path: Path) -> list[dict[str, Any]]:
     if raw and not raw.endswith(b'\n'):
         raise ValueError(f'incomplete reading ledger: {path}')
     rows = []
-    fields = {'at', 'route', 'features', 'key_sha256', 'documents', 'cwd'} | RESOURCE_FIELDS
+    fields = {'at', 'route', 'features', 'key_sha256', 'documents', 'cwd'}
     for line in raw.splitlines():
         if not line.strip():
             raise ValueError(f'empty reading ledger row: {path}')
@@ -182,7 +161,6 @@ def _validate_manifest(value: dict[str, Any]) -> None:
         if item['path'] in seen:
             raise ValueError('duplicate reading document')
         seen.add(item['path'])
-    _validate_resources(value)
 
 
 def capture(route: str, features: list[str] | None = None, *, root: Path = ROOT) -> tuple[dict, list[tuple[dict, bytes]]]:
@@ -195,7 +173,6 @@ def capture(route: str, features: list[str] | None = None, *, root: Path = ROOT)
             raise ValueError('document changed while reading: ' + entry['path'])
         bodies.append(({'kind': 'document', **entry}, raw))
     manifest = {'route': resolved['route'], 'features': resolved['features'], 'documents': resolved['reads']}
-    _capture_resources(manifest, bodies)
     return manifest, bodies
 
 
@@ -226,7 +203,7 @@ def issue(route: str, features: list[str] | None = None, *, root: Path = ROOT,
         stream.write(raw.decode('utf-8'))
         stream.write('\n')
     stream.flush()
-    with c.lock(target.parent):
+    with c.lock(_ledger_folder(target)):
         current, _ = capture(route, features, root=root)
         if manifest != current:
             raise ValueError('reading sources changed; read the current documents')
@@ -245,7 +222,7 @@ def _find_row(record: dict, ledgers: list[Path]) -> dict:
                 matching.append(row)
     if not matching:
         raise ValueError('reading key has no issuance row in the selected ledgers')
-    fields = {'route', 'features', 'documents'} | RESOURCE_FIELDS
+    fields = {'route', 'features', 'documents'}
     if any(any(row[field] != record[field] for field in fields) for row in matching):
         raise ValueError('reading issuance differs from the supplied route, features or document versions')
     return matching[0]
@@ -253,8 +230,7 @@ def _find_row(record: dict, ledgers: list[Path]) -> dict:
 
 def validate_record_content(record: Any) -> None:
     """Check the recorded contract without granting a current execution permission."""
-    fields = {'route', 'features', 'reading_key', 'documents', 'applied'} | RECORD_RESOURCE_FIELDS
-    c.exact(record, fields, 'route reading')
+    c.exact(record, {'route', 'features', 'reading_key', 'documents', 'applied'}, 'route reading')
     _validate_manifest(record)
     _hex(record['reading_key'], 32, 'reading key')
     available = {item['path'] for item in record['documents']}
@@ -266,22 +242,11 @@ def validate_record_content(record: Any) -> None:
         c.text(item['why'], 'application reason')
         if item['path'] not in available:
             raise ValueError('quotation document is absent from the recorded edition')
-    if RECORD_RESOURCE_FIELDS:
-        if not isinstance(record['resource_applied'], list):
-            raise ValueError('resource applications must be an array')
-        for item in record['resource_applied']:
-            c.exact(item, {'resource', 'pointer', 'quote', 'why'}, 'resource application')
-            for field in item:
-                c.text(item[field], field)
-            if item['resource'] not in record['resources']:
-                raise ValueError('quotation resource is absent from the recorded edition')
 
 
 def require_route_reading(record: Any, *, root: Path = ROOT, ledgers: list[Path] | None = None,
                           project: Path | None = None, package_root: Path | None = None,
-                          routes: set[str] | None = None, features: list[str] | None = None,
-                          dialect: Any = _NO_MODEL) -> dict:
-    fields = {'route', 'features', 'reading_key', 'documents', 'applied'} | RECORD_RESOURCE_FIELDS
+                          routes: set[str] | None = None, features: list[str] | None = None) -> dict:
     validate_record_content(record)
     if routes is not None and record['route'] not in routes:
         raise ValueError('reading route must be one of: ' + ', '.join(sorted(routes)))
@@ -311,7 +276,6 @@ def require_route_reading(record: Any, *, root: Path = ROOT, ledgers: list[Path]
         covered.add(item['path'])
     if required - covered:
         raise ValueError('missing application for: ' + ', '.join(sorted(required - covered)))
-    _require_resource_applications(record, bodies, dialect)
     return row
 
 
@@ -323,7 +287,7 @@ def resolve_issuance(key: str, *, project: Path | None = None,
                for row in ledger_rows(path) if row['key_sha256'] == digest]
     if not matches:
         raise ValueError('reading key has no issuance row in the selected ledgers')
-    fields = {'route', 'features', 'documents'} | RESOURCE_FIELDS
+    fields = {'route', 'features', 'documents'}
     if any(any(row[field] != matches[0][field] for field in fields) for row in matches[1:]):
         raise ValueError('reading key has conflicting issuance records')
     return {'reading_key': key, 'row': matches[0]}
@@ -348,15 +312,12 @@ def check_snapshot_issuance(snapshot: str, issued: dict, *, project: Path | None
 
 
 def build_record(issued: dict, applications: dict, *, root: Path = ROOT,
-                 project: Path | None = None, ledgers: list[Path] | None = None,
-                 dialect: Any = _NO_MODEL) -> dict:
+                 project: Path | None = None, ledgers: list[Path] | None = None) -> dict:
     c.exact(issued, {'reading_key', 'row'}, 'issued reading')
     row = issued['row']
-    result = {key: row[key] for key in sorted({'route', 'features', 'documents'} | RESOURCE_FIELDS)}
+    result = {key: row[key] for key in ('documents', 'features', 'route')}
     result.update(reading_key=issued['reading_key'], applied=applications['applied'])
-    if RESOURCE_FIELDS:
-        result['resource_applied'] = applications['resource_applied']
-    require_route_reading(result, root=root, project=project, ledgers=ledgers, dialect=dialect)
+    require_route_reading(result, root=root, project=project, ledgers=ledgers)
     return result
 
 
@@ -365,10 +326,10 @@ def copy_issuance(record: dict, destination: Path, *, root: Path = ROOT, project
                   ledgers: list[Path] | None = None, package_root: Path | None = None) -> dict:
     """Copy a verified issuance row without issuing a key or an application."""
     row = require_route_reading(record, root=root, project=project, ledgers=ledgers, package_root=package_root)
-    with c.lock(destination.parent):
+    with c.lock(_ledger_folder(destination)):
         rows = ledger_rows(destination)
         matching = [old for old in rows if old['key_sha256'] == row['key_sha256']]
-        fields = {'route', 'features', 'documents'} | RESOURCE_FIELDS
+        fields = {'route', 'features', 'documents'}
         if any(any(old[k] != row[k] for k in fields) for old in matching):
             raise ValueError('destination ledger has a conflicting issuance')
         if not matching:
@@ -406,18 +367,19 @@ def _position(snapshot: dict, offset: int) -> tuple[int, int]:
 def read_page(*, route: str | None = None, features: list[str] | None = None,
               cursor: str | None = None, replay: bool = False, page_bytes: int = 16384,
               root: Path = ROOT, project: Path | None = None, ledger: Path | None = None,
-              stream: TextIO | None = None, runtime: dict | None = None) -> dict:
+              stream: TextIO | None = None) -> dict:
     """Deliver an immutable page, then record its exact byte range under a lock."""
     if isinstance(page_bytes, bool) or not isinstance(page_bytes, int) or page_bytes < 4:
         raise ValueError('page-bytes must be an integer of at least four')
     stream = sys.stdout if stream is None else stream
     ledger = ledger if ledger is not None else ledger_candidates(project=project)[0]
-    with c.lock(ledger.parent):
+    # A new reading creates the ledger folder. A continuation needs the existing one.
+    with c.lock(_ledger_folder(ledger) if cursor is None else ledger.parent):
         if cursor is None:
             if route is None:
                 raise ValueError('a route is required to start reading')
             manifest, bodies = capture(route, features, root=root)
-            snapshot = {'manifest': manifest, 'root': str(root.absolute()), 'runtime': runtime,
+            snapshot = {'manifest': manifest, 'root': str(root.absolute()),
                         'nonce': secrets.token_hex(16), 'bodies': [dict(meta, size=len(raw)) for meta, raw in bodies]}
             sid = c.content_id(snapshot)
             folder = c.local(ledger.parent, 'reading-snapshots/' + sid, exists=False)
@@ -433,7 +395,6 @@ def read_page(*, route: str | None = None, features: list[str] | None = None,
             sid = c.content_id(snapshot)
             if str(root.absolute()) != snapshot['root']:
                 raise ValueError('reading cursor belongs to a different skill root')
-            _restore_runtime(snapshot['runtime'])
             start = page['start'] if replay else page['end']
         total = sum(x['size'] for x in snapshot['bodies'])
         if cursor is not None and start == total and not replay:
@@ -508,15 +469,13 @@ def add_read_arguments(parser: argparse.ArgumentParser) -> None:
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--continue', dest='cursor')
     group.add_argument('--replay', dest='replay')
-    _add_runtime_arguments(parser)
 
 
 def read_command(args: argparse.Namespace, parser: argparse.ArgumentParser) -> dict:
-    runtime = _configure_runtime(args, parser)
     if args.cursor or args.replay or args.page_bytes is not None:
         return read_page(route=args.route, features=args.feature, cursor=args.cursor or args.replay,
                          replay=bool(args.replay), page_bytes=16384 if args.page_bytes is None else args.page_bytes,
-                         project=args.root, runtime=runtime)
+                         project=args.root)
     if args.route is None:
         raise ValueError('read requires a route or a continuation cursor')
     return issue(args.route, args.feature, project=args.root)
@@ -531,9 +490,11 @@ def main() -> int:
         row = require_route_reading(c.load(args.record), project=args.root, package_root=args.record.parent)
         print(json.dumps({'ok': True, 'route': row['route'], 'evidence': 'issuance and exact quotation'}, indent=2))
         return 0
-    except (ValueError, OSError) as exc:
-        print(json.dumps({'ok': False, 'error': str(exc)})); return 1
+    except c.EXPECTED_ERRORS as exc:
+        print(json.dumps(c.failure(exc))); return 1
 
 
 if __name__ == '__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

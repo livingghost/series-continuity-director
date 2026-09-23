@@ -25,7 +25,7 @@ from io_budget import optional_count
 def workspace(root: Path) -> Path:
     """Resolve a workspace without letting reporting write into the installed skill."""
     root = root.absolute()
-    # local() also rejects symbolic-link ancestors and noncanonical paths.
+    # local() rejects a symbolic link at or below the root and a noncanonical path.
     c.local(root, 'reviews', exists=False)
     installation = next((p for p in (ROOT, *ROOT.parents)
                          if (p / 'package-manifest.toml').is_file()), ROOT)
@@ -256,4 +256,6 @@ def main() -> int:
 
 
 if __name__ == '__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

@@ -52,17 +52,20 @@ def camera_request(root: Path, scene: str, shot: str, characters: list[str]) -> 
 
 
 def current_submission(value, root: Path, profiles: Path) -> object:
-    """Supply independent declared evidence while retaining each tested field."""
+    """Supply independent declared evidence while retaining each tested field.
+
+    The visual block is sealed by the same code `visual_continuity.py build`
+    runs, and left unchecked, so the gate is the one that refuses it.
+    """
     if not isinstance(value, dict):
         return copy.deepcopy(value)
+    import visual_continuity
+    from submission_gate import load_profile
     result = copy.deepcopy(value)
     result['route_reading'] = fixture_reading(route='media', project=root)
-    basis = {**_save(root, 'fixtures/submission-basis.txt',
-        'Synthetic tests declare one-off subjects and inspect mechanical request constraints.\n'), 'locator': 'whole'}
-    from submission_gate import load_profile
+    _save(root, 'fixtures/submission-basis.txt',
+          'Synthetic tests declare one-off subjects and inspect mechanical request constraints.\n')
     profile = load_profile(str(result.get('target') or ''), profiles)
-    kinds = (profile or {}).get('media_kind', [])
-    purpose = 'video' if 'video' in kinds or 'video-with-audio' in kinds else 'image'
     characters = result.get('characters')
     characters = characters if isinstance(characters, list) and all(isinstance(x, str) for x in characters) else ['C01']
     camera, request = None, None
@@ -70,10 +73,9 @@ def current_submission(value, root: Path, profiles: Path) -> object:
         scene = result.get('scene_id', 'SUBMISSION-GATE-FIXTURE')
         result['scene_id'] = scene
         shot = result.get('shot_id', 'SYNTHETIC-SHOT')
-        camera, request = camera_request(root, scene, shot, characters)
-    visual = {'purpose': purpose, 'basis': basis,
-              'subjects': {key: {'character_id': key, 'continuity': 'one-off', 'identity_refs': []} for key in characters},
-              'shot_camera': camera, 'shot_request': request, 'reference_activation': None}
-    result['visual_continuity'] = visual
-    result['visual_continuity_sha256'] = c.content_id(visual)
-    return result
+        camera, request = ({'path': ref['path']} for ref in camera_request(root, scene, shot, characters))
+    choices = {'purpose': visual_continuity.default_purpose(profile) or 'image',
+               'basis': {'path': 'fixtures/submission-basis.txt', 'locator': 'whole'},
+               'subjects': {key: {'character_id': key, 'continuity': 'one-off', 'identity_refs': []} for key in characters},
+               'shot_camera': camera, 'shot_request': request, 'reference_activation': None}
+    return visual_continuity.attach(result, visual_continuity.seal(choices, root))

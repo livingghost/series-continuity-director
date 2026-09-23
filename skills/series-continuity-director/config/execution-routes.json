@@ -165,7 +165,7 @@
       ],
       "source_roles": []
     },
-    "craft-consultation": {
+    "tactic-consultation": {
       "when": "Reusable craft is consulted or applied to the current production.",
       "reads": [
         "references/tactic-consultation.md"

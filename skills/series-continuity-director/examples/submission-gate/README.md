@@ -5,6 +5,17 @@ Each JSON file includes its expected status and, when applicable, a refusal code
 The `sources/` directory stores the authored scenarios. The builder adds full
 reading records, explicit one-off subjects, and public camera/request artifacts.
 
+The scenarios cover every kind of submission:
+
+- shots of `fixtures/scene-plot.json`;
+- pages and panels of `fixtures/scene-plot-pages.json`, in `clean-page`,
+  `clean-panel`, `page-outside-plot` and `panel-outside-page`;
+- a passage illustration of `fixtures/scene-plot-passages.json`, in `clean-passage`;
+- assets, which belong to no scene.
+
+`shot-against-page-plot` names a shot of a plot realized as pages, and
+`placeholder-unfilled` is a draft with fields nobody filled.
+
 Run from the skill directory:
 
 ```sh

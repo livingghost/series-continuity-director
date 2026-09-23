@@ -2,26 +2,160 @@
 """Validate source approvals, literal contracts, media inputs and request constraints.
 
 The author or delegated reviewer assesses meaning against the recorded requirements.
+`submission_draft.py` writes a submission skeleton that this gate then checks.
 See examples/submission-gate for synthetic requests and observed reports.
 """
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import re
 import sys
 import traceback
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROFILES = ROOT / "protocols" / "target" / "profiles"
 
-RULES = {'ROUTE_READING_INVALID': 'SUB-17', 'VISUAL_CONTINUITY_INVALID': 'SUB-18', 'LOCK_SURFACE_ABSENT': 'SUB-01', 'LOCK_SURFACE_GLUED': 'SUB-02', 'INPUT_MODE_CONFLICT': 'SUB-07', 'IDENTITY_REFERENCE_TOO_SMALL': 'SUB-08', 'SUBMISSION_KIND_UNDECLARED': 'SUB-15', 'SCENE_PLOT_MISSING': 'SUB-15', 'SCENE_PLOT_OUTSIDE_ROOT': 'SUB-15', 'SCENE_PLOT_INVALID': 'SUB-15', 'SCENE_PLOT_UNAPPROVED': 'SUB-15', 'SCENE_PLOT_EDITED_AFTER_APPROVAL': 'SUB-15', 'SCENE_ID_MISMATCH': 'SUB-15', 'SHOT_NOT_IN_SCENE_PLOT': 'SUB-15', 'CHARACTER_NOT_IN_SCENE': 'SUB-15', 'ASSET_CARRIES_SHOT_FIELDS': 'SUB-15', 'SCENE_PLOT_BEHIND_NARRATIVE': 'SUB-15', 'NARRATIVE_OUTSIDE_ROOT': 'SUB-16', 'NARRATIVE_INVALID': 'SUB-16', 'CHARACTER_NOT_IN_NARRATIVE': 'SUB-16', 'PROHIBITED_SURFACE': 'SUB-16', 'DURATION_NOT_INTEGER': 'SUB-09', 'DURATION_OUT_OF_BAND': 'SUB-09', 'SCHEMA_REFUSAL': 'SUB-10'}
-# A submission carrying no text at all fails before any numbered rule applies,
-# so it carries no id rather than an empty one: a reader of `rule` gets a rule
-# or nothing, and never a third thing that has to be told apart from both.
-UNNUMBERED = frozenset({"TEXT_MISSING"})
+RULES = {
+    'ROUTE_READING_INVALID': 'SUB-17', 'VISUAL_CONTINUITY_INVALID': 'SUB-18',
+    'LOCK_SURFACE_ABSENT': 'SUB-01', 'LOCK_SURFACE_GLUED': 'SUB-02', 'INPUT_MODE_CONFLICT': 'SUB-07',
+    'INPUT_MODE_LIMIT': 'SUB-07',
+    'IDENTITY_REFERENCE_TOO_SMALL': 'SUB-08', 'SUBMISSION_KIND_UNDECLARED': 'SUB-15',
+    'SCENE_PLOT_MISSING': 'SUB-15', 'SCENE_PLOT_OUTSIDE_ROOT': 'SUB-15', 'SCENE_PLOT_INVALID': 'SUB-15',
+    'SCENE_PLOT_UNAPPROVED': 'SUB-15', 'SCENE_PLOT_EDITED_AFTER_APPROVAL': 'SUB-15',
+    'SCENE_ID_MISMATCH': 'SUB-15', 'UNIT_NOT_IN_SCENE_PLOT': 'SUB-15', 'CHARACTER_NOT_IN_SCENE': 'SUB-15',
+    'FIELD_OF_ANOTHER_KIND': 'SUB-15', 'SCENE_PLOT_BEHIND_NARRATIVE': 'SUB-15',
+    'NARRATIVE_OUTSIDE_ROOT': 'SUB-16', 'NARRATIVE_INVALID': 'SUB-16', 'CHARACTER_NOT_IN_NARRATIVE': 'SUB-16',
+    'PROHIBITED_SURFACE': 'SUB-16', 'DURATION_NOT_INTEGER': 'SUB-09', 'DURATION_OUT_OF_BAND': 'SUB-09',
+    'SCHEMA_REFUSAL': 'SUB-10',
+}
+# A submission carrying no text at all, or a placeholder nobody filled, fails
+# before any numbered rule applies, so it carries no id rather than an empty
+# one: a reader of `rule` gets a rule or nothing, and never a third thing that
+# has to be told apart from both.
+UNNUMBERED = frozenset({"TEXT_MISSING", "PLACEHOLDER_UNFILLED"})
+
+# What a submission is. A scene-linked kind depicts one unit of the realization
+# its approved scene plot declares, and names that unit in its own field. An
+# asset belongs to no scene: a reference, a sheet panel, a plate or a probe.
+SCENE_KINDS = {
+    "shot": {"realization": "shots", "unit": "shot_id"},
+    "page": {"realization": "pages", "unit": "page_id"},
+    "passage": {"realization": "passages", "unit": "passage_id"},
+}
+KINDS = (*SCENE_KINDS, "asset")
+# A page submission may narrow itself to one panel of that page.
+SCENE_FIELDS = ("scene_plot", "scene_id", "shot_id", "page_id", "panel", "passage_id")
+
+# The fields the gate refuses a submission without. `scripts/README.md` lists
+# the same table, and submission_gate_smoke_test.py compares the two.
+REQUIRED_EVERY_KIND = ("kind", "text", "route_reading", "visual_continuity",
+                       "visual_continuity_sha256")
+REQUIRED_BY_KIND = {
+    "shot": ("scene_plot", "scene_id", "shot_id"),
+    "page": ("scene_plot", "scene_id", "page_id"),
+    "passage": ("scene_plot", "scene_id", "passage_id"),
+    "asset": (),
+}
+# Every top-level field the gate reads. The optional ones are read when present,
+# and an absent one is reported as unmeasured where a rule needed it.
+FIELDS = (
+    "submission_id", "kind", "target", "service", "text", "text_form", "negative_text",
+    "dialogue", "inputs", "parameters", "obligations", "output_kind", "narrative",
+    "characters", *SCENE_FIELDS, "route_reading", "visual_continuity",
+    "visual_continuity_sha256",
+)
+# The code that refuses each required field when it is absent.
+MISSING_CODES = {
+    "kind": "SUBMISSION_KIND_UNDECLARED",
+    "text": "TEXT_MISSING",
+    "route_reading": "ROUTE_READING_INVALID",
+    "visual_continuity": "VISUAL_CONTINUITY_INVALID",
+    "visual_continuity_sha256": "VISUAL_CONTINUITY_INVALID",
+    "scene_plot": "SCENE_PLOT_MISSING",
+    "scene_id": "SCENE_ID_MISMATCH",
+    "shot_id": "UNIT_NOT_IN_SCENE_PLOT",
+    "page_id": "UNIT_NOT_IN_SCENE_PLOT",
+    "passage_id": "UNIT_NOT_IN_SCENE_PLOT",
+}
+# What each required field carries, and the command that writes it where one does.
+MISSING_HELP = {
+    "kind": (
+        "shot, page or passage for a submission that depicts part of a scene plot, asset for a "
+        "reference, a sheet panel, a plate or a probe"
+    ),
+    "text": "the model-facing text",
+    "route_reading": (
+        "the record of reading the media route; read it with scripts/execution_routes.py "
+        "read media --root PROJECT, then attach it with scripts/submission_draft.py reading"
+    ),
+    "visual_continuity": "the visual continuity block; write it with scripts/visual_continuity.py build",
+    "visual_continuity_sha256": (
+        "the hash of the visual continuity block; scripts/visual_continuity.py build writes it"
+    ),
+    "scene_plot": "the project-relative path of the approved scene plot",
+    "scene_id": "the id of the scene the plot covers",
+    "shot_id": "the shot of the scene plot this submission depicts",
+    "page_id": "the page of the scene plot this submission depicts",
+    "passage_id": "the passage of the scene plot this submission illustrates",
+}
+
+# A draft marks every field its author still has to decide with this key, and
+# the gate refuses the submission until none is left.
+PLACEHOLDER = "placeholder"
+
+
+def placeholder(asks: str) -> dict[str, str]:
+    """A value nobody has decided yet, saying what it asks for."""
+
+    return {PLACEHOLDER: asks}
+
+
+def placeholders(value: Any, path: str = "") -> list[tuple[str, str]]:
+    """Every placeholder in a document, by the path of the field that holds it."""
+
+    if isinstance(value, dict):
+        if set(value) == {PLACEHOLDER}:
+            return [(path or "the submission", str(value[PLACEHOLDER]))]
+        found: list[tuple[str, str]] = []
+        for key, item in value.items():
+            found += placeholders(item, f"{path}.{key}" if path else str(key))
+        return found
+    if isinstance(value, list):
+        found = []
+        for index, item in enumerate(value):
+            found += placeholders(item, f"{path}[{index}]")
+        return found
+    return []
+
+
+def submission_bytes(value: dict[str, Any]) -> bytes:
+    """A submission document as the draft and the block builders write it."""
+
+    return (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+
+
+def absent(value: Any) -> bool:
+    """A field that is not there, is null, or holds only whitespace."""
+
+    return value is None or (isinstance(value, str) and not value.strip())
+
+
+def required_fields(kind: Any) -> tuple[str, ...]:
+    """The fields a submission of this kind must carry."""
+
+    return REQUIRED_EVERY_KIND + REQUIRED_BY_KIND.get(kind, ()) if isinstance(kind, str) else REQUIRED_EVERY_KIND
+
+
+def missing(field: str, detail: str = "") -> dict[str, Any]:
+    """The refusal for one required field that is absent."""
+
+    message = f"missing required field {field!r}: {MISSING_HELP[field]}"
+    return finding(MISSING_CODES[field], message + (f"; {detail}" if detail else ""), field=field)
 
 
 def finding(code: str, message: str, **extra: Any) -> dict[str, Any]:
@@ -195,15 +329,43 @@ def image_size(path: Path) -> tuple[int, int] | None:
 
 
 
-def load_profile(target: str, profiles_dir: Path) -> dict[str, Any] | None:
-    for path in sorted(profiles_dir.glob("*.json")):
-        try:
-            value = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
+def profile_directories(profiles: Path | str | Sequence[Path | str]) -> list[Path]:
+    """The profile directories to search, in the order they are searched."""
+
+    if isinstance(profiles, (str, Path)):
+        return [Path(profiles)]
+    return [Path(item) for item in profiles]
+
+
+def _profiles(profiles: Path | str | Sequence[Path | str]):
+    for directory in profile_directories(profiles):
+        for path in sorted(directory.glob("*.json")):
+            try:
+                value = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+                continue
+            if isinstance(value, dict):
+                yield path, value
+
+
+def load_profile(target: str, profiles: Path | str | Sequence[Path | str]) -> dict[str, Any] | None:
+    """The first profile for a target, searching the directories in order.
+
+    A project's own profile directory comes before the suite's, so a project
+    that records its own observation of a target reads that one.
+    """
+
+    for path, value in _profiles(profiles):
         if value.get("target_id") == target or path.stem == target:
             return value
     return None
+
+
+def profile_targets(profiles: Path | str | Sequence[Path | str]) -> list[str]:
+    """The target ids the profiles in these directories record."""
+
+    targets = [value["target_id"] for _, value in _profiles(profiles) if isinstance(value.get("target_id"), str)]
+    return list(dict.fromkeys(targets))
 
 
 def inside_project(declared: Any, root: Path, label: str, code: str,
@@ -225,22 +387,13 @@ def inside_project(declared: Any, root: Path, label: str, code: str,
     return path
 
 
-def check_scene_plot(submission: dict[str, Any], root: Path, errors: list[dict],
-                     unmeasured: list[str]) -> None:
-    """A shot belongs to a scene whose plot was approved before any wording.
+def check_kind(submission: Any, errors: list[dict]) -> str | None:
+    """The kind a submission declares, or a refusal saying why there is none.
 
-    A scene proposition and a blocking table say what happens and where people
-    stand; neither records which beat put a given thing in a given frame, and
-    neither is agreed before the text exists. Without that stop the first thing
-    anyone sees is a finished submission, and every correction after it is made
-    one shot at a time.
-
-    Not every submission is a shot. A reference-set image, a sheet panel, a
-    location plate and a probe belong to no scene, so a submission says which it
-    is. Saying nothing is refused rather than treated as the exempt case.
+    Not every submission depicts part of a scene. A reference-set image, a sheet
+    panel, a location plate and a probe belong to no scene, so a submission says
+    which it is. Saying nothing is refused rather than treated as the exempt case.
     """
-
-    from scene_plot import validate_scene_plot
 
     if not isinstance(submission, dict):
         errors.append(finding(
@@ -248,77 +401,69 @@ def check_scene_plot(submission: dict[str, Any], root: Path, errors: list[dict],
             "a submission is an object naming what it is and what it carries, and this is "
             f"{shape(submission)}",
         ))
-        return
+        return None
     kind = submission.get("kind")
-    if kind not in ("shot", "asset"):
+    if absent(kind):
+        # The required-field check reports the absence.
+        return None
+    if not isinstance(kind, str) or kind not in KINDS:
+        shown = repr(kind) if isinstance(kind, str) else shape(kind)
         errors.append(finding(
             "SUBMISSION_KIND_UNDECLARED",
-            "the submission declares no 'kind': 'shot' for a shot of a scene, 'asset' for a "
-            f"reference, a sheet panel, a plate or a probe, got {kind!r}",
+            f"the submission declares kind {shown}, which is none of {', '.join(KINDS)}: "
+            "shot, page or passage for a submission that depicts part of a scene plot, "
+            "asset for a reference, a sheet panel, a plate or a probe",
+            field="kind",
         ))
-        return
-    if kind == "asset":
-        # An asset belongs to no scene, so the plot rules do not apply to it.
-        # That is also the way around them, and the way around is a lie the gate
-        # cannot catch from the submission alone: nothing in a text says whether
-        # it is a shot. What it can catch is the lie that forgot to tidy up, and
-        # what it must not do is let the skipped rules pass in silence.
-        shot_fields = sorted(
-            name for name in ("scene_plot", "scene_id", "shot_id")
-            if isinstance(submission.get(name), str) and submission[name].strip()
-        )
-        if shot_fields:
-            errors.append(finding(
-                "ASSET_CARRIES_SHOT_FIELDS",
-                "the submission declares itself an asset and carries "
-                + ", ".join(shot_fields)
-                + ", which belong to a shot of a scene; an asset belongs to no scene",
-                fields=shot_fields,
-            ))
-            return
-        unmeasured.append(
-            "scene plot: the submission declares itself an asset, so the rules about a scene "
-            "plot, the shot it plans, and who is in the scene were not applied"
-        )
-        return
+        return None
+    return kind
 
-    declared = submission.get("scene_plot")
-    if not isinstance(declared, str) or not declared.strip():
-        errors.append(finding(
-            "SCENE_PLOT_MISSING",
-            "a shot is written from an approved scene plot; the submission carries its path as "
-            "'scene_plot' and its own id as 'shot_id'",
-        ))
-        return
-    candidate = Path(declared)
-    if candidate.is_absolute() or ".." in candidate.parts:
-        errors.append(finding(
-            "SCENE_PLOT_OUTSIDE_ROOT",
-            f"the scene plot path must stay inside the project: {declared}",
-        ))
-        return
-    path = (root / candidate).resolve()
-    try:
-        path.relative_to(root.resolve())
-    except ValueError:
-        errors.append(finding(
-            "SCENE_PLOT_OUTSIDE_ROOT",
-            f"the scene plot resolves outside the project: {declared}",
-        ))
-        return
+
+def plural(count: int, noun: str) -> str:
+    return f"{count} {noun}" + ("" if count == 1 else "s")
+
+
+def declared_units(value: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """The units a valid plot's realization declares, by id."""
+
+    return {unit["id"]: unit for unit in value["realization"]["units"]}
+
+
+def describe_units(realization: str, units: dict[str, dict[str, Any]]) -> str:
+    """The units a plot declares, as a reader of a refusal needs them listed."""
+
+    if realization == "pages":
+        return ", ".join(f"{name} ({plural(unit['panels'], 'panel')})" for name, unit in units.items())
+    return ", ".join(units)
+
+
+def read_scene_plot(declared: str, root: Path,
+                    errors: list[dict]) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    """The approved plot a scene-linked submission names, or refusals saying why not.
+
+    A scene proposition and a blocking table say what happens and where people
+    stand; neither records which beat put a given thing in a given frame, and
+    neither is agreed before the text exists. Without that stop the first thing
+    anyone sees is a finished submission, and every correction after it is made
+    one unit at a time.
+    """
+
+    from scene_plot import validate_scene_plot
+
+    path = inside_project(declared, root, "scene plot", "SCENE_PLOT_OUTSIDE_ROOT", errors)
+    if path is None:
+        return None
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         errors.append(finding("SCENE_PLOT_INVALID", f"the scene plot could not be read: {declared}: {exc}"))
-        return
+        return None
 
     report = validate_scene_plot(value)
     if not report["ok"]:
-        shown = report["errors"]
-        elided = len(report["errors"]) - len(shown)
-        detail = "; ".join(shown) + (f"; and {elided} more" if elided else "")
-        errors.append(finding("SCENE_PLOT_INVALID", f"the scene plot is invalid: {declared}: {detail}"))
-        return
+        errors.append(finding(
+            "SCENE_PLOT_INVALID", f"the scene plot is invalid: {declared}: " + "; ".join(report["errors"])))
+        return None
     if not report["approved"]:
         reason = "; ".join(report["approval_errors"]) or "it carries no approved block"
         code = (
@@ -327,29 +472,143 @@ def check_scene_plot(submission: dict[str, Any], root: Path, errors: list[dict],
             else "SCENE_PLOT_UNAPPROVED"
         )
         errors.append(finding(code, f"the scene plot is not approved: {declared}: {reason}"))
+        return None
+    return value, report
+
+
+def check_unit(submission: dict[str, Any], kind: str, value: dict[str, Any],
+               report: dict[str, Any], declared: str, errors: list[dict]) -> None:
+    """The unit a scene-linked submission depicts is one its approved plot declares.
+
+    A shot names a shot of the plot. A page names a page, and may narrow itself
+    to one panel within that page's declared panel count. A passage names the
+    passage it illustrates. Every refusal lists what the plot does declare, so
+    the next attempt is a choice from that list rather than a guess.
+    """
+
+    wanted = SCENE_KINDS[kind]
+    units = declared_units(value)
+    listing = describe_units(report["realization"], units)
+    if report["realization"] != wanted["realization"]:
+        other = next(name for name, spec in SCENE_KINDS.items()
+                     if spec["realization"] == report["realization"])
+        errors.append(finding(
+            "UNIT_NOT_IN_SCENE_PLOT",
+            f"the submission declares kind {kind!r} and the scene plot {declared} is realized as "
+            f"{report['realization']}: {listing}; a submission depicting one of them declares kind "
+            f"{other!r} and names it as {SCENE_KINDS[other]['unit']!r}",
+            realization=report["realization"], declared=list(units),
+        ))
+        return
+    field = wanted["unit"]
+    unit = submission.get(field)
+    if absent(unit):
+        errors.append(missing(field, f"the scene plot {declared} declares {report['realization']} {listing}"))
+        return
+    if not isinstance(unit, str):
+        errors.append(finding(
+            "UNIT_NOT_IN_SCENE_PLOT",
+            f"{field!r} carries {shape(unit)} rather than the id of the {kind} it depicts; the "
+            f"scene plot {declared} declares {report['realization']} {listing}",
+            field=field, declared=list(units),
+        ))
+        return
+    if unit not in units:
+        errors.append(finding(
+            "UNIT_NOT_IN_SCENE_PLOT",
+            f"{kind} {unit!r} is not in the approved scene plot {declared}, which declares "
+            f"{report['realization']} {listing}",
+            field=field, declared=list(units),
+        ))
+        return
+    panel = submission.get("panel")
+    if kind == "page" and panel is not None:
+        count = units[unit]["panels"]
+        if isinstance(panel, bool) or not isinstance(panel, int) or not 1 <= panel <= count:
+            shown = str(panel) if isinstance(panel, int) and not isinstance(panel, bool) else shape(panel)
+            errors.append(finding(
+                "UNIT_NOT_IN_SCENE_PLOT",
+                f"panel {shown} is not on page {unit!r}, which the scene plot {declared} declares "
+                f"with {plural(count, 'panel')}; "
+                + ("name panel 1, or leave 'panel' out for the whole page" if count == 1
+                   else f"name a panel from 1 to {count}, or leave 'panel' out for the whole page"),
+                field="panel", page_id=unit, panels=count,
+            ))
+
+
+def check_scene_plot(submission: dict[str, Any], kind: str, root: Path, errors: list[dict],
+                     unmeasured: list[str], shown: dict[str, list[str]] | None = None) -> None:
+    """A scene-linked submission depicts a unit of a scene whose plot was approved first.
+
+    `shown` maps each character the submission depicts to the fields that name
+    them: `characters`, and the visual subjects that carry a character id.
+    """
+
+    fields = {name for name in SCENE_FIELDS if not absent(submission.get(name))}
+    if kind == "asset":
+        # An asset belongs to no scene, so the plot rules do not apply to it.
+        # That is also the way around them, and the way around is a lie the gate
+        # cannot catch from the submission alone: nothing in a text says whether
+        # it depicts part of a scene. What it can catch is the lie that forgot to
+        # tidy up, and what it must not do is let the skipped rules pass in silence.
+        if fields:
+            errors.append(finding(
+                "FIELD_OF_ANOTHER_KIND",
+                "the submission declares itself an asset and carries " + ", ".join(sorted(fields))
+                + ", which belong to a submission that depicts part of a scene; an asset belongs "
+                "to no scene",
+                fields=sorted(fields),
+            ))
+            return
+        unmeasured.append(
+            "scene plot: the submission declares itself an asset, so the rules about a scene "
+            "plot, the unit it declares, and who is in the scene were not applied"
+        )
         return
 
+    own = {"scene_plot", "scene_id", SCENE_KINDS[kind]["unit"]} | ({"panel"} if kind == "page" else set())
+    foreign = sorted(fields - own)
+    if foreign:
+        errors.append(finding(
+            "FIELD_OF_ANOTHER_KIND",
+            f"the submission declares kind {kind!r} and carries " + ", ".join(foreign)
+            + ("; it names" if len(foreign) == 1 else "; they name")
+            + f" the unit of another kind, and a {kind} submission names its unit as "
+            f"{SCENE_KINDS[kind]['unit']!r}" + (" and may name a 'panel'" if kind == "page" else ""),
+            fields=foreign,
+        ))
+
+    declared = submission.get("scene_plot")
+    if absent(declared) or not isinstance(declared, str):
+        errors.append(missing("scene_plot"))
+        return
+    plot = read_scene_plot(declared, root, errors)
+    if plot is None:
+        return
+    value, report = plot
+
     scene_id = submission.get("scene_id")
-    if isinstance(scene_id, str) and scene_id.strip() and scene_id != report["scene_id"]:
+    if absent(scene_id):
+        errors.append(missing("scene_id", f"the scene plot {declared} covers {report['scene_id']!r}"))
+    elif scene_id != report["scene_id"]:
         errors.append(finding(
             "SCENE_ID_MISMATCH",
             f"the submission names scene {scene_id!r} and the plot covers {report['scene_id']!r}",
+            field="scene_id",
         ))
         return
 
-    # A submission naming somebody the scene does not contain is a shot of a
-    # different scene, or a plot that omits who was there. Either way the two
+    # A submission depicting somebody the scene does not contain belongs to a
+    # different scene, or its plot omits who was there. Either way the two
     # documents disagree and neither one is the answer.
-    present = submission.get("characters")
-    if isinstance(present, list):
-        for who in present:
-            if str(who) not in report["characters"]:
-                errors.append(finding(
-                    "CHARACTER_NOT_IN_SCENE",
-                    f"the submission names character {who!r}, and the scene plot {declared} "
-                    f"carries {report['characters']}",
-                    character=str(who),
-                ))
+    for who, sources in (shown or {}).items():
+        if who not in report["characters"]:
+            errors.append(finding(
+                "CHARACTER_NOT_IN_SCENE",
+                f"the submission names character {who!r} in {', '.join(sources)}, and the scene "
+                f"plot {declared} carries {report['characters']}",
+                character=who,
+            ))
 
     # The narrative this plot was approved against. A change above a plot
     # invalidates what was approved below it, and a gate that does not look is a
@@ -368,7 +627,7 @@ def check_scene_plot(submission: dict[str, Any], root: Path, errors: list[dict],
         if narrative_path is not None:
             try:
                 document = json.loads(narrative_path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError) as exc:
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
                 errors.append(finding(
                     "NARRATIVE_INVALID",
                     f"the narrative could not be read: {declared_narrative}: {exc}",
@@ -390,25 +649,26 @@ def check_scene_plot(submission: dict[str, Any], root: Path, errors: list[dict],
                         scene_plot=declared,
                     ))
 
-    shot_id = submission.get("shot_id")
-    if not isinstance(shot_id, str) or not shot_id.strip():
-        errors.append(finding(
-            "SHOT_NOT_IN_SCENE_PLOT",
-            "the submission carries no 'shot_id', so it cannot be matched to a shot in the scene plot",
-        ))
-        return
-    if shot_id not in report["shot_ids"]:
-        realization = report["realization"]
-        detail = (
-            f"it carries {report['shot_ids']}"
-            if realization == "shots"
-            else f"the scene is realized as {realization}, which a shot is not one of"
-        )
-        errors.append(finding(
-            "SHOT_NOT_IN_SCENE_PLOT",
-            f"shot {shot_id!r} is not in the approved scene plot {declared}; {detail}",
-            shot_id=shot_id,
-        ))
+    check_unit(submission, kind, value, report, declared, errors)
+
+
+def shown_characters(submission: dict[str, Any], visual: Any) -> dict[str, list[str]]:
+    """Each character a submission depicts, with the fields that name them."""
+
+    shown: dict[str, list[str]] = {}
+    present = submission.get("characters")
+    if isinstance(present, list):
+        for who in present:
+            shown.setdefault(str(who), []).append("characters")
+    subjects = visual.get("subjects") if isinstance(visual, dict) else None
+    if isinstance(subjects, dict):
+        for subject in subjects.values():
+            who = subject.get("character_id") if isinstance(subject, dict) else None
+            if isinstance(who, str) and who.strip():
+                where = "visual_continuity.subjects"
+                if where not in shown.setdefault(who, []):
+                    shown[who].append(where)
+    return shown
 
 
 def check_prohibitions(submission: dict[str, Any], root: Path, errors: list[dict],
@@ -569,108 +829,128 @@ def check_locks(text: str, locks: list[str], errors: list[dict]) -> None:
 def check_input_modes(
     inputs: list[dict],
     profile: dict[str, Any] | None,
+    offering: dict[str, Any] | None,
     errors: list[dict],
     unmeasured: list[str],
-) -> None:
-    """Compare the request keys this submission occupies against the profile.
+) -> list[str | None]:
+    """The mode each input occupies, and the model's rules about modes.
 
-    An input may name the request key it occupies. Where it does not, the role is
-    matched against the modes the profile declares, and a role that more than one
-    mode could hold is reported rather than charged. A submission carrying one
-    reference is not carrying every reference channel the surface exposes, and
-    refusing it for a conflict between two channels it never used would refuse a
-    submission that is fine.
+    A mode is the model's name for what an input supplies, such as reference
+    images or frame images. An input names its `mode`. Where a service is named,
+    it may name the `request_key` it occupies instead, and the offering says
+    which mode that key carries. Where it names neither, the role is matched
+    against the modes that take media, and a role more than one mode could hold
+    is reported rather than charged. A submission carrying one reference is not
+    carrying every channel the model exposes, and refusing it for a conflict
+    between two channels it never used would refuse a submission that is fine.
+
+    Exclusivity and counts are properties of the model, so they are checked
+    with or without a service.
     """
 
+    none: list[str | None] = [None] * len(inputs)
     if profile is None:
-        unmeasured.append("input mode exclusivity: no profile for the named target")
-        return
-    modes = [mode for mode in (profile.get("input_modes") or []) if mode.get("request_keys")]
+        unmeasured.append("input modes: no target profile was read, so the modes were not compared")
+        return none
+    modes = {mode["mode"]: mode for mode in profile.get("input_modes") or []
+             if isinstance(mode, dict) and isinstance(mode.get("mode"), str)}
     if not modes:
-        unmeasured.append("input mode exclusivity: the profile declares no mode carrying a request key")
-        return
+        unmeasured.append("input modes: the profile declares none, so the modes were not compared")
+        return none
+    keys = (offering or {}).get("request_keys") or {}
+    by_key = {key: mode for mode, values in keys.items() if isinstance(values, list) for key in values}
+    service = (offering or {}).get("service")
+    # The modes that take media: the ones the offering maps, or without a
+    # service, the ones whose count the model states.
+    media_modes = sorted(keys) if offering else sorted(name for name, mode in modes.items() if mode.get("max_inputs"))
 
-    by_key = {key: mode for mode in modes for key in mode["request_keys"]}
-    frame_roles = {"first_frame", "last_frame"}
-    used: set[str] = set()
-
+    resolved: list[str | None] = []
     for index, item in enumerate(inputs):
-        if not isinstance(item, dict):
+        mode = item.get("mode")
+        if mode is not None and (not isinstance(mode, str) or mode not in modes):
+            shown = repr(mode) if isinstance(mode, str) else shape(mode)
             unmeasured.append(
-                f"input mode exclusivity: input {index} is not an object, so it names no "
-                "request key"
+                f"input modes: input {index} names mode {shown}, which the profile does not record; "
+                f"it records {', '.join(repr(name) for name in sorted(modes))}"
             )
+            resolved.append(None)
             continue
-        declared = item.get("request_key")
-        if declared is not None:
-            if not isinstance(declared, str):
+        key = item.get("request_key")
+        if key is not None and not isinstance(key, str):
+            unmeasured.append(
+                f"input modes: input {index} names a request key that is not a name but {shape(key)}, "
+                "so the mode it occupies was not read from it"
+            )
+        elif key is not None and offering is not None:
+            if key not in by_key:
                 unmeasured.append(
-                    f"input mode exclusivity: input {index} names a request key that is not a "
-                    f"name but {shape(declared)}, so the channel it occupies was not read"
+                    f"input modes: input {index} names request key {key!r}, which the offering on "
+                    f"{service!r} does not record; it records {', '.join(sorted(by_key)) or 'none'}"
                 )
-                continue
-            if declared in by_key:
-                used.add(declared)
+            elif mode is not None and mode != by_key[key]:
+                errors.append(finding(
+                    "INPUT_MODE_CONFLICT",
+                    f"input {index} names mode {mode!r} and request key {key!r}, which the offering on "
+                    f"{service!r} gives to mode {by_key[key]!r}",
+                    input=index, mode=mode, request_key=key,
+                ))
             else:
+                mode = by_key[key]
+        if mode is None:
+            role = item.get("role", "reference")
+            if not isinstance(role, str):
                 unmeasured.append(
-                    f"input mode exclusivity: input {index} names request key {declared!r}, "
-                    "which this profile does not record"
+                    f"input modes: input {index} names a role that is not a name but {shape(role)}, "
+                    "so the mode it occupies was not read"
                 )
-            continue
-        role = item.get("role", "reference")
-        if not isinstance(role, str):
-            unmeasured.append(
-                f"input mode exclusivity: input {index} names a role that is not a name "
-                f"but {shape(role)}, so the channel it occupies was not read"
-            )
-            continue
-        wants_frame = role in frame_roles
-        candidates = sorted({
-            key
-            for mode in modes
-            if ("frame" in str(mode.get("mode", "")).lower()) == wants_frame
-            for key in mode["request_keys"]
-        })
-        if len(candidates) == 1:
-            used.add(candidates[0])
-        elif not candidates:
-            unmeasured.append(
-                f"input mode exclusivity: the profile declares no mode that carries the role {role!r}"
-            )
-        else:
-            unmeasured.append(
-                f"input mode exclusivity: the role {role!r} could occupy any of {candidates}; "
-                "name request_key on the input to settle it"
-            )
+                resolved.append(None)
+                continue
+            wants_frame = role in {"first_frame", "last_frame"}
+            candidates = [name for name in media_modes if ("frame" in name.lower()) == wants_frame]
+            if len(candidates) == 1:
+                mode = candidates[0]
+            elif not candidates:
+                unmeasured.append(
+                    f"input modes: input {index} has the role {role!r}, and the profile declares no mode that carries it"
+                )
+            else:
+                where = ", ".join(repr(name) for name in candidates)
+                also = (f", or one of the request keys {', '.join(key for name in candidates for key in keys[name])}"
+                        if offering else "")
+                unmeasured.append(
+                    f"input modes: input {index} has the role {role!r}, which could occupy any of the modes "
+                    f"{where}; name mode on the input{also} to settle it"
+                )
+        resolved.append(mode)
 
+    used = [mode for mode in resolved if mode is not None]
+    for name in sorted(set(used)):
+        limit = modes[name].get("max_inputs")
+        count = used.count(name)
+        if isinstance(limit, int) and not isinstance(limit, bool) and count > limit:
+            errors.append(finding(
+                "INPUT_MODE_LIMIT",
+                f"the profile records that mode {name!r} takes at most {plural(limit, 'input')}, and this "
+                f"submission sends {count}",
+                mode=name, limit=limit, count=count,
+            ))
     # One finding per excluded pair. The profile states an exclusion from both
     # sides, and reporting it twice says the submission has two problems.
     reported: set[tuple[str, str]] = set()
-    outside: set[str] = set()
-    for key in sorted(used):
-        for excluded in by_key[key].get("excludes") or []:
-            if excluded not in by_key:
-                # The exclusion names something that is not an input, such as a
-                # size setting. This gate reads inputs, so it cannot settle it.
-                outside.add(excluded)
-                continue
+    for name in sorted(set(used)):
+        for excluded in modes[name].get("excludes") or []:
             if excluded not in used:
                 continue
-            pair = (min(key, excluded), max(key, excluded))
+            pair = (min(name, excluded), max(name, excluded))
             if pair in reported:
                 continue
             reported.add(pair)
             errors.append(finding(
                 "INPUT_MODE_CONFLICT",
-                f"the profile records that {pair[0]} excludes {pair[1]}, and this submission uses both",
-                request_key=pair[0],
-                excluded=pair[1],
+                f"the profile records that mode {pair[0]!r} excludes mode {pair[1]!r}, and this submission uses both",
+                mode=pair[0], excluded=pair[1],
             ))
-    for excluded in sorted(outside):
-        unmeasured.append(
-            f"input mode exclusivity: a mode this submission uses excludes {excluded!r}, "
-            "which is not an input and is not declared here"
-        )
+    return resolved
 
 
 def minimum_shorter_side(
@@ -770,15 +1050,6 @@ def check_identity_resolution(
             ))
 
 
-FACING = re.compile(
-    r"\b(?:with\s+(?:his|her|their|its)\s+back\s+(?:turned|to)|back\s+turned|backs?\s+to\s+(?:the|us)|from\s+behind|"
-    r"facing\s+away|turned\s+away|rear\s+view|back\s+view|seen\s+from\s+(?:behind|underneath))\b",
-    re.IGNORECASE,
-)
-
-
-
-
 def check_identity_carrier(inputs: list[dict], obligations: dict, unmeasured: list[str]) -> None:
     """A sheet reaches a surface only as an image.
 
@@ -800,51 +1071,35 @@ def check_identity_carrier(inputs: list[dict], obligations: dict, unmeasured: li
     )
 
 
-def select_offering(profile: dict[str, Any] | None, service: str | None, unmeasured: list[str]) -> dict[str, Any] | None:
-    """The offering is the model as one service exposes it.
+def select_offering(profile: dict[str, Any] | None, service: Any, unmeasured: list[str]) -> dict[str, Any] | None:
+    """The offering of the service the submission names, and no other.
 
-    A profile may list several; the submission names the service it will use. With
-    one offering the choice is settled; with none, the mode-level request keys stand
-    on their own.
+    An offering is the model as one service exposes it: its request keys, its
+    limits and its schema. A submission that names no service is checked against
+    the model alone, and each rule that belongs to a service says it was not
+    applied. An offering is never chosen for a submission that did not choose it.
     """
 
     if profile is None:
         return None
-    offerings = [o for o in (profile.get("offerings") or []) if isinstance(o, dict)]
-    if not offerings:
+    offerings = [item for item in (profile.get("offerings") or []) if isinstance(item, dict)]
+    services = ", ".join(str(item.get("service")) for item in offerings) or "none"
+    if absent(service):
+        for rule, effect in (("request keys", "no request key was read"),
+                             ("service limits", "no offering limit was applied"),
+                             ("parameter schema", "no service schema was evaluated")):
+            unmeasured.append(f"{rule}: the submission names no service, so {effect}; the profile records "
+                              f"offerings on {services}")
         return None
-    if service:
-        for offering in offerings:
-            if offering.get("service") == service:
-                return offering
-        unmeasured.append(
-            f"offering: the profile records no offering on service {service!r}; "
-            f"it records {[o.get('service') for o in offerings]}"
-        )
-        return None
-    if len(offerings) == 1:
-        return offerings[0]
+    for offering in offerings:
+        if offering.get("service") == service:
+            return offering
+    shown = repr(service) if isinstance(service, str) else shape(service)
     unmeasured.append(
-        "offering: the profile records several services "
-        f"{[o.get('service') for o in offerings]} and the submission names none"
+        f"offering: the profile records no offering on service {shown}; it records {services}, so no "
+        "request key, service limit or service schema was applied"
     )
     return None
-
-
-def apply_offering(profile: dict[str, Any] | None, offering: dict[str, Any] | None) -> dict[str, Any] | None:
-    """Request keys belong to the offering; the mode keeps its meaning."""
-
-    if profile is None or offering is None or not offering.get("request_keys"):
-        return profile
-    keys = offering["request_keys"]
-    modes = []
-    for mode in profile.get("input_modes") or []:
-        name = str(mode.get("mode", ""))
-        if name in keys:
-            modes.append({**mode, "request_keys": list(keys[name])})
-        else:
-            modes.append(mode)
-    return {**profile, "input_modes": modes}
 
 
 def check_parameters(parameters: dict[str, Any], offering: dict[str, Any] | None, media_kind: list[str], errors: list[dict], unmeasured: list[str]) -> None:
@@ -853,10 +1108,12 @@ def check_parameters(parameters: dict[str, Any], offering: dict[str, Any] | None
     The duration band is the one such limit recorded so far. A submission that
     states its duration is checked against the band; one that does not state it
     on a video surface is reported, because the gate cannot check what it was not
-    given.
+    given. Without an offering, the band is the service's and is not applied.
     """
 
-    constraints = (offering or {}).get("constraints") or {}
+    if offering is None:
+        return
+    constraints = offering.get("constraints") or {}
     band = constraints.get("duration_seconds")
     is_video = bool(set(media_kind) & {"video", "video-with-audio"})
     duration = parameters.get("duration")
@@ -972,60 +1229,109 @@ def schema_violations(instance: Any, schema: Any, path: str = "$") -> list[str]:
     return out
 
 
-def build_instance(text: str, inputs: list[dict], parameters: dict[str, Any], offering: dict[str, Any]) -> dict[str, Any]:
-    """The request as the service would see it, from what the submission declares."""
-
-    instance: dict[str, Any] = {"model": offering.get("model_identifier"), "positivePrompt": text}
-    for key, value in (parameters or {}).items():
-        instance[key] = value
-    media: dict[str, list[str]] = {}
-    keys_by_mode = offering.get("request_keys") or {}
-    for item in inputs:
-        key = str(item.get("request_key") or "")
-        if not key:
-            # Resolve the role the way the input-mode check does: a frame role takes a
-            # frame mode, any other role the single non-frame mode, if there is one.
-            role = str(item.get("role", "reference"))
-            wants_frame = role in ("first_frame", "last_frame")
-            candidates = sorted({k for mode, ks in keys_by_mode.items() if ("frame" in mode.lower()) == wants_frame for k in ks})
-            key = candidates[0] if len(candidates) == 1 else ""
-        if key.startswith("inputs."):
-            media.setdefault(key[len("inputs."):], []).append("00000000-0000-4000-8000-000000000000")
-        elif key in ("seedImage", "maskImage"):
-            instance.setdefault("inputs", {})[key] = "00000000-0000-4000-8000-000000000000"
-        elif key:
-            media.setdefault(key, []).append("00000000-0000-4000-8000-000000000000")
-    if media:
-        instance.setdefault("inputs", {}).update(media)
-    return instance
+# A stand-in for one media reference, in each form a request shape can declare.
+# The schema check needs a value of the right form, not the file itself.
+MEDIA_REFERENCES = {
+    "uuid": "00000000-0000-4000-8000-000000000000",
+    "url": "https://example.invalid/media",
+    "data-uri": "data:image/png;base64,AAAA",
+}
+REQUEST_SHAPE_FIELDS = ("model_key", "text_key", "media_reference", "single_value_keys")
 
 
-def check_schema(text: str, inputs: list[dict], parameters: dict[str, Any] | None, offering: dict[str, Any] | None, root: Path, errors: list[dict], unmeasured: list[str]) -> None:
+def place(request: dict[str, Any], key: str, value: Any, *, single: bool) -> None:
+    """Put a value at a dotted request path, as one value or appended to a list."""
+
+    parts = key.split(".")
+    target = request
+    for part in parts[:-1]:
+        nested = target.get(part)
+        if not isinstance(nested, dict):
+            nested = target[part] = {}
+        target = nested
+    if single:
+        target[parts[-1]] = value
+    else:
+        current = target.get(parts[-1])
+        target[parts[-1]] = (current if isinstance(current, list) else []) + [value]
+
+
+def media_key(item: dict[str, Any], mode: str | None, offering: dict[str, Any]) -> str | None:
+    """The request key one input occupies on this offering, when it can be settled."""
+
+    key = item.get("request_key")
+    if isinstance(key, str) and key:
+        return key
+    keys = (offering.get("request_keys") or {}).get(mode) if mode else None
+    return keys[0] if isinstance(keys, list) and len(keys) == 1 else None
+
+
+def build_instance(text: str, inputs: list[dict], modes: list[str | None], parameters: dict[str, Any],
+                   offering: dict[str, Any], negative_text: str | None = None) -> dict[str, Any]:
+    """The request as the service would see it, formed by the shape the offering declares.
+
+    The declaration names where the model identifier and the text go, where a
+    negative text goes if the service has one, how a media reference is written,
+    and which media keys take one value rather than a list. Nothing about any
+    service is written here.
+    """
+
+    shape_ = offering["request_shape"]
+    request: dict[str, Any] = copy.deepcopy(parameters or {})
+    place(request, shape_["model_key"], offering.get("model_identifier"), single=True)
+    place(request, shape_["text_key"], text, single=True)
+    if negative_text and shape_.get("negative_text_key"):
+        place(request, shape_["negative_text_key"], negative_text, single=True)
+    reference = MEDIA_REFERENCES[shape_["media_reference"]]
+    single = set(shape_.get("single_value_keys") or [])
+    for item, mode in zip(inputs, modes):
+        key = media_key(item, mode, offering)
+        if key:
+            place(request, key, reference, single=key in single)
+    return request
+
+
+def check_schema(text: str, inputs: list[dict], modes: list[str | None], parameters: dict[str, Any] | None,
+                 offering: dict[str, Any] | None, root: Path, errors: list[dict], unmeasured: list[str],
+                 negative_text: str | None = None) -> None:
     """The service's own parameter schema, observed and stored, settles what it can."""
 
-    if not offering or not offering.get("schema_snapshot"):
-        unmeasured.append("parameter schema: the offering records no observed schema")
+    if offering is None:
+        return
+    service = offering.get("service")
+    shape_ = offering.get("request_shape")
+    if (not isinstance(shape_, dict) or any(field not in shape_ for field in REQUEST_SHAPE_FIELDS)
+            or shape_.get("media_reference") not in MEDIA_REFERENCES):
+        unmeasured.append(f"parameter schema: the offering on {service!r} declares no complete request shape, "
+                          "so the request could not be formed")
+        return
+    if negative_text and not shape_.get("negative_text_key"):
+        unmeasured.append(f"negative text: the offering on {service!r} declares no negative text key, so the "
+                          "negative text is not part of the request the schema reads")
+    if not offering.get("schema_snapshot"):
+        unmeasured.append(f"parameter schema: the offering on {service!r} records no observed schema")
         return
     if parameters is None:
         unmeasured.append("parameter schema: the submission states no parameters, so the schema was not evaluated")
         return
-    candidates = [Path(__file__).resolve().parents[1] / offering["schema_snapshot"], root / offering["schema_snapshot"]]
-    path = next((c for c in candidates if c.is_file()), None)
+    candidates = [ROOT / offering["schema_snapshot"], root / offering["schema_snapshot"]]
+    path = next((candidate for candidate in candidates if candidate.is_file()), None)
     if path is None:
         unmeasured.append(f"parameter schema: {offering['schema_snapshot']} is not on disk")
         return
     try:
         snapshot = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
         unmeasured.append(f"parameter schema: {path.name} did not load: {error}")
         return
-    schema = snapshot.get("schema")
+    schema = snapshot.get("schema") if isinstance(snapshot, dict) else None
     if not isinstance(schema, dict):
         unmeasured.append(f"parameter schema: {path.name} carries no schema")
         return
-    instance = build_instance(text, inputs, parameters or {}, offering)
+    observed = snapshot.get("observed_at") or offering.get("observed_at") or "undated"
+    instance = build_instance(text, inputs, modes, parameters or {}, offering, negative_text)
     for violation in dict.fromkeys(schema_violations(instance, schema)):
-        errors.append(finding("SCHEMA_REFUSAL", f"the service's parameter schema (observed {snapshot.get('observed_at', 'undated')}) refuses this request: {violation}", schema_rule=violation))
+        errors.append(finding("SCHEMA_REFUSAL", f"the parameter schema of the offering on {service!r} (observed {observed}) refuses this request: {violation}", schema_rule=violation))
 
 
 def check_as_written(parameters: dict[str, Any] | None, offering: dict[str, Any] | None, unmeasured: list[str]) -> None:
@@ -1054,20 +1360,6 @@ def check_as_written(parameters: dict[str, Any] | None, offering: dict[str, Any]
                 )
 
     walk(defaults, parameters, "")
-
-
-
-
-
-
-DIALECTS = {
-    "parenthesis-colon": (r"\([^()]*:\s*\d+(?:\.\d+)?\s*\)", "(term:number)"),
-    "compel": (r"\)\s*\d+(?:\.\d+)?|\w\+\+|\w--", "(term)number, term++ or term--"),
-}
-
-
-
-
 
 
 def declared_mapping(value: Any, label: str, unmeasured: list[str]) -> dict[str, Any] | None:
@@ -1126,45 +1418,129 @@ def review_requirements(submission: dict) -> list[dict]:
             for i, value in enumerate(values) if isinstance(value, str) and value.strip()]
 
 
-from execution_contract import content_id as c_visual_hash
+def verdict(submission: Any, profile: dict[str, Any] | None, offering: dict[str, Any] | None,
+            errors: list[dict], unmeasured: list[str]) -> dict[str, Any]:
+    """One report shape for every answer, including a document that is not an object."""
+
+    known = submission if isinstance(submission, dict) else {}
+    return {
+        "gate": "submission",
+        "submission_id": known.get("submission_id"),
+        "target": known.get("target"),
+        "profile_found": profile is not None,
+        "service": (offering or {}).get("service") or known.get("service"),
+        "offering_observed_at": (offering or {}).get("observed_at"),
+        "review_requirements": review_requirements(known),
+        "status": "refused" if errors else "admitted",
+        "errors": errors,
+        "unmeasured": unmeasured,
+    }
 
 
-def gate(submission: dict[str, Any], profiles_dir: Path, root: Path) -> dict[str, Any]:
+def check_route_reading(submission: dict[str, Any], root: Path, errors: list[dict]) -> None:
+    """A current reading of the media route, with an application from each required document."""
+
+    from route_reading import require_route_reading
+    try:
+        require_route_reading(submission["route_reading"], project=root, routes={"media"})
+    except (ValueError, OSError, TypeError, KeyError) as exc:
+        errors.append(finding("ROUTE_READING_INVALID", f"route_reading: {exc}", field="route_reading"))
+
+
+def check_visual(submission: dict[str, Any], kind: str | None, gaps: set[str], root: Path,
+                 profile: dict[str, Any] | None, errors: list[dict], unmeasured: list[str]) -> Any:
+    """The visual continuity block, checked against its hash and against current bytes.
+
+    Returns the block when it answers its contract, so the scene rules can read
+    which characters it depicts.
+    """
+
+    import execution_contract
+    import visual_continuity
+
+    if "visual_continuity" in gaps:
+        return None
+    if kind is None:
+        unmeasured.append(
+            "visual continuity: the submission declares no kind the block could be checked "
+            "against, so it was not checked"
+        )
+        return None
+    visual = submission["visual_continuity"]
+    if ("visual_continuity_sha256" not in gaps
+            and execution_contract.content_id(visual) != submission["visual_continuity_sha256"]):
+        errors.append(finding(
+            "VISUAL_CONTINUITY_INVALID",
+            "visual_continuity_sha256 does not match the visual_continuity block, so the block "
+            "changed after it was built; rebuild it with scripts/visual_continuity.py build",
+            field="visual_continuity_sha256",
+        ))
+    try:
+        continuity = visual_continuity.require(visual, submission=submission, root=root, profile=profile)
+    except (ValueError, OSError, TypeError, KeyError) as exc:
+        errors.append(finding("VISUAL_CONTINUITY_INVALID", f"visual_continuity: {exc}",
+                              field="visual_continuity"))
+        return None
+    unmeasured.extend(item["reason"] if isinstance(item, dict) else item for item in continuity["unmeasured"])
+    return visual
+
+
+def gate(submission: dict[str, Any], profiles_dir: Path | Sequence[Path], root: Path) -> dict[str, Any]:
+    """The verdict on one submission.
+
+    `profiles_dir` is one profile directory or several, searched in order, so a
+    project's own profiles can come before the suite's.
+    """
+
     errors: list[dict[str, Any]] = []
     unmeasured: list[str] = []
 
     # A submission is an object, and every check below reads a named field of
     # it. A string, a list or a number carries none, so asking one of them for
-    # `text` raises where a gate has to refuse. The shot rules already state
-    # what a submission is, so the refusal is theirs and the verdict is built
+    # `text` raises where a gate has to refuse. The kind rule already states
+    # what a submission is, so the refusal is its own and the verdict is built
     # out of the nothing that is known about this document.
     if not isinstance(submission, dict):
-        check_scene_plot(submission, root, errors, unmeasured)
-        return {
-            "gate": "submission",
-            "submission_id": None,
-            "target": None,
-            "profile_found": False,
-            "service": None,
-            "offering_observed_at": None,
-            "status": "refused",
-            "errors": errors,
-            "unmeasured": unmeasured,
-        }
+        check_kind(submission, errors)
+        return verdict(submission, None, None, errors, unmeasured)
 
-    from route_reading import require_route_reading
-    try:
-        require_route_reading(submission.get("route_reading"), project=root, routes={"media"})
-    except (ValueError, OSError, TypeError, KeyError) as exc:
-        errors.append(finding("ROUTE_READING_INVALID", str(exc)))
+    # A draft still holding a placeholder is unfinished, and every rule read
+    # against it would report the placeholder under another name.
+    unfilled = placeholders(submission)
+    if unfilled:
+        for field, asks in unfilled:
+            errors.append(finding("PLACEHOLDER_UNFILLED", f"placeholder not filled: {field}",
+                                  field=field, asks=asks))
+        unmeasured.append(
+            f"every rule: {plural(len(unfilled), 'field')} still "
+            + ("holds" if len(unfilled) == 1 else "hold")
+            + " a placeholder, so no rule was applied; fill them and run the gate again"
+        )
+        return verdict(submission, None, None, errors, unmeasured)
+
+    kind = check_kind(submission, errors)
+    # The fields every kind carries. The fields of a scene-linked kind are
+    # reported by the scene rules, which can name what the plot declares.
+    gaps = {field for field in REQUIRED_EVERY_KIND if absent(submission.get(field))}
+    for field in REQUIRED_EVERY_KIND:
+        if field in gaps:
+            errors.append(missing(field))
+
+    if "route_reading" not in gaps:
+        check_route_reading(submission, root, errors)
     text = submission.get("text")
-    if not isinstance(text, str) or not text.strip():
-        errors.append(finding("TEXT_MISSING", "the submission carries no model-facing text"))
+    if "text" not in gaps and not isinstance(text, str):
+        errors.append(finding(
+            "TEXT_MISSING",
+            f"'text' carries {shape(text)} where the model-facing text goes",
+            field="text",
+        ))
+    if not isinstance(text, str):
         text = ""
 
     obligations = declared_mapping(submission.get("obligations"), "obligations", unmeasured) or {}
     locks = declared_phrases(obligations.get("locks"), "lock surfaces", unmeasured)
-    features = declared_phrases(obligations.get("permanent_features"), "permanent features", unmeasured)
+    declared_phrases(obligations.get("permanent_features"), "permanent features", unmeasured)
     identity_roles = declared_phrases(
         obligations.get("identity_reference_roles"), "identity reference roles", unmeasured)
     # A parameter block that was not read is not an empty one: the schema check
@@ -1175,16 +1551,14 @@ def gate(submission: dict[str, Any], profiles_dir: Path, root: Path) -> dict[str
     if text_form is not None and not isinstance(text_form, str):
         unmeasured.append(
             f"text form: the submission states {shape(text_form)} rather than a "
-            "name, so neither the vocabulary nor the contradiction check read it"
+            "name, so it was not read"
         )
-        text_form = None
     negative_text = submission.get("negative_text")
     if negative_text is not None and not isinstance(negative_text, str):
         unmeasured.append(
             f"negative text: the submission states {shape(negative_text)} rather "
-            "than text, so it was not compared against the primary field"
+            "than text, so it was not read"
         )
-        negative_text = None
     # An input that is not an object names no role, no request key and no file.
     declared_inputs = submission.get("inputs") or []
     if not isinstance(declared_inputs, list):
@@ -1194,27 +1568,35 @@ def gate(submission: dict[str, Any], profiles_dir: Path, root: Path) -> dict[str
     for index, item in enumerate(declared_inputs):
         if not isinstance(item, dict):
             unmeasured.append(f"inputs[{index}] is not an object, so nothing about it was read")
-    profile = load_profile(str(submission.get("target") or ""), profiles_dir)
-    if profile is None and submission.get("target"):
-        unmeasured.append(f"target profile {submission['target']!r} was not found in {profiles_dir}")
 
-    import visual_continuity
-    try:
-        visual=submission.get('visual_continuity')
-        if c_visual_hash(visual)!=submission.get('visual_continuity_sha256'):
-            raise ValueError('visual continuity hash mismatch')
-        continuity=visual_continuity.require(visual,submission=submission,root=root,profile=profile)
-        unmeasured.extend(x['reason'] if isinstance(x,dict) else x for x in continuity['unmeasured'])
-    except (ValueError,OSError,TypeError,KeyError) as exc:
-        errors.append(finding('VISUAL_CONTINUITY_INVALID',str(exc)))
-    check_scene_plot(submission, root, errors, unmeasured)
+    target = submission.get("target")
+    profile = None
+    if absent(target):
+        unmeasured.append("target: the submission names no target, so no target profile was read")
+    elif not isinstance(target, str):
+        unmeasured.append(f"target: the submission states {shape(target)} rather than a target id, "
+                          "so no target profile was read")
+    else:
+        profile = load_profile(target, profiles_dir)
+        if profile is None:
+            unmeasured.append(
+                f"target profile {target!r} was not found in "
+                + ", ".join(str(item) for item in profile_directories(profiles_dir))
+                + "; they record " + (", ".join(profile_targets(profiles_dir)) or "none")
+            )
+
+    visual = check_visual(submission, kind, gaps, root, profile, errors, unmeasured)
+    if kind is not None:
+        check_scene_plot(submission, kind, root, errors, unmeasured,
+                         shown_characters(submission, visual))
     check_prohibitions(submission, root, errors, unmeasured)
     check_locks(text, locks, errors)
     check_identity_carrier(inputs, obligations, unmeasured)
     offering = select_offering(profile, submission.get("service"), unmeasured)
-    check_input_modes(inputs, apply_offering(profile, offering), errors, unmeasured)
+    modes = check_input_modes(inputs, profile, offering, errors, unmeasured)
     check_parameters(parameters or {}, offering, list((profile or {}).get("media_kind") or []), errors, unmeasured)
-    check_schema(text, inputs, parameters, offering, root, errors, unmeasured)
+    check_schema(text, inputs, modes, parameters, offering, root, errors, unmeasured,
+                 negative_text if isinstance(negative_text, str) else None)
     check_as_written(parameters, offering, unmeasured)
     minimum, source = minimum_shorter_side(profile, obligations)
     check_identity_resolution(
@@ -1235,29 +1617,39 @@ def gate(submission: dict[str, Any], profiles_dir: Path, root: Path) -> dict[str
     if not obligations.get("permanent_features"):
         unmeasured.append("permanent features: the submission declares none")
 
-    return {
-        "gate": "submission",
-        "submission_id": submission.get("submission_id"),
-        "target": submission.get("target"),
-        "profile_found": profile is not None,
-        "service": (offering or {}).get("service") or submission.get("service"),
-        "offering_observed_at": (offering or {}).get("observed_at"),
-        "review_requirements": review_requirements(submission),
-        "status": "refused" if errors else "admitted",
-        "errors": errors,
-        "unmeasured": unmeasured,
-    }
+    return verdict(submission, profile, offering, errors, unmeasured)
+
+
+def print_text(report: dict[str, Any], stream: Any = None) -> None:
+    """The report as lines a person reads, with nothing the JSON carries left out."""
+
+    stream = sys.stdout if stream is None else stream
+    print(f"{report['status']}: {report['submission_id']} -> {report['target']}", file=stream)
+    for item in report["errors"]:
+        print(f"  refused  {item['code']}: {item['message']}", file=stream)
+        if item.get("asks"):
+            print(f"           asks for: {item['asks']}", file=stream)
+    for item in report["unmeasured"]:
+        print(f"  unmeasured  {item}", file=stream)
+    for item in report.get("review_requirements") or []:
+        print(f"  review  {item['id']} ({item['requires']}): {item['statement']}", file=stream)
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Refuse a submission with provable defects.")
+    parser = argparse.ArgumentParser(
+        description="Refuse a submission with provable defects.",
+        epilog="Write a submission skeleton with scripts/submission_draft.py new.",
+    )
     parser.add_argument("submission", type=Path)
-    parser.add_argument("--profiles", type=Path, default=DEFAULT_PROFILES)
+    parser.add_argument("--profiles", type=Path, action="append", default=[],
+                        help="A target profile directory, such as the project's own; repeatable. "
+                             "They are searched in order, and the suite's profiles last.")
     parser.add_argument("--root", type=Path, default=None,
-                        help="Root for relative input paths. Defaults to the directory "
-                             "holding the submission.")
+                        help="The project root that relative paths resolve from. Defaults to the "
+                             "directory holding the submission.")
     parser.add_argument("--json", action="store_true", help="Print the report and nothing else")
     args = parser.parse_args(argv)
+    profiles = [*args.profiles, DEFAULT_PROFILES]
 
     # Three answers, three exit codes: 1 is a refusal, 2 is a submission that
     # could not be read, 3 is a gate that broke. A file that is not UTF-8 is the
@@ -1272,7 +1664,7 @@ def main(argv: list[str] | None = None) -> int:
 
     root = args.root if args.root is not None else args.submission.resolve().parent
     try:
-        report = gate(submission, args.profiles, root)
+        report = gate(submission, profiles, root)
     except Exception:
         # A verdict and a crash are different answers, and a caller that gets
         # the same exit code for both cannot tell a refusal from a broken gate.
@@ -1282,13 +1674,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
-        print(f"{report['status']}: {report['submission_id']} -> {report['target']}")
-        for item in report["errors"]:
-            print(f"  refused  {item['code']}: {item['message']}")
-        for item in report["unmeasured"]:
-            print(f"  unmeasured  {item}")
+        print_text(report)
     return 1 if report["status"] == "refused" else 0
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

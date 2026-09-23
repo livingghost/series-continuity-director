@@ -179,7 +179,7 @@ class ResumeTests(ResumeFixture, unittest.TestCase):
         (self.root / 'source.txt').write_text('Changed synthetic premise.')
         before = self.files()
         result = subprocess.run([sys.executable, str(Path(w.__file__)), 'resume', '--root', str(self.root), '--run', RUN],
-                                capture_output=True, text=True, timeout=15)
+                                capture_output=True, text=True, encoding='utf-8', timeout=15)
         self.assertEqual(result.returncode, 1, result.stderr)
         report = json.loads(result.stdout)
         self.assertTrue(report['integrity']['ok'])
@@ -243,4 +243,6 @@ class RecordingRecoveryTests(ResumeFixture, unittest.TestCase):
 
 
 if __name__ == '__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     unittest.main()

@@ -1,6 +1,12 @@
 {
-  "submission_id": "asset-carries-shot-fields",
-  "kind": "asset",
+  "submission_id": "page-carries-shot-id",
+  "kind": "page",
+  "scene_plot": "fixtures/scene-plot-pages.json",
+  "scene_id": "SUBMISSION-GATE-PAGES",
+  "page_id": "PG01",
+  "shot_id": "CLEAN-S03",
+  "expected_status": "refused",
+  "expected_code": "FIELD_OF_ANOTHER_KIND",
   "target": "xai-grok-imagine-2",
   "text": "A boathouse loft at first light seen from the hatch. The very broad anthro badger stands at the bench with his back to us. He has a white stripe from brow to nape and one short thick tail. He wears a collarless linen shirt with the sleeves pushed past the elbow under a rust-brown leather apron, barefoot. A brass lantern with a trimmed wick sits on the near end of the bench in front of him. The window over the far end is bright and the near end stays dim.",
   "inputs": [
@@ -26,9 +32,5 @@
   "narrative": "fixtures/narrative.json",
   "characters": [
     "C01"
-  ],
-  "scene_plot": "fixtures/scene-plot.json",
-  "shot_id": "CLEAN-S03",
-  "expected_status": "refused",
-  "expected_code": "ASSET_CARRIES_SHOT_FIELDS"
+  ]
 }

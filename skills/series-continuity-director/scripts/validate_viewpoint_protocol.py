@@ -66,7 +66,7 @@ def main() -> int:
         [sys.executable, "scripts/build_example.py", "--check"],
         cwd=ROOT,
         env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
-        text=True,
+        text=True, encoding='utf-8',
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
@@ -165,4 +165,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

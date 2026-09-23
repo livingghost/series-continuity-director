@@ -2,7 +2,11 @@
   "artifact_type": "target-profile",
   "target_id": "seedance-2-0",
   "label": "Seedance 2.0 multimodal video with native audio",
-  "model_identifier": "bytedance:seedance@2.0",
+  "model": {
+    "maker": "ByteDance",
+    "name": "Seedance",
+    "version": "2.0"
+  },
   "media_kind": [
     "video-with-audio"
   ],
@@ -12,10 +16,6 @@
       {
         "kind": "vendor-documentation",
         "reference": "Seedance prompt guidance"
-      },
-      {
-        "kind": "surface-control",
-        "reference": "Runware model schema for bytedance:seedance@2.0"
       }
     ]
   },
@@ -117,8 +117,7 @@
       "4k: 3840x2160, 3326x2494, 2880x2880, 2496x3328, 2160x3840, 4398x1886"
     ],
     "notes": [
-      "Width and height are required whenever frame images are not supplied.",
-      "Every pair above, including the 4k tier, is in the host's parameter schema for this model."
+      "Width and height are required whenever frame images are not supplied."
     ]
   },
   "input_modes": [
@@ -129,50 +128,40 @@
     },
     {
       "mode": "frame images",
-      "request_keys": [
-        "inputs.frameImages"
-      ],
       "limits": "at most two, addressed as first and last",
+      "max_inputs": 2,
       "media_supplies": "the endpoints of the motion",
       "text_must_establish": "the path between them without creating a competing landing",
       "excludes": [
-        "inputs.referenceImages",
-        "inputs.referenceVideos",
-        "inputs.referenceAudios",
-        "width",
-        "height"
+        "reference images",
+        "reference videos",
+        "reference audios"
       ]
     },
     {
       "mode": "reference images",
-      "request_keys": [
-        "inputs.referenceImages"
-      ],
       "limits": "up to nine",
+      "max_inputs": 9,
       "media_supplies": "identity, wardrobe, or palette, according to the role the text assigns",
       "text_must_establish": "each reference's explicit job, and everything the reference must not control",
       "excludes": [
-        "inputs.frameImages"
+        "frame images"
       ]
     },
     {
       "mode": "reference videos",
-      "request_keys": [
-        "inputs.referenceVideos"
-      ],
       "limits": "up to three",
+      "max_inputs": 3,
       "media_supplies": "motion, timing, camera, or an anchor shot's established look",
       "text_must_establish": "what carries over from the source and what changes",
       "excludes": [
-        "inputs.frameImages"
+        "frame images"
       ]
     },
     {
       "mode": "reference audios",
-      "request_keys": [
-        "inputs.referenceAudios"
-      ],
       "limits": "up to three, and only alongside image or video references",
+      "max_inputs": 3,
       "media_supplies": "voice or performance timing",
       "text_must_establish": "who speaks, and how the audio relates to the visible action"
     }
@@ -203,6 +192,12 @@
         "reference audios": [
           "inputs.referenceAudios"
         ]
+      },
+      "request_shape": {
+        "model_key": "model",
+        "text_key": "positivePrompt",
+        "media_reference": "uuid",
+        "single_value_keys": []
       },
       "constraints": {
         "duration_seconds": {
@@ -236,11 +231,18 @@
           "min": 1,
           "max": 4
         },
-        "inputs_envelope": "media keys sit inside an inputs object (inputs.referenceImages, inputs.frameImages, inputs.referenceVideos, inputs.referenceAudios)"
+        "inputs_envelope": "media keys sit inside an inputs object (inputs.referenceImages, inputs.frameImages, inputs.referenceVideos, inputs.referenceAudios)",
+        "geometry_evidence": "Every pair above, including the 4k tier, is in the service's parameter schema for this model."
       },
       "observed_at": "2026-09-13",
-      "schema_snapshot": "protocols/target/observed-schemas/seedance-2-0.runware.json"
+      "schema_snapshot": "protocols/target/observed-schemas/seedance-2-0.runware.json",
+      "sources": [
+        {
+          "kind": "surface-control",
+          "reference": "Runware model schema for bytedance:seedance@2.0"
+        }
+      ]
     }
   ],
-  "profile_sha256": "a69b81ba69dcc2fe228d8f911e470a9b23d577e2881c1cdf59b7cd267c92c4bd"
+  "profile_sha256": "61b5fcc55dd2bc432044ad4604bf3327695fce80a1063eef91c71e03ea5ade3c"
 }

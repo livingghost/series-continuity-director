@@ -49,9 +49,9 @@ or declared character IDs. This front matter supplies machine links; prose below
 record, with adoption, basis, scope and remaining uncertainty stated where relevant.
 
 ```bash
-python <skill>/scripts/narrative_entity.py --series <series> add system <id> --name "<name>"
-python <skill>/scripts/narrative_entity.py --series <series> rename <old-id> <new-id>
-python <skill>/scripts/narrative_index.py <series>
+python <skill>/scripts/narrative_entity.py --project <project> add system <id> --name "<name>"
+python <skill>/scripts/narrative_entity.py --project <project> rename <old-id> <new-id>
+python <skill>/scripts/narrative_index.py <project>
 ```
 
 Use the commands for creation and ID changes. Rename updates declared ID references, supported

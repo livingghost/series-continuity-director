@@ -11,18 +11,20 @@
     "storyboard",
     "image-generation",
     "video-generation",
+    "comics",
+    "prose",
     "series"
   ],
   "skills": "./skills",
   "hooks": "./hooks/codex.json",
   "interface": {{
     "displayName": "Series Continuity Director",
-    "shortDescription": "Keep a recurring character series continuous across shots and episodes.",
+    "shortDescription": "Keep a recurring-character series continuous across scenes and chapters in screen, comics or prose.",
     "longDescription": "{description}",
     "developerName": "{author}",
     "category": "Creative",
     "defaultPrompt": [
-      "Plan the next scene of this series and write the start frame for its first shot."
+      "Plan the next scene of this series and prepare its first shot, page or passage."
     ]
   }}
 }}

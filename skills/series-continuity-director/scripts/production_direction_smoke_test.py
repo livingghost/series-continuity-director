@@ -139,4 +139,7 @@ class MediaTests(unittest.TestCase):
     def test_unknown_media_stays_unmeasured(self):
         p=self.root/'unknown';p.write_bytes(b'\x00\xffgarbage');self.assertEqual(media.inspect(p)['kind'],'unmeasured')
 
-if __name__=='__main__':unittest.main(verbosity=2)
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    unittest.main(verbosity=2)

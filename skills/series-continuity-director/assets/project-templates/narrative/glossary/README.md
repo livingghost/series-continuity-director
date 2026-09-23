@@ -28,9 +28,9 @@ That last line is what makes the check run both ways. A file nothing names is re
 with no file behind it is refused; neither is visible from inside a single document.
 
 ```
-python <skill>/scripts/narrative_index.py <series>
-python <skill>/scripts/narrative_entity.py --series <series> add term <id> --name "<name>"
-python <skill>/scripts/narrative_entity.py --series <series> rename <old> <new>
+python <skill>/scripts/narrative_index.py <project>
+python <skill>/scripts/narrative_entity.py --project <project> add term <id> --name "<name>"
+python <skill>/scripts/narrative_entity.py --project <project> rename <old> <new>
 ```
 
 Write the file with the command rather than by hand. Renaming in particular has to be one: an id

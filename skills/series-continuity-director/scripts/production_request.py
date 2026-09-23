@@ -17,8 +17,10 @@ DECISION_FIELDS = {'case', 'assessments', 'principal_approval', 'rendition_revie
 def production_selector(prepared: dict, spec: dict) -> dict:
     """Describe a production by declared IDs, independently of a file's display name."""
     selected = {'task_id': prepared['task']['task_id'], 'kind': spec['kind'], 'target': spec['target']}
-    if spec['kind'] == 'shot':
-        selected.update(scene_id=spec['scene_id'], shot_id=spec['shot_id'])
+    units = {'shot': ('shot_id',), 'page': ('page_id', 'panel'), 'passage': ('passage_id',)}
+    if spec['kind'] in units:
+        selected['scene_id'] = spec['scene_id']
+        selected.update({key: spec[key] for key in units[spec['kind']] if key in spec})
     return selected
 
 

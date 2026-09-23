@@ -2,6 +2,7 @@
 """Run attributed schema import through the public CLI using synthetic local evidence."""
 from __future__ import annotations
 import argparse
+import difflib
 import json
 from pathlib import Path
 import subprocess
@@ -13,7 +14,7 @@ import execution_contract as c
 
 
 def execute(args):
-    result=subprocess.run([sys.executable,*args],capture_output=True,text=True,timeout=60)
+    result=subprocess.run([sys.executable,*args],capture_output=True,text=True, encoding='utf-8',timeout=60)
     if result.returncode:raise ValueError(result.stdout+result.stderr)
     return json.loads(result.stdout)
 
@@ -49,12 +50,42 @@ def build():
         return report
 
 
+def difference(expected, path):
+    """A unified diff of the committed file against the rebuilt bytes.
+
+    JSON compares field by field first, then as raw text. A carriage return
+    prints as \\r, so a line-ending difference shows.
+    """
+    if not path.is_file():
+        return f'{path} is missing.'
+    found = path.read_bytes()
+    for structured in (True, False):
+        def lines(raw):
+            text = raw.decode('utf-8', 'replace')
+            if structured:
+                try:
+                    text = json.dumps(json.loads(text), indent=2, sort_keys=True)
+                except ValueError:
+                    pass
+            return text.replace('\r', '\\r').split('\n')
+        shown = '\n'.join(difflib.unified_diff(lines(found), lines(expected), f'{path.name} (committed)',
+                                               f'{path.name} (rebuilt)', lineterm=''))
+        if shown:
+            return shown.encode('ascii', 'backslashreplace').decode('ascii')
+    return f'{path} differs in bytes that do not decode as UTF-8.'
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--check',action='store_true')
     args=parser.parse_args();path=Path(__file__).with_name('report.json');raw=c.encoded(build())
     if args.check:
-        if not path.is_file() or c.read(path)!=raw:raise ValueError('Rebuild the synthetic model evidence report.')
+        if not path.is_file() or c.read(path)!=raw:
+            print(difference(raw, path), file=sys.stderr)
+            raise ValueError('Rebuild the synthetic model evidence report.')
     else:path.write_bytes(raw)
     print(raw.decode(),end='');return 0
 
-if __name__=='__main__':raise SystemExit(main())
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    raise SystemExit(main())

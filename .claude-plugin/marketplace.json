@@ -3,7 +3,7 @@
   "owner": {
     "name": "series-continuity-director"
   },
-  "description": "Skills for serialized visual production: shot planning, continuity, asset authority, and a provider neutral submission gate.",
+  "description": "Skills for continuing series in screen, comics and prose: narrative and scene planning, continuity, asset authority, and a provider neutral submission gate.",
   "plugins": [
     {
       "name": "series-continuity-director",

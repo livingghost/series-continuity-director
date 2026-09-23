@@ -12,10 +12,12 @@
   ],
   "principles": {
     "profile_per_exact_model": true,
+    "model_facts_and_service_facts_kept_separate": true,
+    "request_shape_declared_per_offering": true,
     "documentation_and_behaviour_kept_separate": true,
     "camera_vocabulary_constrains_shot_planning": true,
     "multi_shot_support_changes_clip_packing": true,
     "unstated_prompt_layer_takes_a_surface_default": true
   },
-  "usage": "Read the profile for the selected model before writing a director package or an exact submission. Profiles hold durable surface facts; project files hold the decisions made from them."
+  "usage": "Read the profile for the selected model before writing a director package or an exact submission. The top level holds the model's facts on every service; each offering holds one service's identifier, request keys, request shape and limits. Profiles hold durable surface facts; project files hold the decisions made from them."
 }

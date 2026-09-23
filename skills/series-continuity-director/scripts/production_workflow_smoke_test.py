@@ -2,13 +2,21 @@
 """Actual project-run, authority, observation, selection and ledger tests."""
 from pathlib import Path
 import copy
+import json
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 import execution_contract as c
 import production_workflow as w
 import production_test_support as support
 import work_ledger
 import execution_routes
+from reading_fixtures import task_reading
+
+SCRIPTS = Path(__file__).resolve().parent
 
 class ProductionTests(unittest.TestCase):
     def setUp(self):
@@ -107,5 +115,111 @@ class ProductionTests(unittest.TestCase):
         with self.assertRaises(ValueError):w.capture(self.root,run,'other.txt','Not the completed choice')
     def test_recorded_output_change_is_detected(self):
         run,ca=self.captured();(self.root/'result.txt').write_text('Changed artifact');self.assertFalse(w.status(self.root,run)['ok'])
+    def test_prepare_updates_the_open_task_under_the_project_lock(self):
+        task_reading(self.root,self.task);(self.root/'task.json').write_bytes(c.encoded(self.task))
+        held=[];original=work_ledger.write_current
+        def observed(root,value):
+            held.append(str(root.resolve()) in getattr(c._held_locks,'roots',set()));original(root,value)
+        with patch.object(work_ledger,'write_current',side_effect=observed):
+            run=w._prepare(self.root,'task.json')['run']
+        self.assertEqual(held,[True]);self.assertEqual(work_ledger.read_current(self.root)['production_run'],run)
+    def test_run_listing_ignores_templates_and_file_manager_entries(self):
+        run=self.prepare();folder=self.root/'production'
+        for name in ('desktop.ini','Thumbs.db','.DS_Store','production-task.json'):(folder/name).write_bytes(b'synthetic entry')
+        (folder/'notes').mkdir();(folder/'00000000-0000-4000-8000-000000000000').mkdir()
+        self.assertEqual(w.run_ids(self.root),[run])
 
-if __name__=='__main__':unittest.main(verbosity=2)
+
+def cli(*args):
+    """Run one documented production_workflow.py command and decode its JSON output."""
+    env=dict(os.environ,PYTHONUTF8='1',PYTHONDONTWRITEBYTECODE='1')
+    done=subprocess.run([sys.executable,str(SCRIPTS/'production_workflow.py'),*map(str,args)],
+                        capture_output=True,text=True,encoding='utf-8',env=env)
+    return done.returncode,json.loads(done.stdout),done.stderr
+
+
+class InitializedProjectTests(unittest.TestCase):
+    """The flow in references/production-execution.md, in a project init_project.py created."""
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
+        self.root=Path(self.tmp.name)/'project'
+        subprocess.run([sys.executable,str(SCRIPTS/'init_project.py'),'--out',str(self.root),
+                        '--series-id','synthetic-series','--title','Synthetic series'],check=True,capture_output=True)
+        production=self.root/'production'
+        for name in ('desktop.ini','Thumbs.db','.DS_Store'):(production/name).write_bytes(b'Synthetic file manager entry.')
+        (production/'notes').mkdir()
+        opened=work_ledger.begin(self.root,'Synthetic initialized project',['deliver'])
+        (self.root/'brief.md').write_text('A synthetic brief for an initialized project.\n',encoding='utf-8')
+        (self.root/'delivery.txt').write_text('Hold the declared condition.\n',encoding='utf-8')
+        # The shipped task template, filled in where it stands.
+        task=c.load(production/'production-task.json');task['task_id']=opened['task_id']
+        task['direction']=support.direction(task,'Hold the declared condition.');task_reading(self.root,task)
+        (production/'production-task.json').write_bytes(c.encoded(task))
+    def ok(self,*args):
+        code,out,err=cli(*args);self.assertEqual((code,err),(0,''),out);return out
+    def fill(self,name,**fields):
+        value=c.load(self.root/name);value.update(fields);(self.root/name).write_bytes(c.encoded(value))
+    def selection(self,artifact,operations):
+        root=['--root',self.root]
+        run=self.ok('prepare',*root,'--task','production/production-task.json')['run'];at=[*root,'--run',run]
+        self.ok('handoff',*at,'--recipient','synthetic operator','--method','manual')
+        candidate=self.ok('capture',*at,'--artifact',artifact,'--note','Synthetic acquired artifact.')['sha256']
+        self.ok('draft-review',*at,'--candidate',candidate,'--out','review.json')
+        (self.root/'review.json').write_bytes(c.encoded(support.observed(c.load(self.root/'review.json'))))
+        self.ok('review',*at,'--file','review.json')
+        self.ok('draft-authorization',*at,'--out','grant.json')
+        (self.root/'grant-evidence.txt').write_text('SYNTHETIC AUTHORITY FIXTURE. NOT A HUMAN APPROVAL.\n',encoding='utf-8')
+        self.fill('grant.json',principal='SYNTHETIC TEST PRINCIPAL, NOT USER CONSENT',actor='synthetic selector',
+            purpose='Only this synthetic test.',evidence={'path':'grant-evidence.txt','locator':'whole'},
+            permissions=[{'operation':op,'scopes':['task'],'max_calls':1,'max_outputs':0,'max_cost':'0','currency':'none',
+                          'request_scope':None,'submission_validation_modes':[]} for op in operations])
+        authorization=self.ok('authorize',*at,'--file','grant.json')['sha256']
+        self.ok('draft-selection',*at,'--candidate',candidate,'--out','selection.json')
+        self.fill('selection.json',selector='synthetic selector',reason='Synthetic selection.',authorization=authorization)
+        return at,candidate
+    def test_documented_flow_completes_beside_templates_and_file_manager_entries(self):
+        (self.root/'result.txt').write_text('The condition persists.\n',encoding='utf-8')
+        at,_=self.selection('result.txt',('select',))
+        self.ok('select',*at,'--file','selection.json');self.ok('complete',*at)
+        self.assertEqual(self.ok('status',*at)['next'],'done')
+    def registry(self,digest):
+        """Fill the shipped registry template's identity record the way its fields ask."""
+        text=(self.root/'asset-registry.md').read_text(encoding='utf-8')
+        record,rest=text.split('### S01-SCENE',1)
+        record=record.replace('- role:\n','- role: C01/identity\n',1).replace('- status: candidate\n','- status: accepted\n',1)
+        record=record.replace('- files and views:\n','- files and views:\n  - `media/c01-identity.png` (front view)\n',1)
+        record=record.replace('- SHA-256 per file:\n','- SHA-256 per file:\n  - `media/c01-identity.png`: '+digest+'\n',1)
+        (self.root/'asset-registry.md').write_text(record+'### S01-SCENE'+rest,encoding='utf-8')
+    def adopting(self):
+        from PIL import Image
+        Image.new('RGB',(8,8),(40,40,40)).save(self.root/'media/c01-identity.png')
+        at,candidate=self.selection('media/c01-identity.png',('select','adopt'))
+        self.fill('selection.json',scope='registry-adoption',
+                  adoption={'owner_path':'asset-registry.md','asset_id':'C01-IDENTITY','role':'C01/identity'})
+        return at,c.digest((self.root/'media/c01-identity.png').read_bytes())
+    def test_template_registry_record_adopts_the_candidate(self):
+        at,digest=self.adopting();self.registry(digest.upper())
+        selected=self.ok('select',*at,'--file','selection.json')
+        self.assertIn('asset-registry.md',[f['path'] for f in selected['data']['files']])
+        self.ok('complete',*at)
+    def test_template_registry_record_with_other_bytes_is_refused(self):
+        at,_=self.adopting();self.registry('0'*64)
+        code,out,err=cli('select',*at,'--file','selection.json')
+        self.assertEqual((code,err,out['ok']),(1,'',False));self.assertIn('exact candidate path and bytes',out['error'])
+    def test_missing_root_is_one_error_and_creates_nothing(self):
+        missing=self.root/'mistyped'/'deeper'
+        for command in ('status','impact','draft-authorization'):
+            args=[command,'--root',missing,'--run',c.new_run_id()]+(['--out','grant.json'] if command=='draft-authorization' else [])
+            code,out,err=cli(*args)
+            self.assertEqual((code,err,out['ok']),(1,'',False));self.assertIn('not an existing directory',out['error'])
+        self.assertFalse((self.root/'mistyped').exists())
+    def test_malformed_record_is_one_json_error(self):
+        run=self.ok('prepare','--root',self.root,'--task','production/production-task.json')['run']
+        (self.root/'grant.json').write_bytes(c.encoded(['not','an','object']))
+        code,out,err=cli('authorize','--root',self.root,'--run',run,'--file','grant.json')
+        self.assertEqual((code,err,out['ok']),(1,'',False));self.assertIn('malformed record',out['error'])
+
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    unittest.main(verbosity=2)

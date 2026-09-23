@@ -71,17 +71,48 @@ class AcquisitionTests(unittest.TestCase):
     def test_pointer_selects_structure_not_words(self):
         with self.assertRaises(ValueError):self.assemble(pointer='/synthetic')
 
+def synthetic_profile(target: dict) -> dict:
+    """A neutral target profile whose one offering is the synthetic service."""
+    import target_protocol
+    return target_protocol.finalize_profile({
+        'artifact_type':'target-profile','target_id':'fixture','label':'Synthetic model for schema import',
+        'model':{'maker':'synthetic','name':'fixture'},'media_kind':['image'],
+        'evidence':{'checked_on':'2000-01-01','sources':[{'kind':'user-supplied','reference':'Synthetic test model.'}]},
+        'prompt_contract':{'layers':['declared text']},
+        'offerings':[{'service':target['service'],'model_identifier':target['model_identifier'],'request_keys':{},
+            'request_shape':{'model_key':'model','text_key':'prompt','media_reference':'url','single_value_keys':[]},
+            'constraints':{},'observed_at':'2000-01-01'}]})
+
+
 class ProfileImportTests(AcquisitionTests):
     def setUp(self):
         super().setUp()
-        import production_test_support as support
-        spec={'target':'fixture','service':self.target['service'],'model':self.target['model_identifier'],'operation':self.target['operation']}
-        service={'operations':{'generate':{}}}
-        profile,_,_=support.model_inputs(self.root,spec,service)
+        profile=synthetic_profile(self.target)
         (self.root/'profile.json').write_bytes(c.encoded(profile))
         self.args=SimpleNamespace(command='schema',root=self.root,profile='profile.json',service=self.target['service'],
             model=self.target['model_identifier'],operation='generate',out_dir='published',
-            acquisition='acquisition.json',pointer='/schema',overlay=None)
+            acquisition='acquisition.json',pointer='/schema',overlay=None,profiles=None)
+    def test_project_profile_points_at_the_published_schema(self):
+        import observe_schema as cli
+        import submission_gate
+        before=c.read(self.root/'profile.json')
+        result=cli.publish(SimpleNamespace(**{**vars(self.args),'profiles':Path('target-profiles')}))
+        self.assertEqual(c.read(self.root/'profile.json'),before)
+        written=c.load(self.root/result['profile']['path'])
+        offering=written['offerings'][0]
+        self.assertEqual(offering['schema_snapshot'],'published/contract.json')
+        # The gate reads the project's profile before the suite's.
+        found=submission_gate.load_profile('fixture',[self.root/'target-profiles',submission_gate.DEFAULT_PROFILES])
+        self.assertEqual(found,written)
+    def test_installed_suite_profiles_are_refused(self):
+        import observe_schema as cli
+        with self.assertRaisesRegex(ValueError,'inside the project|shipped profiles'):
+            cli.profile_destination(self.root,cli.target_protocol.PROFILE_DIR)
+        suite=cli.target_protocol.ROOT.resolve()
+        with self.assertRaisesRegex(ValueError,'shipped profiles'):
+            cli.profile_destination(suite,Path('protocols/target/profiles'))
+        self.assertEqual(cli.profile_destination(suite,Path('protocols/target/profiles'),suite_maintenance=True),
+                         cli.target_protocol.PROFILE_DIR.resolve())
     def test_schema_command_keeps_public_profile_unchanged(self):
         import observe_schema as cli
         before=c.read(self.root/'profile.json');result=cli.publish(self.args)
@@ -95,4 +126,7 @@ class ProfileImportTests(AcquisitionTests):
         with self.assertRaises(ValueError):cli.publish(self.args)
         self.assertFalse((self.root/'published').exists())
 
-if __name__=='__main__':unittest.main(verbosity=2)
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    unittest.main(verbosity=2)

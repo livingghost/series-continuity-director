@@ -2,7 +2,10 @@
 """Cross-run permissions, observation intervals and reviewed child-run changes."""
 from __future__ import annotations
 import copy
+import errno
+import os
 import subprocess
+import tempfile
 import unittest
 from unittest.mock import patch
 from pathlib import Path
@@ -142,4 +145,70 @@ class IntegrityTests(unittest.TestCase):
         self.assertEqual(revision.changed_scopes(prepared,after,old,new),['placement:moving'])
 
 
-if __name__=='__main__':unittest.main(verbosity=2)
+class LocalPathTests(unittest.TestCase):
+    """Project-relative paths, exclusive writes and the project lock on local disks."""
+    def setUp(self):
+        temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup)
+        self.base=Path(temporary.name).resolve()
+    def link(self,target,name):
+        try:os.symlink(target,self.base/name,target_is_directory=True)
+        except (OSError,NotImplementedError) as exc:self.skipTest(f'this platform refuses symbolic links: {exc}')
+        return self.base/name
+    def test_symbolic_link_above_the_root_is_accepted(self):
+        (self.base/'real/project').mkdir(parents=True);(self.base/'real/project/a.txt').write_text('a')
+        root=self.link(self.base/'real','linked')/'project'
+        self.assertEqual(c.local(root,'a.txt'),root/'a.txt')
+        with c.lock(root):c.atomic(c.local(root,'b.txt',exists=False),b'b')
+        self.assertEqual((self.base/'real/project/b.txt').read_bytes(),b'b')
+    def test_symbolic_link_at_or_below_the_root_is_refused(self):
+        (self.base/'real').mkdir();(self.base/'project').mkdir()
+        with self.assertRaisesRegex(ValueError,'symbolic link in root'):c.local(self.link(self.base/'real','root-link'),'a.txt',exists=False)
+        os.symlink(self.base/'real',self.base/'project/inner',target_is_directory=True)
+        with self.assertRaisesRegex(ValueError,'symbolic link in project path'):c.local(self.base/'project','inner/a.txt',exists=False)
+    def test_names_windows_reads_differently_are_refused_everywhere(self):
+        for name in ('hero.png.','hero.png ','hero.png:ads','C:hero.png','NUL','nul.txt','Com1.tar.gz','LPT9','con .txt','a?b','a*b'):
+            with self.subTest(name=name),self.assertRaises(ValueError):c.local(self.base,'media/'+name,exists=False)
+        for name in ('console.png','com10.png','nulls.txt','.hidden','a.b.c'):
+            self.assertEqual(c.local(self.base,'media/'+name,exists=False),self.base/'media'/name)
+    def test_exclusive_write_without_hard_links(self):
+        target=self.base/'objects/value'
+        with patch.object(os,'link',side_effect=OSError(errno.EINVAL,'Synthetic volume without hard links')):
+            c.atomic(target,b'first')
+            with self.assertRaises(FileExistsError):c.atomic(target,b'second')
+        self.assertEqual(target.read_bytes(),b'first')
+        self.assertEqual(sorted(p.name for p in target.parent.iterdir()),['value'])
+    def test_failed_exclusive_write_leaves_no_file(self):
+        target=self.base/'value'
+        with patch.object(os,'fsync',side_effect=OSError(errno.EIO,'Synthetic flush failure')):
+            with self.assertRaises(OSError):c.create_exclusive(target,b'partial')
+        self.assertFalse(target.exists())
+    def test_lock_refuses_a_missing_root_without_creating_it(self):
+        with self.assertRaisesRegex(ValueError,'not an existing directory'):
+            with c.lock(self.base/'mistyped/project'):pass
+        self.assertEqual(list(self.base.iterdir()),[])
+    def test_resolved_source_accepts_other_spellings_of_the_same_file(self):
+        import state_protocol
+        path=self.base/'reference.png';path.write_bytes(b'synthetic reference')
+        source={'kind':'supplied-file','reference_id':'synthetic','resolved_path':str(path),
+                'media_type':'application/octet-stream','sha256':c.digest(path.read_bytes())}
+        spellings=[str(path)]
+        if os.name=='nt':
+            import ctypes
+            spellings.append(str(path)[0].swapcase()+str(path)[1:])
+            buffer=ctypes.create_unicode_buffer(32768)
+            if ctypes.windll.kernel32.GetShortPathNameW(str(path),buffer,len(buffer)) and buffer.value!=str(path):
+                spellings.append(buffer.value)
+        for spelling in spellings:
+            with self.subTest(spelling=spelling):state_protocol.validate_source_bytes(dict(source,resolved_path=spelling))
+        (self.base/'inner').mkdir()
+        with self.assertRaisesRegex(ValueError,'explicitly resolved'):
+            state_protocol.validate_source_bytes(dict(source,resolved_path=str(self.base/'inner'/'..'/'reference.png')))
+        linked=self.link(self.base,'linked')
+        with self.assertRaisesRegex(ValueError,'explicitly resolved'):
+            state_protocol.validate_source_bytes(dict(source,resolved_path=str(linked/'reference.png')))
+
+
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    unittest.main(verbosity=2)

@@ -62,7 +62,6 @@ def draft(root: Path, run: str, changes_path: str, out_dir: str, *, runtime_argu
     choices['source_run']=run
     reading=source.get('route_reading',prepared['route_reading'])
     choices['reading']={'snapshot_id':None,'reading_key':reading['reading_key'],'applied':copy.deepcopy(reading['applied'])}
-    if 'resource_applied' in reading:choices['reading']['resource_applied']=copy.deepcopy(reading['resource_applied'])
     if reading['route']!=task['route']:
         unresolved.append({'field':'reading','code':'select-stage-reading'})
     if not current['freshness']['reading']['current']:

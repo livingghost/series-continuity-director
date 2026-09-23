@@ -20,7 +20,7 @@ references: []
 >   - **Observable facts**: What they actually do and say
 >   - **Outside perception**: How others see them: reputation, first impressions, misconceptions
 >
->   §5 MIND is primarily self-image; §12 EXTERNAL is primarily outside perception. Most other sections describe observable traits or factual context. Some sections (§2 PORTRAYAL IDENTITY, §6 THOUGHT, §13 RELATIONSHIPS, §14 MEMORY, §15 UNCERTAINTY) deliberately mix layers, and their comments flag the mix where it matters.
+>   section 5 MIND is primarily self-image; section 12 EXTERNAL is primarily outside perception. Most other sections describe observable traits or factual context. Some sections (section 2 PORTRAYAL IDENTITY, section 6 THOUGHT, section 13 RELATIONSHIPS, section 14 MEMORY, section 15 UNCERTAINTY) deliberately mix layers, and their comments flag the mix where it matters.
 >
 > **Language Policy**:
 > - Section headings, field names, authoring instructions, and ordinary descriptive prose are written in English by default.
@@ -35,19 +35,19 @@ references: []
 > - **"undecided"** = examined design choice not yet settled. State what remains to decide; this is a drafting gap, not missing historical evidence.
 > - **"unknown"** = examined, but no reliable information available. Write this explicitly when you've looked and come up empty.
 > - **"n/a"** = does not apply to this character at all (e.g. combat stance for a pacifist scholar who never fights).
-> - **Inference** = not directly attested, but plausibly derived. Write the inference with a brief note of reasoning (e.g. "likely gentle, based on his treatment of stray animals in §13"). Don't guess without marking the guess.
+> - **Inference** = not directly attested, but plausibly derived. Write the inference with a brief note of reasoning (e.g. "likely gentle, based on his treatment of stray animals in section 13"). Don't guess without marking the guess.
 >
->   Overall confidence is tracked at the section level in §19 Certainty Audit. Design adoption is tracked separately; confidence never means creator approval.
+>   Overall confidence is tracked at the section level in section 19 Certainty Audit. Design adoption is tracked separately; confidence never means creator approval.
 >
 > **Original-Character Design Mode**:
 >
 > When `subject_type: original` and the requester delegates invention, design rather than pretend to research. The evidence rules below still apply to supplied facts and already established material; they do not forbid making clearly labeled new proposals.
 >
 > - Preserve creator-provided anchors. Record new personality, past events, physical details, relationships and dialogue as **proposed**, not as observed facts, creator instructions or adopted canon.
-> - Use stable design IDs in §19 Design Ledger for `user-anchor`, `proposed`, `adopted`, `rejected` and `deferred` decisions. Record a statement, its scope, its basis or dependency, and the actual adoption record where one exists. Metadata summarizes the adoption scope; the ledger owns the individual decisions.
+> - Use stable design IDs in section 19 Design Ledger for `user-anchor`, `proposed`, `adopted`, `rejected` and `deferred` decisions. Record a statement, its scope, its basis or dependency, and the actual adoption record where one exists. Metadata summarizes the adoption scope; the ledger owns the individual decisions.
 > - A request to invent permits proposals; it does not approve them. Selecting a scene or saying a direction is interesting does not automatically adopt every detail in its persona. Record only the approval actually given. Do not carry rejected earlier suggestions forward.
 > - Author concrete IF / THEN / BRANCH procedures, vocabulary choices and behavioral probes from those design decisions. In original mode, an `evidence` field may cite a design ID and rationale; it must not invent an episode, quotation, observation or source that never existed. Distinguish a deliberate proposal from an inference about supplied evidence.
-> - Mark newly written dialogue and behavior as **hypothetical design sample** and name the rules it tests. It does not establish that the event occurred in the story, and cannot be independent corroboration of the rule used to write it. Do not label an original proposal with ★ as though it were a source quotation.
+> - Mark newly written dialogue and behavior as **hypothetical design sample** and name the rules it tests. It does not establish that the event occurred in the story, and cannot be independent corroboration of the rule used to write it. Do not label an original proposal with [C] as though it were a source quotation.
 > - Keep the full twenty-section workspace. During exploration, deepen the fields required by the present creative decision and explicitly retain unresolved coverage. Present useful contrasts and probes rather than a complete questionnaire. The five-example and ten-flow targets guide later depth; they neither block early proposals nor authorize fabricated canon.
 > - Separate an individual's own wants, habits and decision criteria from their function in a plot, group or interaction. Species, body size, social status and reputation do not settle temperament. A future relationship plan is not an exception already active in the opening phase.
 > - A person the agent proposes joins the cast only after the author admits that candidate, recorded in the project's design record with its scope; existence, name, appearance and history are separate decisions. Depth follows the use at hand, and a mention, a bounded scene, recurring appearances and a consequential choice each need different preparation; the runtime document that owns cast admission holds both rules.
@@ -71,7 +71,7 @@ references: []
 >
 > **Completion Rule**:
 > - **Blank** is a drafting state, not a valid state for a released persona. Before release, every applicable field must contain evidence-backed content (or explicitly adopted original-design content), `unknown`, or `n/a`; optional repeated rows may be removed. A deliberately incomplete draft must be labeled as such, not released as an adopted persona.
-> - Do not treat the instructional HTML comments as character data. They remain concrete authoring examples, such as `addresses by name → asks after their state → pauses`, not statements about the character being documented.
+> - Do not treat the instructional HTML comments as character data. They remain concrete authoring examples, such as `addresses by name -> asks after their state -> pauses`, not statements about the character being documented.
 > - A persona may be ready for one declared use while incomplete overall; the prepared Scene Persona material records that scope. This rule applies to a released persona, and neither label stands for the other.
 >
 > **Anti-Bias Protocol**:
@@ -91,11 +91,11 @@ references: []
 >
 > Describe the character precisely enough that a writer can reproduce their choices, speech and behavior from this dossier. Include the context needed to interpret examples and evidence. The following rules apply:
 >
-> - **Citing a source does NOT authorize omitting the content.** Phrases like "see pegasusknight.com", "refer to the wiki", or "cited in §19" must never stand in for actual information in the body. §19 SOURCES exists for *verifiability*; it is not a license to offload substance to external pages the reader cannot reach.
+> - **Citing a source does NOT authorize omitting the content.** Phrases like "see pegasusknight.com", "refer to the wiki", or "cited in section 19" must never stand in for actual information in the body. section 19 SOURCES exists for *verifiability*; it is not a license to offload substance to external pages the reader cannot reach.
 > - **Distinguish "source of behavior" from "reference to behavior".** A bare quote ("character said X in scene Y") records what was said once, but not how to produce something equivalent in a new scene. Every significant quote must be accompanied by:
 >   - The surrounding context (what was happening).
 >   - The emotional quality (what feeling is expressed or strongly supported by the scene; mark inference when it is not explicit).
->   - The lexical analysis. For a canonical line (★), explain what the wording observably does and how it contrasts with attested alternatives; do not claim undocumented authorial intent or rejected drafts. For a reconstruction (★★), explain the actual wording choice and the plausible alternatives the persona author rejected.
+>   - The lexical analysis. For a canonical line ([C]), explain what the wording observably does and how it contrasts with attested alternatives; do not claim undocumented authorial intent or rejected drafts. For a reconstruction ([R]), explain the actual wording choice and the plausible alternatives the persona author rejected.
 >   - The nearest documented contrast or boundary case. If no neighboring scene supplies one, write `unknown` rather than manufacturing a contrast.
 > - **The author may not hide behind abstraction.** Generalization is necessary, but every general rule must be grounded in concrete observations, contexts, limits, and exceptions. The author must never leave gaps expecting the reader to "fill in the obvious". A downstream reader can compress specifics into generalizations, but cannot invent specifics from generalizations.
 > - **Self-containment test.** When the file is complete, ask whether a downstream reader can reproduce the subject's intended portrayal from its explicit rules and the declared current world/intent/state context, without guessing missing source content. A bare citation is not a substitute for a subject-specific rule. This does not require copying the whole world, future plot or secret-bearing source into the persona or a consumer view; keep those owners and information boundaries separate.
@@ -104,10 +104,10 @@ references: []
 >
 > A usable characterization combines four layers:
 >
-> 1. **Dialogue database (§16).** Use concrete utterance samples organized by situation. Five total entries per major category is the completion target for a well-documented character, combining short canonical lines (★) and evidence-grounded reconstructions (★★). The count is never permission to fabricate: when the record cannot support five, include every supported entry, add only reconstructions grounded in documented rules, and record the remaining deficit in §19 Known Gaps.
-> 2. **Vocabulary registry (§7).** List preferred forms AND specifically avoided forms with exact tokens. "Speaks politely" is insufficient; write `uses 「〜です」, not 「〜ですわ」` or `says “thank you,” not “thanks”`, together with the condition and evidence. Absence from a small corpus is not enough to declare a word forbidden.
-> 3. **Decision flows (§6 Action Patterns).** Use IF-THEN pseudo-algorithms for at least ten recurring, evidence-supported situations. Write procedures (`IF challenged after hearing the other out, THEN acknowledge once → give no more than three counter-points → close the topic`), not aspirations (`responds with integrity`). If ten situations are not supportable, do not invent them; document the coverage gap in §19.
-> 4. **Prohibitions with concrete contrast (§17).** List likely portrayal errors in the form `× what gets written / ○ what is actually right`, with evidence or a clear boundary. Ground the Anti-Bias Protocol in specific failure modes rather than generic warnings.
+> 1. **Dialogue database (section 16).** Use concrete utterance samples organized by situation. Five total entries per major category is the completion target for a well-documented character, combining short canonical lines ([C]) and evidence-grounded reconstructions ([R]). The count is never permission to fabricate: when the record cannot support five, include every supported entry, add only reconstructions grounded in documented rules, and record the remaining deficit in section 19 Known Gaps.
+> 2. **Vocabulary registry (section 7).** List preferred forms AND specifically avoided forms with exact tokens. "Speaks politely" is insufficient; write `uses 「〜です」, not 「〜ですわ」` or `says "thank you," not "thanks"`, together with the condition and evidence. Absence from a small corpus is not enough to declare a word forbidden.
+> 3. **Decision flows (section 6 Action Patterns).** Use IF-THEN pseudo-algorithms for at least ten recurring, evidence-supported situations. Write procedures (`IF challenged after hearing the other out, THEN acknowledge once -> give no more than three counter-points -> close the topic`), not aspirations (`responds with integrity`). If ten situations are not supportable, do not invent them; document the coverage gap in section 19.
+> 4. **Prohibitions with concrete contrast (section 17).** List likely portrayal errors in the form `wrong: what gets written / right: what is actually right`, with evidence or a clear boundary. Ground the Anti-Bias Protocol in specific failure modes rather than generic warnings.
 >
 > **Copyright-Aware Authoring**:
 >
@@ -115,12 +115,12 @@ references: []
 >
 > - Quote only short, representative canonical lines; never reproduce whole scenes or monologues verbatim.
 > - Extract tone, vocabulary, and decision rules, and fill the body with **reconstruction samples** that follow those rules.
-> - Use a visible marker (e.g. ★ = canonical, ★★ = reconstruction in the same style) so the reader can tell which is which.
-> - Add a brief note at the end of §19 SOURCES describing this policy, so downstream users understand how the file was built.
+> - Use a visible marker (e.g. [C] = canonical, [R] = reconstruction in the same style) so the reader can tell which is which.
+> - Add a brief note at the end of section 19 SOURCES describing this policy, so downstream users understand how the file was built.
 >
 > **Premise and Canonical-Scope Rule**:
 >
-> First determine the declared `premise_mode` and `canonicity_scope` in §0 META. Then handle requester-provided premises (lineage, voice actor, class name, relationship status, timeline) as follows:
+> First determine the declared `premise_mode` and `canonicity_scope` in section 0 META. Then handle requester-provided premises (lineage, voice actor, class name, relationship status, timeline) as follows:
 >
 > - When the requester claims canonical or adaptation-specific accuracy and a premise contradicts the controlling record, correct it to that declared record.
 > - When the requester explicitly requests an alternate universe, composite continuity, fan-derived continuity, or original character, preserve the intentional divergence and label it; do not "correct" it back to canon.
@@ -170,7 +170,7 @@ references: []
 
 ## 0. META
 
-<!-- Metadata about this persona file itself. Read the full template instructions before authoring. For delegated original design, evidence fields may cite proposed or adopted design IDs from §19 instead of nonexistent source scenes. Hypothetical samples test a proposal; they are not independent observations or events that already occurred. -->
+<!-- Metadata about this persona file itself. Read the full template instructions before authoring. For delegated original design, evidence fields may cite proposed or adopted design IDs from section 19 instead of nonexistent source scenes. Hypothetical samples test a proposal; they are not independent observations or events that already occurred. -->
 
 ### File Info
 
@@ -190,7 +190,7 @@ references: []
 - **design_status**:
   <!-- Draft, reviewed proposal, or adopted within the stated scope. Neither a filled form nor a generated scene implies adoption. -->
 - **adoption_scope**:
-  <!-- Identify the adopted decisions by §19 Design Ledger IDs, with actual creator approval basis. Use n/a for record-based reconstruction; state no adoption yet for a proposal. Do not manufacture approval. -->
+  <!-- Identify the adopted decisions by section 19 Design Ledger IDs, with actual creator approval basis. Use n/a for record-based reconstruction; state no adoption yet for a proposal. Do not manufacture approval. -->
 
 ### Persona Info
 
@@ -232,7 +232,7 @@ references: []
 |-------|-------|------------|--------|
 | 1 | <!-- e.g. "training years" --> | <!-- e.g. "enters apprenticeship; first public failure" --> | past |
 | 2 | <!-- e.g. "early service" --> | <!-- e.g. "earns rank; forms current alliance" --> | past |
-| **→** | **{this_phase}** | **{events}** | **current** |
+| **->** | **{this_phase}** | **{events}** | **current** |
 | 4 | <!-- Optional future phase label for human orientation. e.g. `later period`; omit in direct agent context if the label itself reveals an outcome. --> | <!-- AUTHOR-ONLY. Keep empty or abstract; do not place a concealed answer here. --> | future (author-only; remove before direct agent use) |
 
 ### Current Phase Position
@@ -260,7 +260,7 @@ references: []
   <!-- Current areas of expertise, ordinary familiarity, unfamiliarity, or documented indifference that govern whether they answer, ask, or defer. e.g. `expert in field logistics; lay familiarity with law; defers medical diagnosis to a healer`. -->
 - **inference_limits**:
   <!-- Conclusions they will not draw from the evidence currently available. e.g. `may note one inconsistent date but does not assign intent without corroboration or direct testimony`. -->
-  <!-- NOTE: This field is the single home for the character's reasoning limits. §17 Epistemic Boundary Handling defines only the procedures that operate at this limit; do not restate the limits themselves there. -->
+  <!-- NOTE: This field is the single home for the character's reasoning limits. section 17 Epistemic Boundary Handling defines only the procedures that operate at this limit; do not restate the limits themselves there. -->
 - **in_progress**:
   <!-- Changes or learning still underway during this phase. e.g. `has begun questioning the institution but still obeys its public orders`. -->
 
@@ -335,7 +335,7 @@ references: []
   <!-- Name, alias, title used in this phase -->
 - **first_person**:
   <!-- Exact first-person form in the character's language, plus switching rule in English. e.g. `Japanese: 「私」 in public; 「僕」 with childhood friends`; `Korean: 「저」 in formal contexts; 「나」 only with close friends`. -->
-  <!-- NOTE: Languages differ on what this field can carry. Japanese offers many variants (わたし / 私 / 僕 / 俺 / あたし / わし …); record the variant. English has effectively one ("I"); instead, record HOW they refer to themselves: hedged, direct, avoidant, third-person, or using their own name. Apply the same principle to any other language feature that lacks a direct analogue in the character's language: record the nearest behavioral equivalent rather than forcing the original framing. -->
+  <!-- NOTE: Languages differ on what this field can carry. Japanese offers many variants (わたし / 私 / 僕 / 俺 / あたし / わし ...); record the variant. English has effectively one ("I"); instead, record HOW they refer to themselves: hedged, direct, avoidant, third-person, or using their own name. Apply the same principle to any other language feature that lacks a direct analogue in the character's language: record the nearest behavioral equivalent rather than forcing the original framing. -->
 - **second_person**:
   <!-- Exact second-person or address forms in the character's language, with relationship conditions in English. e.g. `Japanese: surname+「さん」 by default; given name alone only in the innermost relationship`; `French: « vous » toward every colleague regardless of rank; « tu » only within family`. -->
   <!-- NOTE: For languages with rich address systems (Japanese -さん/-様, French tu/vous, Korean 요/시), record the forms and the rule for switching. For languages that mark deference differently (English first-name vs. Mr./Ms., use or avoidance of direct address), record whichever distinction the character's language actually uses. -->
@@ -375,7 +375,7 @@ references: []
   <!-- Health state, chronic conditions, injuries -->
 - **voice**:
   <!-- Voice characteristics -->
-  <!-- NOTE: Describe voice timbre, pitch, softness, roughness. This field is central information for prose narration, audio direction, voice casting references, and illustration / character-sheet annotations. It also shapes word choice and rhythm even in dialogue-only uses. For speaking patterns (sentence endings, register, rhythm of speech), see §7 SPEECH. -->
+  <!-- NOTE: Describe voice timbre, pitch, softness, roughness. This field is central information for prose narration, audio direction, voice casting references, and illustration / character-sheet annotations. It also shapes word choice and rhythm even in dialogue-only uses. For speaking patterns (sentence endings, register, rhythm of speech), see section 7 SPEECH. -->
 - **handedness**:
   <!-- Dominant hand -->
 - **sensory_acuity**:
@@ -556,7 +556,7 @@ references: []
   <!-- How they decide what is right. Virtue, consequence, duty, custom, personal code -->
 - **reference_frame**:
   <!-- The frame they fall back on when judging. A mentor's teaching, religion, personal experience, pure instinct -->
-  <!-- NOTE: Day-to-day judgment frame. Distinct from §2 inner_core (scoped motives and commitments) and §15 guiding_principle (unprecedented situations). -->
+  <!-- NOTE: Day-to-day judgment frame. Distinct from section 2 inner_core (scoped motives and commitments) and section 15 guiding_principle (unprecedented situations). -->
 - **value_hierarchy**:
   <!-- Priority order when values conflict. e.g. loyalty > truth > self-interest -->
 - **what_they_refuse_to_weigh**:
@@ -567,7 +567,7 @@ references: []
 <!-- These entries summarize conditions, not an emotion-to-face lookup table. For consequential responses, link the Conditional Response Rules below: perception/appraisal -> control or involuntary response -> speech and body -> continuation/release. Distinguish internal experience, intended display, observable channels and another observer's reading. No automatic agreement or visible leakage is required. -->
 
 <!-- Reactions to specific situations -->
-<!-- NOTE: Record the phase-wide default or public-facing baseline here; do not invent a numerical or conceptual average between incompatible relationship modes. The same person may withdraw in public and cry with one trusted person. Write the most consistently observed default, note systematic exceptions inline, and detail person- or relationship-specific shifts in §13 Relationship-Specific Realizations. Example: `when_sad: looks down and shortens replies by default; with {trusted person}, remains present and allows visible tears`. -->
+<!-- NOTE: Record the phase-wide default or public-facing baseline here; do not invent a numerical or conceptual average between incompatible relationship modes. The same person may withdraw in public and cry with one trusted person. Write the most consistently observed default, note systematic exceptions inline, and detail person- or relationship-specific shifts in section 13 Relationship-Specific Realizations. Example: `when_sad: looks down and shortens replies by default; with {trusted person}, remains present and allows visible tears`. -->
 
 - **when_surprised**:
   <!-- How they react when surprised. Visible or suppressed, freeze or quick recovery -->
@@ -608,7 +608,7 @@ references: []
 
 <!-- Before choosing a reaction, apply section 2 and its authorial intent references. A locally plausible response can violate the adopted portrayal. A designed switch is not automatically an identity break; an actual departure needs its scoped decision. -->
 
-<!-- Repeat for relevant boundaries, not for every emotion multiplied by every relationship. Use stable local IDs; refer to SPEECH mode IDs and RELATIONSHIPS exceptions instead of copying their content. A rule is a permitted tendency with limits, not a deterministic personality algorithm. Original-design samples and rules retain proposal/adoption status through §19. -->
+<!-- Repeat for relevant boundaries, not for every emotion multiplied by every relationship. Use stable local IDs; refer to SPEECH mode IDs and RELATIONSHIPS exceptions instead of copying their content. A rule is a permitted tendency with limits, not a deterministic personality algorithm. Original-design samples and rules retain proposal/adoption status through section 19. -->
 
 - **response_rule_id**:
   <!-- Stable local ID, e.g. response-work-interruption; it is prose, not a new narrative entity ID. -->
@@ -625,7 +625,7 @@ references: []
 - **development_and_recovery**:
   <!-- Conditions and sequence of onset, persistence, interruption, switch, release or residue as relevant. Return is not mandatory or instantaneous. -->
 - **overlap_and_exceptions**:
-  <!-- How relevant simultaneous conditions are resolved component by component; reference §7/§13. Mark unresolved overlaps, not invented universal priorities. -->
+  <!-- How relevant simultaneous conditions are resolved component by component; reference section 7/section 13. Mark unresolved overlaps, not invented universal priorities. -->
 - **response_basis_and_probe**:
   <!-- Sources or design IDs, current status, tested sample references, counterexample and remaining gap. A generated example cannot corroborate its own rule. -->
 
@@ -641,15 +641,15 @@ references: []
 ### Action Patterns
 
 <!-- Multi-step interaction procedures this person performs, whether self-initiated or triggered by another person's action. Reaction Patterns record immediate affective leakage; Action Patterns record an ordered social procedure. -->
-<!-- Write each entry as IF / THEN / BRANCH / EVIDENCE, not as a trait. `Greets warmly` is insufficient. `IF a known person is waiting, THEN address by name → ask after their state → pause before stating business` is reproducible. -->
+<!-- Write each entry as IF / THEN / BRANCH / EVIDENCE, not as a trait. `Greets warmly` is insufficient. `IF a known person is waiting, THEN address by name -> ask after their state -> pause before stating business` is reproducible. -->
 <!-- In record-based mode, a flow may synthesize observations with marked inference and scene evidence, but cannot invent plausible steps. In original-design mode, author proposed steps explicitly, cite the supporting design decisions and test their consistency with values, speech and social behavior. -->
-<!-- The ten categories below satisfy the structural coverage target only when evidence supports them. Replace unsupported defaults with character-specific recurring situations, such as `public_address`, `bedside_approach`, or `correction_without_shame`. If fewer than ten flows are supportable, record the deficit in §19 Known Gaps. -->
+<!-- The ten categories below satisfy the structural coverage target only when evidence supports them. Replace unsupported defaults with character-specific recurring situations, such as `public_address`, `bedside_approach`, or `correction_without_shame`. If fewer than ten flows are supportable, record the deficit in section 19 Known Gaps. -->
 
 - **opening_interactions**:
   - **if**:
     <!-- Trigger. e.g. `IF they enter a room where one known person is already waiting` -->
   - **then**:
-    <!-- Ordered procedure. e.g. `address by name → ask after physical state → wait for an answer → state business` -->
+    <!-- Ordered procedure. e.g. `address by name -> ask after physical state -> wait for an answer -> state business` -->
   - **branch**:
     <!-- Conditional variant. e.g. `IF the addressee is a stranger, omit the personal check-in and identify purpose first` -->
   - **evidence**:
@@ -658,7 +658,7 @@ references: []
   - **if**:
     <!-- e.g. `IF someone offers warning, practical help, or concern` -->
   - **then**:
-    <!-- e.g. `let them finish → acknowledge the concern once → accept or refuse the concrete help → do not defend character unless accused` -->
+    <!-- e.g. `let them finish -> acknowledge the concern once -> accept or refuse the concrete help -> do not defend character unless accused` -->
   - **branch**:
     <!-- e.g. `IF the concern comes from the closest relationship, answer one question honestly before redirecting` -->
   - **evidence**:
@@ -667,7 +667,7 @@ references: []
   - **if**:
     <!-- e.g. `IF their action caused identifiable harm` -->
   - **then**:
-    <!-- e.g. `name own fault first → give a one-line apology → pause → offer repair only after the other responds` -->
+    <!-- e.g. `name own fault first -> give a one-line apology -> pause -> offer repair only after the other responds` -->
   - **branch**:
     <!-- e.g. `IF the harm is irreversible, omit self-explanation and accept rejection` -->
   - **evidence**:
@@ -676,7 +676,7 @@ references: []
   - **if**:
     <!-- e.g. `IF asked to accept a costly role or obligation` -->
   - **then**:
-    <!-- e.g. `test one practical condition → state the cost aloud → accept in a single declarative sentence` -->
+    <!-- e.g. `test one practical condition -> state the cost aloud -> accept in a single declarative sentence` -->
   - **branch**:
     <!-- e.g. `IF the request violates the value hierarchy, move to the refusal flow instead` -->
   - **evidence**:
@@ -685,7 +685,7 @@ references: []
   - **if**:
     <!-- e.g. `IF a request conflicts with a current duty or hard boundary` -->
   - **then**:
-    <!-- e.g. `acknowledge the request → state own position → give no more than three reasons → close without inviting negotiation` -->
+    <!-- e.g. `acknowledge the request -> state own position -> give no more than three reasons -> close without inviting negotiation` -->
   - **branch**:
     <!-- e.g. `IF refusing a close person, add one alternative action without softening the no` -->
   - **evidence**:
@@ -694,7 +694,7 @@ references: []
   - **if**:
     <!-- e.g. `IF another person must act and time remains for consent` -->
   - **then**:
-    <!-- e.g. `state shared objective → use the character-language hortative (Japanese: 「行きましょう」 rather than 「行け」; French: « On y va » rather than « Vas-y ») → begin moving first` -->
+    <!-- e.g. `state shared objective -> use the character-language hortative (Japanese: 「行きましょう」 rather than 「行け」; French: « On y va » rather than « Vas-y ») -> begin moving first` -->
   - **branch**:
     <!-- e.g. `IF immediate danger removes deliberation time, shorten to one direct command` -->
   - **evidence**:
@@ -703,7 +703,7 @@ references: []
   - **if**:
     <!-- e.g. `IF someone causes concrete harm and denial continues` -->
   - **then**:
-    <!-- e.g. `let the denial finish → ask one fact-bound question → name the consequence → state the demanded stop` -->
+    <!-- e.g. `let the denial finish -> ask one fact-bound question -> name the consequence -> state the demanded stop` -->
   - **branch**:
     <!-- e.g. `IF confronting an authority figure, retain formal address but remove hedging` -->
   - **evidence**:
@@ -712,7 +712,7 @@ references: []
   - **if**:
     <!-- e.g. `IF indecision in the group requires their own stance to be explicit` -->
   - **then**:
-    <!-- e.g. `use first person → state one irreversible choice → name the immediate next action` -->
+    <!-- e.g. `use first person -> state one irreversible choice -> name the immediate next action` -->
   - **branch**:
     <!-- e.g. `IF speaking privately, omit the public justification and address one person directly` -->
   - **evidence**:
@@ -721,7 +721,7 @@ references: []
   - **if**:
     <!-- e.g. `IF someone is injured, grieving, or visibly overwhelmed` -->
   - **then**:
-    <!-- e.g. `reduce physical height or distance → identify the practical need → offer one action → leave silence for acceptance` -->
+    <!-- e.g. `reduce physical height or distance -> identify the practical need -> offer one action -> leave silence for acceptance` -->
   - **branch**:
     <!-- e.g. `IF touch is not welcome, keep distance and place the needed item within reach` -->
   - **evidence**:
@@ -730,7 +730,7 @@ references: []
   - **if**:
     <!-- e.g. `IF an interaction or relationship interval is ending` -->
   - **then**:
-    <!-- e.g. `finish unresolved practical business → mark continuity or finality explicitly → leave without adding a second goodbye` -->
+    <!-- e.g. `finish unresolved practical business -> mark continuity or finality explicitly -> leave without adding a second goodbye` -->
   - **branch**:
     <!-- e.g. `IF reunion is uncertain, avoid a promise and use an open temporal phrase instead` -->
   - **evidence**:
@@ -741,7 +741,7 @@ references: []
 ## 7. SPEECH
 
 <!-- How they speak in this phase -->
-<!-- NOTE: This section covers speech PATTERNS (what forms their utterances take). For voice TIMBRE (pitch, softness, roughness as a physical property), see §4 voice. The two interact but belong in different sections: §4 voice shapes the reader's mental sound; §7 specifies the actual grammatical and rhetorical forms of the character's utterances. -->
+<!-- NOTE: This section covers speech PATTERNS (what forms their utterances take). For voice TIMBRE (pitch, softness, roughness as a physical property), see section 4 voice. The two interact but belong in different sections: section 4 voice shapes the reader's mental sound; section 7 specifies the actual grammatical and rhetorical forms of the character's utterances. -->
 
 ### Speech Patterns
 
@@ -750,7 +750,7 @@ references: []
 - **speech_baseline_context**:
   <!-- Applicable language, communication mode, addressee/audience, task and phase; no assumed universal public or neutral default. -->
 - **address_and_register**:
-  <!-- Apply the self/address inventory in §3 to this baseline, with exact forms or field references, titles and politeness/speech levels. §7 modes own switching; §13 owns relational exceptions. Do not duplicate the form registry. Formality, respect, warmth and honesty are separate. -->
+  <!-- Apply the self/address inventory in section 3 to this baseline, with exact forms or field references, titles and politeness/speech levels. section 7 modes own switching; section 13 owns relational exceptions. Do not duplicate the form registry. Formality, respect, warmth and honesty are separate. -->
 - **sentence_construction**:
   <!-- Typical clause shape, answer/reason/request order, compression or elaboration, and permitted alternatives. Distinguish grammatical structure from tempo. -->
 - **conversational_initiative**:
@@ -774,7 +774,7 @@ references: []
 
 <!-- Select modes under section 2, not solely because they are psychologically possible. Tie each material switch or maintained register to the recognizable portrayal and governing intent. The pattern across turns/scenes matters as well as one utterance. -->
 
-<!-- Use only modes material to this portrayal. Affects, situation, role, task, audience, addressee, communication medium/language and bodily resources can modify different components. §13 owns person-specific activation or deviations; point to those exceptions rather than copying them. No global relationship/emotion priority and no mandatory loss of politeness under stress. Keep language-bound forms exact. -->
+<!-- Use only modes material to this portrayal. Affects, situation, role, task, audience, addressee, communication medium/language and bodily resources can modify different components. section 13 owns person-specific activation or deviations; point to those exceptions rather than copying them. No global relationship/emotion priority and no mandatory loss of politeness under stress. Keep language-bound forms exact. -->
 
 - **voice_mode_id**:
   <!-- Stable local ID, e.g. voice-task-urgent. Does not create a JSON enum or narrative entity. -->
@@ -797,12 +797,12 @@ references: []
 - **switch_release_and_repair**:
   <!-- Where a switch occurs, what persists, whether the speaker corrects a form, and re-entry or release conditions. One listener arriving need not erase the previous affect. -->
 - **mode_basis_and_examples**:
-  <!-- Source/design IDs and status, matched baseline/changed-context samples in §16, plus limitations. Samples remain hypothetical unless established in continuity. -->
+  <!-- Source/design IDs and status, matched baseline/changed-context samples in section 16, plus limitations. Samples remain hypothetical unless established in continuity. -->
 
 ### Vocabulary Registry
 
 <!-- Record exact preferred and avoided forms. Descriptions and conditions are in English; tokens remain in the character's language. Duplicate rows as needed. -->
-<!-- A preferred/avoided pair must express a real choice, not a translation artifact. Example: Japanese `gratitude | 「ありがとうございます」 | 「サンキュー」 | public and unfamiliar addressees | [P01 ch. 2; P02 ep. 5]`; English `gratitude | “thank you” | “thanks” | formal work interactions | [P03 scene 8]`; German `gratitude | „vielen Dank“ | „danke“ | toward clients and superiors | [P02 sc. 4]`. -->
+<!-- A preferred/avoided pair must express a real choice, not a translation artifact. Example: Japanese `gratitude | 「ありがとうございます」 | 「サンキュー」 | public and unfamiliar addressees | [P01 ch. 2; P02 ep. 5]`; English `gratitude | "thank you" | "thanks" | formal work interactions | [P03 scene 8]`; German `gratitude | „vielen Dank“ | „danke“ | toward clients and superiors | [P02 sc. 4]`. -->
 
 | Function | Preferred Form(s) | Avoided / Forbidden Form(s) | Conditions and Boundary | Evidence |
 |----------|-------------------|------------------------------|-------------------------|----------|
@@ -879,7 +879,7 @@ references: []
 
 - **likes**:
   <!-- Things they like -->
-  <!-- NOTE: Phase-specific. Not the scoped identity pattern (§2), sense-level preferences (below), or food (§10). -->
+  <!-- NOTE: Phase-specific. Not the scoped identity pattern (section 2), sense-level preferences (below), or food (section 10). -->
 - **dislikes**:
   <!-- Things they dislike -->
   <!-- NOTE: Same scope as likes. -->
@@ -893,7 +893,7 @@ references: []
 
 ### Sensory Preferences
 
-<!-- Preferences across the senses. Useful for immersive depiction. Taste/food is in §10 Food & Drink -->
+<!-- Preferences across the senses. Useful for immersive depiction. Taste/food is in section 10 Food & Drink -->
 
 - **preferred_sounds**:
   <!-- Liked and disliked sounds. Calming sounds, irritating sounds -->
@@ -968,7 +968,7 @@ references: []
   <!-- Creativity. Generate new ideas or build on existing ones -->
 - **artistic_sense**:
   <!-- Artistic sense. Interest in art, aesthetic sensibility -->
-  <!-- NOTE: Engagement with art (consumption, creation, critique). For what they find beautiful in general, see §2 aesthetic_sense. -->
+  <!-- NOTE: Engagement with art (consumption, creation, critique). For what they find beautiful in general, see section 2 aesthetic_sense. -->
 - **self_expression**:
   <!-- Means of self-expression. Drawing, poetry, singing, dancing -->
 
@@ -1019,7 +1019,7 @@ references: []
 
 ### Food & Drink
 
-<!-- Eating preferences and manners. For alcohol, see §8 Dependencies & Indulgences -->
+<!-- Eating preferences and manners. For alcohol, see section 8 Dependencies & Indulgences -->
 
 - **favorite_foods**:
   <!-- Favorite foods -->
@@ -1091,7 +1091,7 @@ references: []
   <!-- Value conflicts between communities, situations where they're caught in the middle -->
 - **conflict_resolution**:
   <!-- Criteria for resolving inter-community conflict -->
-  <!-- NOTE: For inter-community clashes only. General judgment → §6 reference_frame. -->
+  <!-- NOTE: For inter-community clashes only. General judgment -> section 6 reference_frame. -->
 - **outsider_attitude**:
   <!-- Attitude toward communities they don't belong to -->
 - **community_mobility**:
@@ -1228,7 +1228,7 @@ references: []
 
 ### Relationship-Specific Realizations
 
-<!-- Use this section only for systematic deviations from the default/public baselines in §6, §7, §8, and §11. Do not repeat the whole relationship history. Record only exceptions active in this phase. Planned future closeness belongs in separate author notes, not the opening persona. Evaluate each direction separately; another person's feelings cannot be inferred from this person's hopes. -->
+<!-- Use this section only for systematic deviations from the default/public baselines in section 6, section 7, section 8, and section 11. Do not repeat the whole relationship history. Record only exceptions active in this phase. Planned future closeness belongs in separate author notes, not the opening persona. Evaluate each direction separately; another person's feelings cannot be inferred from this person's hopes. -->
 <!-- TERMINOLOGY: the field naming ("realization") is shared with the companion behavioral-texture template. Describe the behavior as realized within this relationship, compared against the baseline, in qualitative terms; never express the difference as a numeric delta or score. -->
 
 #### {person or structural relationship type}
@@ -1319,7 +1319,7 @@ references: []
 <!-- Response to uncertainty and unprecedented situations. Guidance for "what would this person do?" when no directly documented case exists. Mixes internal principles with expected observable behavior; mark inference explicitly. -->
 
 - **general_approach**:
-  <!-- Default approach to an unfamiliar situation. e.g. `observe before acting → ask one clarifying question → choose the reversible option first` -->
+  <!-- Default approach to an unfamiliar situation. e.g. `observe before acting -> ask one clarifying question -> choose the reversible option first` -->
 - **risk_tolerance**:
   <!-- How much risk they accept and for whom. e.g. `accepts personal injury risk but not irreversible risk to bystanders` -->
 - **adaptation_speed**:
@@ -1328,7 +1328,7 @@ references: []
   <!-- Whether they accept change or resist, with conditions. e.g. `accepts procedural change after evidence; resists changes framed only as status or fashion` -->
 - **guiding_principle**:
   <!-- The principle they fall back on when no precedent applies. e.g. `choose the option that leaves the harmed party more agency` -->
-  <!-- NOTE: Distinct from §6 reference_frame (everyday judgment) and §2 inner_core (scoped motives and commitments). -->
+  <!-- NOTE: Distinct from section 6 reference_frame (everyday judgment) and section 2 inner_core (scoped motives and commitments). -->
 
 ---
 
@@ -1336,28 +1336,28 @@ references: []
 
 <!-- Concrete examples. Record both speech and behavior. -->
 <!-- For dialogue, state a stable source ID and add the four-item annotation required by the Self-Containment Protocol. -->
-<!-- Five entries per major dialogue category is the target for well-documented characters. Duplicate the entry block as needed; never invent canon to satisfy the count, and record unsupported coverage in §19 Known Gaps. -->
+<!-- Five entries per major dialogue category is the target for well-documented characters. Duplicate the entry block as needed; never invent canon to satisfy the count, and record unsupported coverage in section 19 Known Gaps. -->
 <!-- Language-bound text and exact quotes remain in the original language. Explanatory annotations are in English. An optional English gloss may follow, but never replaces the original wording. -->
-<!-- MARK EACH QUOTE: ★ = canonical (verbatim, short, and source-located), ★★ = reconstruction in the same style (generated from recorded rules, not taken from source). In original-design mode use "hypothetical design sample" with design IDs and the same context, emotional-quality, lexical-choice and boundary analysis. It is neither a source quotation nor an event already in continuity. -->
+<!-- MARK EACH QUOTE: [C] = canonical (verbatim, short, and source-located), [R] = reconstruction in the same style (generated from recorded rules, not taken from source). In original-design mode use "hypothetical design sample" with design IDs and the same context, emotional-quality, lexical-choice and boundary analysis. It is neither a source quotation nor an event already in continuity. -->
 
 ### Dialogue Examples
 
 <!-- Organize by situation; the same person speaks differently across functions and relationship states. -->
-<!-- For every entry, use the complete block below. For ★ lines, lexical_analysis describes observable function rather than undocumented authorial intent. For ★★ lines, it documents the reconstruction choices actually made. -->
+<!-- For every entry, use the complete block below. For [C] lines, lexical_analysis describes observable function rather than undocumented authorial intent. For [R] lines, it documents the reconstruction choices actually made. -->
 
 #### In Normal / Peaceful Moments
 
-<!-- ■[source ID + locator] ★ or ★★. e.g. `■[P01 ch. 2 p. 31] ★` or `■[R03 based on P01 ch. 2 and P02 ep. 5] ★★` -->
+<!-- Source [source ID + locator] [C] or [R]. e.g. `Source [P01 ch. 2 p. 31] [C]` or `Source [R03 based on P01 ch. 2 and P02 ep. 5] [R]` -->
 > "{quote in the character's language}"
 <!-- English_gloss_optional: e.g. `A restrained acknowledgment of help; the gloss does not reproduce the register exactly.` -->
 <!-- context: e.g. `A colleague has finished a routine report; no immediate danger; two other people are present.` -->
 <!-- emotional_quality: e.g. `mild relief kept below professional composure`; mark `[inference]` if not explicit. -->
-<!-- lexical_analysis: ★ e.g. (a Korean-language character) `uses 「알겠습니다」 as formal uptake, not casual agreement`; ★★ e.g. `chose 「알겠습니다」 rather than 「알았어」 to preserve public distance.` -->
+<!-- lexical_analysis: [C] e.g. (a Korean-language character) `uses 「알겠습니다」 as formal uptake, not casual agreement`; [R] e.g. `chose 「알겠습니다」 rather than 「알았어」 to preserve public distance.` -->
 <!-- contrast_or_boundary: e.g. `with the closest relationship in [P02 ep. 9], switches to 「응」; no switch occurs with peers.` Write `unknown` if no supported contrast exists. -->
 
 #### Under Tension / Pressure
 
-<!-- ■[source ID + locator] ★ or ★★. e.g. `■[P02 ep. 11 00:18:05] ★` -->
+<!-- Source [source ID + locator] [C] or [R]. e.g. `Source [P02 ep. 11 00:18:05] [C]` -->
 > "{quote in the character's language}"
 <!-- English_gloss_optional: e.g. `A direct stop command with no insult.` -->
 <!-- context: e.g. `The other speaker denies visible harm while time is running out.` -->
@@ -1367,28 +1367,28 @@ references: []
 
 #### At Critical Decision Points
 
-<!-- ■[source ID + locator] ★ or ★★. e.g. `■[P01 ch. 14 p. 208] ★★ based on [P01 ch. 5; P02 ep. 16]` -->
+<!-- Source [source ID + locator] [C] or [R]. e.g. `Source [P01 ch. 14 p. 208] [R] based on [P01 ch. 5; P02 ep. 16]` -->
 > "{quote in the character's language}"
 <!-- English_gloss_optional: e.g. `A first-person commitment followed by the immediate action.` -->
 <!-- context: e.g. `The group is divided and waiting for someone to accept responsibility.` -->
 <!-- emotional_quality: e.g. `fear acknowledged but subordinated to duty`; mark inference where needed. -->
-<!-- lexical_analysis: e.g. `begins with the exact first-person form used in self-binding declarations, then avoids collective “we” until consent exists.` -->
+<!-- lexical_analysis: e.g. `begins with the exact first-person form used in self-binding declarations, then avoids collective "we" until consent exists.` -->
 <!-- contrast_or_boundary: e.g. `earlier planning scenes use suggestions; irreversible commitments switch to a declarative ending.` -->
 
 #### In Private / Intimate Moments
 
-<!-- ■[source ID + locator] ★ or ★★. e.g. `■[P03 scene 22] ★` -->
+<!-- Source [source ID + locator] [C] or [R]. e.g. `Source [P03 scene 22] [C]` -->
 > "{quote in the character's language}"
 <!-- English_gloss_optional: e.g. `An indirect admission of needing the other person to stay.` -->
 <!-- context: e.g. `Only the closest person is present after the public task has ended.` -->
 <!-- emotional_quality: e.g. `need expressed through a practical request rather than a direct confession`; mark inference where needed. -->
 <!-- lexical_analysis: e.g. `retains polite grammar but removes the title and uses the person's name once, which carries the intimacy.` -->
-<!-- contrast_or_boundary: e.g. `with everyone else, the same need is converted into “there is still work”; this direct request occurs only in the innermost relationship.` -->
+<!-- contrast_or_boundary: e.g. `with everyone else, the same need is converted into "there is still work"; this direct request occurs only in the innermost relationship.` -->
 
 #### Recurring Patterns (General)
 
 <!-- Not scene quotations. Record repeated forms attested across multiple documented scenes, using exact language-bound tokens where relevant. -->
-<!-- Example: `concession → choice: 「そうかもしれません。ですが、私は……」`; attested in [P01 ch. 4], [P02 ep. 7], and [P03 scene 8]. -->
+<!-- Example: `concession -> choice: 「そうかもしれません。ですが、私は……」`; attested in [P01 ch. 4], [P02 ep. 7], and [P03 scene 8]. -->
 <!-- A single occurrence belongs in a situation category above. -->
 
 - **pattern**: {exact form or syntactic sequence}
@@ -1428,7 +1428,7 @@ references: []
 - **situation**:
   <!-- e.g. `A peer admits a preventable mistake in front of two subordinates.` -->
 - **action**:
-  <!-- e.g. `stops the public explanation → moves the discussion private → asks for the exact failed assumption before judging intent` -->
+  <!-- e.g. `stops the public explanation -> moves the discussion private -> asks for the exact failed assumption before judging intent` -->
 - **internal**:
   <!-- Directly attested content only, or a marked inference. e.g. `unknown`; or `protects the peer from public shame [inference: action contrast with P03]`. -->
 - **relevance**:
@@ -1441,7 +1441,7 @@ references: []
 - **situation**:
   <!-- e.g. `Two options remain: one is faster, the other preserves bystander choice.` -->
 - **action**:
-  <!-- e.g. `states the irreversible cost of each option → rejects the faster option → gives the affected person the deciding information` -->
+  <!-- e.g. `states the irreversible cost of each option -> rejects the faster option -> gives the affected person the deciding information` -->
 - **internal**:
   <!-- e.g. `fear is explicit in internal narration [P01]`; otherwise write `unknown` or mark inference. -->
 - **relevance**:
@@ -1454,7 +1454,7 @@ references: []
 - **situation**:
   <!-- e.g. `Alone after a public success, with no immediate task remaining.` -->
 - **action**:
-  <!-- e.g. `checks the damaged object twice → begins a written report → stops before the self-evaluation section` -->
+  <!-- e.g. `checks the damaged object twice -> begins a written report -> stops before the self-evaluation section` -->
 - **internal**:
   <!-- e.g. `direct narration: relief followed by guilt`; if not narrated, describe only the visible sequence and write `unknown`. -->
 - **relevance**:
@@ -1466,21 +1466,21 @@ references: []
 
 <!-- Prohibitions specific to this phase -->
 <!-- NOTE: Do not duplicate items from PORTRAYAL IDENTITY > meaningful_boundaries. Record only phase-specific constraints -->
-<!-- AUTHORING ORDER: This section is the LAST line of defense, not the first. By the time you reach §17, the persona should already describe the character actively: what they do say, what they do believe, how they do move. Entries here exist to catch the specific failure modes a reader is likely to fall into despite the active description. If something can be communicated by the active fields in earlier sections, write it there; leave §17 for the residue that those sections cannot carry. Avoid filling §17 with mere inversions of earlier positive content. -->
+<!-- AUTHORING ORDER: This section is the LAST line of defense, not the first. By the time you reach section 17, the persona should already describe the character actively: what they do say, what they do believe, how they do move. Entries here exist to catch the specific failure modes a reader is likely to fall into despite the active description. If something can be communicated by the active fields in earlier sections, write it there; leave section 17 for the residue that those sections cannot carry. Avoid filling section 17 with mere inversions of earlier positive content. -->
 
 ### Epistemic Boundary Handling
 
 <!-- Do not encode concealed truths as negative-prompt items. Define the character's positive procedure when a claim is unsupported, outside competence, irrelevant to their attention, or beyond the evidence available in this phase. -->
-<!-- The reasoning limits themselves are defined once, in §1 Epistemic Position (`inference_limits`). This section adds only the procedures that operate at that boundary; do not restate the limits here. -->
+<!-- The reasoning limits themselves are defined once, in section 1 Epistemic Position (`inference_limits`). This section adds only the procedures that operate at that boundary; do not restate the limits here. -->
 
 - **out_of_scope_contexts**:
   <!-- Structural contexts only. e.g. `events outside direct experience; specialist diagnosis; private motives unsupported by testimony`. Do not name the concealed answer. -->
 - **default_unknown_response**:
-  <!-- Ordered response. e.g. `state lack of basis → identify what is known → ask for a source or defer to appropriate expertise → stop rather than speculate`. -->
+  <!-- Ordered response. e.g. `state lack of basis -> identify what is known -> ask for a source or defer to appropriate expertise -> stop rather than speculate`. -->
 - **interest_and_expertise_filter**:
   <!-- Use only when supported by the character. e.g. `does not pursue court gossip without task relevance; redirects technical medical claims to the healer`. Do not fabricate disinterest solely as a guardrail. -->
 - **unsupported_claim_recovery**:
-  <!-- If an output asserts information beyond the phase boundary: `do not repeat or paraphrase the proposition → retract certainty at a general level → restate only phase-supported evidence → continue from the last supported premise`. Do not promise that the concealed fact has been `fixed in memory`; that repeats and preserves the very content being excluded. -->
+  <!-- If an output asserts information beyond the phase boundary: `do not repeat or paraphrase the proposition -> retract certainty at a general level -> restate only phase-supported evidence -> continue from the last supported premise`. Do not promise that the concealed fact has been `fixed in memory`; that repeats and preserves the very content being excluded. -->
 - **recovery_utterance**:
   <!-- Exact repair form in the character's language, followed by an English functional explanation. e.g. Japanese: 「今の断定には、この時点で使える根拠がありません。撤回します。」, which retracts the unsupported assertion without naming the concealed proposition. Spanish: «Esa afirmación fue demasiado tajante. La retiro: con lo que sé ahora, no puedo sostenerla.», the same function for a Spanish-speaking character. -->
 
@@ -1497,11 +1497,11 @@ references: []
 ### Embodiment Notes
 
 <!-- Concrete portrayal failures that remain likely after the active sections are complete. Each row must name the overplayed or stereotyped version, the correct behavior, and the evidence or boundary. -->
-<!-- Example: `× answers every prompt with silence / ○ answers direct practical questions in one sentence; silence appears before emotional admissions / [P01 ch. 2; P02 ep. 9]`. -->
+<!-- Example: `wrong: answers every prompt with silence / right: answers direct practical questions in one sentence; silence appears before emotional admissions / [P01 ch. 2; P02 ep. 9]`. -->
 
-| Failure Mode | × Incorrect Portrayal | ○ Correct Portrayal | Evidence / Boundary |
+| Failure Mode | Incorrect Portrayal | Correct Portrayal | Evidence / Boundary |
 |--------------|-----------------------|---------------------|---------------------|
-| <!-- e.g. `overplaying taciturnity` --> | <!-- e.g. `responds with “…” even when asked for actionable information` --> | <!-- e.g. `gives the needed fact in one sentence; silence is reserved for affective hesitation` --> | <!-- e.g. `[P01 ch. 2], [P02 ep. 9]` --> |
+| <!-- e.g. `overplaying taciturnity` --> | <!-- e.g. `responds with "..." even when asked for actionable information` --> | <!-- e.g. `gives the needed fact in one sentence; silence is reserved for affective hesitation` --> | <!-- e.g. `[P01 ch. 2], [P02 ep. 9]` --> |
 
 <!-- Add rows for language, body, judgment, relationships, and knowledge where the likely error differs. -->
 
@@ -1543,7 +1543,7 @@ references: []
 
 ### Source ID Format
 
-<!-- Assign a stable ID once and reuse it in action flows, vocabulary rows, relationship-specific realizations, and examples. Use P for primary sources, S for secondary sources, and R for reconstruction entries whose evidence chain is stated in §16. -->
+<!-- Assign a stable ID once and reuse it in action flows, vocabulary rows, relationship-specific realizations, and examples. Use P for primary sources, S for secondary sources, and R for reconstruction entries whose evidence chain is stated in section 16. -->
 <!-- Examples: `[P01] Novel Title, 2nd ed., ch. 4, pp. 61-67`; `[P02] Episode 7, 00:12:41-00:13:08`; `[S01] Official interview, publication, 2024-05-10`; `[R03] Reconstruction based on [P01 ch. 2] and [P02 ep. 5]`. -->
 
 ### Design Ledger
@@ -1585,7 +1585,7 @@ references: []
 
 | Section/Area | Confidence | Notes |
 |--------------|------------|-------|
-| <!-- e.g. §2 PORTRAYAL IDENTITY --> | <!-- high / medium / low --> | <!-- e.g. "Supported in the declared scope", "Partly inferred from behavior", "Limited documentation" --> |
+| <!-- e.g. section 2 PORTRAYAL IDENTITY --> | <!-- high / medium / low --> | <!-- e.g. "Supported in the declared scope", "Partly inferred from behavior", "Limited documentation" --> |
 
 ### Known Gaps
 
@@ -1603,7 +1603,7 @@ references: []
 - [ ] <!-- Hidden answers are not encoded as model-facing negative items; unresolved matters are written as questions, available evidence, and inference limits. -->
 - [ ] <!-- Any author-only future content is removed before direct agent use; labels are not treated as access controls. -->
 - [ ] <!-- Every abstract trait has concrete support, a limit, or an explicitly marked inference. -->
-- [ ] <!-- §7 contains an exact-token vocabulary registry; §6 contains supported IF-THEN flows; §17 contains ×/○ contrasts. -->
+- [ ] <!-- section 7 contains an exact-token vocabulary registry; section 6 contains supported IF-THEN flows; section 17 contains wrong/right contrasts. -->
 - [ ] <!-- Any unmet five-example or ten-flow target is recorded in Known Gaps rather than filled by fabrication. -->
 - [ ] <!-- Original-design proposals, adopted decisions and hypothetical samples are distinct; actual adoption scope is recorded and rejected ideas do not reappear as canon. -->
 - [ ] <!-- Relationship exceptions and knowledge match this phase; the character has goals and daily behavior independent of the central relationship. -->
@@ -1621,7 +1621,7 @@ references: []
 
 <!-- Record the authoring policy used for this file, per the Copyright-Aware Authoring protocol in the header. -->
 <!-- Typical contents: -->
-<!-- - Which scenes were directly quoted (★) and which were reconstructed in the character's style (★★). -->
+<!-- - Which scenes were directly quoted ([C]) and which were reconstructed in the character's style ([R]). -->
 <!-- - Any deliberate departures from verbatim transcription to avoid reproducing long stretches of source script. -->
 <!-- - Acknowledgment that the reconstructed samples are style-faithful generation by the persona author, not canonical utterances. -->
 <!-- - Any other policy the downstream reader (or downstream LLM) should know in order to use this file responsibly. -->

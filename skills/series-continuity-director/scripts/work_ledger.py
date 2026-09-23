@@ -13,13 +13,18 @@ done, not at the end. Finish the task when every step is done, or abandon it
 with the reason. A step that is not written down is a step the next session
 does again or skips.
 
-    python scripts/work_ledger.py begin --project DIR --goal "..." --step "..." --step "..."
-    python scripts/work_ledger.py step --project DIR <n> [--note "..."]
-    python scripts/work_ledger.py note --project DIR "..."
-    python scripts/work_ledger.py block --project DIR "the question the user has to answer"
-    python scripts/work_ledger.py finish --project DIR
-    python scripts/work_ledger.py abandon --project DIR --reason "..."
-    python scripts/work_ledger.py show --project DIR
+Every change holds the project lock that production runs hold, and the open
+task is replaced in one step, so two sessions marking steps at once both land.
+The command writes only into a project: a directory holding
+project-manifest.json, outside the installed suite.
+
+    python scripts/work_ledger.py --project DIR begin --goal "..." --step "..." --step "..."
+    python scripts/work_ledger.py --project DIR step <n> [--note "..."]
+    python scripts/work_ledger.py --project DIR note "..."
+    python scripts/work_ledger.py --project DIR block "the question the user has to answer"
+    python scripts/work_ledger.py --project DIR finish
+    python scripts/work_ledger.py --project DIR abandon --reason "..."
+    python scripts/work_ledger.py --project DIR show
 """
 from __future__ import annotations
 
@@ -29,6 +34,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+import execution_contract as c
+from project_layout import refuse_suite, require_project
 
 WORK_DIR = "work"
 CURRENT = "current.json"
@@ -45,30 +53,44 @@ def work_dir(root: Path) -> Path:
 
 
 def read_current(root: Path) -> dict[str, Any] | None:
+    """The open task, or None. A file that is not a task raises ValueError saying so."""
+
     path = work_dir(root) / CURRENT
     if not path.is_file():
         return None
-    value = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError(
+            f"{WORK_DIR}/{CURRENT} is not a readable task ({exc}); it was cut off or edited by "
+            f"hand. {WORK_DIR}/{LEDGER} holds every step recorded for it: rewrite the file from "
+            "there, or remove it and open the task again"
+        ) from exc
     if not isinstance(value, dict):
-        raise ValueError(f"{path}: not an object")
+        raise ValueError(f"{WORK_DIR}/{CURRENT}: not an object")
     return value
 
 
 def write_current(root: Path, value: dict[str, Any] | None) -> None:
+    """Replace or remove the open task in one step, under the project lock."""
+
+    refuse_suite(root)
     path = work_dir(root) / CURRENT
-    if value is None:
-        if path.is_file():
-            path.unlink()
-        return
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+    with c.lock(root):
+        if value is None:
+            path.unlink(missing_ok=True)
+            return
+        c.atomic(path, (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode("utf-8"),
+                 replace=True)
 
 
 def append(root: Path, entry: dict[str, Any]) -> None:
+    refuse_suite(root)
     path = work_dir(root) / LEDGER
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8", newline="\n") as stream:
-        stream.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    with c.lock(root):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8", newline="\n") as stream:
+            stream.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
 def read_ledger(root: Path) -> list[dict[str, Any]]:
@@ -79,9 +101,12 @@ def read_ledger(root: Path) -> list[dict[str, Any]]:
     for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         if not line.strip():
             continue
-        value = json.loads(line)
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{WORK_DIR}/{LEDGER}:{number}: not a JSON line ({exc})") from exc
         if not isinstance(value, dict):
-            raise ValueError(f"{path}:{number}: not an object")
+            raise ValueError(f"{WORK_DIR}/{LEDGER}:{number}: not an object")
         entries.append(value)
     return entries
 
@@ -104,7 +129,7 @@ def new_task_id(root: Path) -> str:
     return f"t{count + 1:04d}"
 
 
-def begin(root: Path, goal: str, steps: list[str]) -> dict[str, Any]:
+def _begin(root: Path, goal: str, steps: list[str]) -> dict[str, Any]:
     if read_current(root) is not None:
         raise ValueError("a task is already open; finish or abandon it before opening another")
     if not goal.strip():
@@ -133,7 +158,7 @@ def require_open(root: Path) -> dict[str, Any]:
     return task
 
 
-def step_done(root: Path, number: int, note: str | None = None) -> dict[str, Any]:
+def _step_done(root: Path, number: int, note: str | None = None) -> dict[str, Any]:
     task = require_open(root)
     steps = task.get("steps") or []
     found = next((step for step in steps if step.get("n") == number), None)
@@ -151,7 +176,7 @@ def step_done(root: Path, number: int, note: str | None = None) -> dict[str, Any
     return task
 
 
-def note(root: Path, text: str) -> dict[str, Any]:
+def _note(root: Path, text: str) -> dict[str, Any]:
     task = require_open(root)
     if not text.strip():
         raise ValueError("a note needs text")
@@ -161,7 +186,7 @@ def note(root: Path, text: str) -> dict[str, Any]:
     return task
 
 
-def block(root: Path, question: str) -> dict[str, Any]:
+def _block(root: Path, question: str) -> dict[str, Any]:
     task = require_open(root)
     if not question.strip():
         raise ValueError("say what the task is blocked on")
@@ -171,7 +196,7 @@ def block(root: Path, question: str) -> dict[str, Any]:
     return task
 
 
-def finish(root: Path) -> dict[str, Any]:
+def _finish(root: Path) -> dict[str, Any]:
     task = require_open(root)
     left = [step for step in task.get("steps") or [] if not step.get("done_at")]
     if left:
@@ -187,7 +212,7 @@ def finish(root: Path) -> dict[str, Any]:
     return task
 
 
-def abandon(root: Path, reason: str) -> dict[str, Any]:
+def _abandon(root: Path, reason: str) -> dict[str, Any]:
     task = require_open(root)
     if not reason.strip():
         raise ValueError("abandoning a task needs the reason")
@@ -195,6 +220,54 @@ def abandon(root: Path, reason: str) -> dict[str, Any]:
                   "left": [s["text"] for s in task.get("steps") or [] if not s.get("done_at")]})
     write_current(root, None)
     return task
+
+
+def begin(root: Path, goal: str, steps: list[str]) -> dict[str, Any]:
+    """Open a task, under the project lock."""
+
+    refuse_suite(root)
+    with c.lock(root):
+        return _begin(root, goal, steps)
+
+
+def step_done(root: Path, number: int, note: str | None = None) -> dict[str, Any]:
+    """Mark one step of the open task done, under the project lock."""
+
+    refuse_suite(root)
+    with c.lock(root):
+        return _step_done(root, number, note)
+
+
+def note(root: Path, text: str) -> dict[str, Any]:
+    """Add a note to the open task, under the project lock."""
+
+    refuse_suite(root)
+    with c.lock(root):
+        return _note(root, text)
+
+
+def block(root: Path, question: str) -> dict[str, Any]:
+    """Record what the open task waits on, under the project lock."""
+
+    refuse_suite(root)
+    with c.lock(root):
+        return _block(root, question)
+
+
+def finish(root: Path) -> dict[str, Any]:
+    """Close the open task once every step is done, under the project lock."""
+
+    refuse_suite(root)
+    with c.lock(root):
+        return _finish(root)
+
+
+def abandon(root: Path, reason: str) -> dict[str, Any]:
+    """Close the open task without finishing it, under the project lock."""
+
+    refuse_suite(root)
+    with c.lock(root):
+        return _abandon(root, reason)
 
 
 def show(root: Path) -> str:
@@ -229,8 +302,8 @@ def check(root: Path) -> list[str]:
     errors: list[str] = []
     try:
         entries = read_ledger(root)
-    except (ValueError, json.JSONDecodeError) as exc:
-        return [f"{WORK_DIR}/{LEDGER}: {exc}"]
+    except ValueError as exc:
+        return [str(exc)]
     opened = [entry.get("task_id") for entry in entries if entry.get("event") == "opened"]
     if len(opened) != len(set(opened)):
         errors.append(f"{WORK_DIR}/{LEDGER}: a task id is opened twice")
@@ -242,8 +315,8 @@ def check(root: Path) -> list[str]:
             errors.append(f"{WORK_DIR}/{LEDGER}:{number}: unknown event {entry.get('event')!r}")
     try:
         task = read_current(root)
-    except (ValueError, json.JSONDecodeError) as exc:
-        return errors + [f"{WORK_DIR}/{CURRENT}: {exc}"]
+    except ValueError as exc:
+        return errors + [str(exc)]
     if task is not None:
         if task.get("task_id") not in opened:
             errors.append(f"{WORK_DIR}/{CURRENT}: task {task.get('task_id')!r} was never opened in the ledger")
@@ -260,7 +333,9 @@ def check(root: Path) -> list[str]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--project", type=Path, default=Path.cwd(), help="The project directory (default: the working directory)")
+    parser.add_argument("--project", type=Path, default=Path.cwd(),
+                        help="The project directory, the one holding project-manifest.json "
+                             "(default: the working directory)")
     commands = parser.add_subparsers(dest="command", required=True)
     begin_parser = commands.add_parser("begin", help="open a task")
     begin_parser.add_argument("--goal", required=True)
@@ -277,8 +352,8 @@ def main(argv: list[str] | None = None) -> int:
     abandon_parser.add_argument("--reason", required=True)
     commands.add_parser("show", help="print the open task, or the trail")
     args = parser.parse_args(argv)
-    root = args.project.resolve()
     try:
+        root = require_project(args.project)
         if args.command == "begin":
             begin(root, args.goal, args.step)
         elif args.command == "step":
@@ -291,12 +366,15 @@ def main(argv: list[str] | None = None) -> int:
             finish(root)
         elif args.command == "abandon":
             abandon(root, args.reason)
+        shown = show(root)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    print(show(root))
+    print(shown)
     return 0
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

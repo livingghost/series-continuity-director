@@ -37,4 +37,7 @@ def main() -> int:
     else:
         target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(raw);ok=True
     print(json.dumps({'ok':ok,'entries':sum(len(v['entries']) for v in data['categories']),'output':OUTPUT,'check':a.check}));return int(not ok)
-if __name__=='__main__':raise SystemExit(main())
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    raise SystemExit(main())

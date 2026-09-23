@@ -1,12 +1,40 @@
-"""Bind explicit visual subjects to adopted media and delivered reference bytes."""
+#!/usr/bin/env python3
+"""Bind explicit visual subjects to adopted media and delivered reference bytes.
+
+`build` writes a submission's visual continuity block from explicit choices and
+checks it against current bytes. `verify` checks the block a submission carries.
+"""
 from __future__ import annotations
+import argparse
 import copy
+import json
+import report_output
 from pathlib import Path
 from typing import Any
 import execution_contract as c
 
 CONTINUITIES = {'recurring', 'one-off', 'undecided'}
 VISUAL_KINDS = {'image', 'video', 'video-with-audio'}
+PURPOSES = ('sheet-panel', 'image', 'video', 'nonvisual')
+CONTENT_FIELDS = {'purpose', 'basis', 'subjects', 'shot_camera', 'shot_request', 'reference_activation'}
+# The submission fields a block is checked against.
+SUBMISSION_READS = ('kind', 'target', 'scene_id', 'shot_id', 'inputs', 'output_kind')
+
+
+def fields(value: Any, expected: set[str], label: str) -> None:
+    """The exact fields of one block, naming what is missing and what is extra."""
+    if not isinstance(value, dict):
+        raise ValueError(f'{label} must be an object with the fields {", ".join(sorted(expected))}')
+    lacking = sorted(expected - set(value))
+    extra = sorted(set(value) - expected)
+    if lacking or extra:
+        parts = (['missing ' + ', '.join(lacking)] if lacking else []) + (['unexpected ' + ', '.join(extra)] if extra else [])
+        raise ValueError(label + ': ' + '; '.join(parts))
+
+
+def submission_kinds() -> tuple[str, ...]:
+    from submission_gate import KINDS
+    return KINDS
 
 
 def file_ref(root: Path, path: str, *, locator: str | None = None) -> dict:
@@ -25,32 +53,35 @@ def check_file(root: Path, value: Any, *, basis: bool = False) -> Path:
 
 
 def validate_content(value: Any, *, kind: str) -> None:
-    c.exact(value, {'purpose', 'basis', 'subjects', 'shot_camera', 'shot_request', 'reference_activation'}, 'visual continuity')
-    if value['purpose'] not in {'sheet-panel', 'image', 'video', 'nonvisual'}:
-        raise ValueError('declare the output purpose')
+    fields(value, CONTENT_FIELDS, 'visual continuity')
+    kinds = submission_kinds()
+    if kind not in kinds:
+        raise ValueError('declare the submission kind, one of ' + ', '.join(kinds))
+    if value['purpose'] not in PURPOSES:
+        raise ValueError(f'purpose must be one of {", ".join(PURPOSES)}; got {value["purpose"]!r}')
     if not isinstance(value['subjects'], dict): raise ValueError('subjects must be an ID-keyed object')
     visual = value['purpose'] != 'nonvisual'
     if not visual:
         if value['subjects'] or any(value[x] is not None for x in ('basis','shot_camera','shot_request','reference_activation')):
             raise ValueError('nonvisual output has no visual subjects or selectors')
         return
-    c.exact(value['basis'], {'path','sha256','locator'}, 'visual basis')
+    fields(value['basis'], {'path','sha256','locator'}, 'visual basis')
     for key in ('path','locator'): c.text(value['basis'][key], key)
     c.sha(value['basis']['sha256'])
     for key in ('shot_camera','shot_request','reference_activation'):
         ref = value[key]
         if ref is not None:
-            c.exact(ref, {'path','sha256'}, key); c.text(ref['path'], key); c.sha(ref['sha256'])
+            fields(ref, {'path','sha256'}, key); c.text(ref['path'], key); c.sha(ref['sha256'])
     if kind == 'shot' and (value['shot_camera'] is None or value['shot_request'] is None):
-        raise ValueError('a visual shot needs its camera and shot request')
-    if kind == 'asset' and (value['shot_camera'] is not None or value['shot_request'] is not None):
-        raise ValueError('an asset does not borrow a shot camera or request')
-    if kind not in {'shot','asset'}: raise ValueError('declare shot or asset')
+        raise ValueError('a shot carries shot_camera and shot_request: the camera specification '
+                         'and the generation request of that shot')
+    if kind != 'shot' and (value['shot_camera'] is not None or value['shot_request'] is not None):
+        raise ValueError(f'kind {kind!r} carries no shot_camera or shot_request; those belong to kind shot')
     count = len(value['subjects'])
     if value['purpose'] == 'sheet-panel' and count != 1: raise ValueError('a sheet panel needs exactly one subject')
     for ident, item in value['subjects'].items():
         c.text(ident, 'subject ID')
-        c.exact(item, {'continuity','character_id','identity_refs'}, 'visual subject')
+        fields(item, {'continuity','character_id','identity_refs'}, 'visual subject ' + ident)
         if item['continuity'] not in CONTINUITIES: raise ValueError(ident + ': explicitly select a continuity')
         if item['continuity'] == 'undecided' and count != 1: raise ValueError(ident + ': undecided subjects require single-subject exploration')
         if item['character_id'] is not None: c.text(item['character_id'], 'character ID')
@@ -164,18 +195,15 @@ def adopted_identity(root: Path, selector: dict, *, character: str | None, story
         raise ValueError('public adoption is not established for this story order')
     # Import acceptance is a local production selection, not the receipt's mere presence.
     matches = []
-    production = c.local(root, 'production', exists=False)
-    if production.exists():
-        for directory in sorted(production.iterdir()):
-            if directory.name.startswith('.pending-'): continue
-            _,_,_,records = w.load_run(root, directory.name)
-            for record in records:
-                if record['event'] != 'selection': continue
-                selected = record['data']['selection']
-                if selected['scope'] == 'registry-adoption' and selected['adoption'] == selector['registry'] and selected.get('influence') == 'identity':
-                    local = {'kind':'production-selection','run':directory.name,'selection_sha256':record['sha256']}
-                    proof = _local_adoption(root, selector, local, receipt['character_id'])
-                    matches.append(proof)
+    for run in w.run_ids(root):
+        _,_,_,records = w.load_run(root, run)
+        for record in records:
+            if record['event'] != 'selection': continue
+            selected = record['data']['selection']
+            if selected['scope'] == 'registry-adoption' and selected['adoption'] == selector['registry'] and selected.get('influence') == 'identity':
+                local = {'kind':'production-selection','run':run,'selection_sha256':record['sha256']}
+                proof = _local_adoption(root, selector, local, receipt['character_id'])
+                matches.append(proof)
     if not matches: raise ValueError('public reference must complete the local identity acceptance workflow')
     return {'character_id': receipt['character_id'], 'continuity': matches[-1]['continuity'],
             'receipt_sha256': receipt['adoption_receipt_sha256'], 'local_selections': matches}
@@ -203,11 +231,21 @@ def require(value: Any, *, submission: dict, root: Path, profile: dict | None = 
         from reference_activation_gate import file_ref as public_file
         camera = public_file(root, value['shot_camera']); shot_request = public_file(root, value['shot_request'])
         if camera['artifact_type'] != 'shot-camera-spec' or shot_request['artifact_type'] != 'shot-request':
-            raise ValueError('visual shot needs the camera specification and generation request')
-        if shot_request['camera_spec_sha256'] != camera['camera_spec_sha256']: raise ValueError('shot request and camera differ')
+            raise ValueError('shot_camera must be a shot-camera-spec and shot_request a shot-request; they are '
+                             f'{camera["artifact_type"]!r} and {shot_request["artifact_type"]!r}')
+        if shot_request['camera_spec_sha256'] != camera['camera_spec_sha256']:
+            raise ValueError(f'the shot request names camera_spec_sha256 {shot_request["camera_spec_sha256"][:12]} '
+                             f'and the shot camera is {camera["camera_spec_sha256"][:12]}; '
+                             'the request is written for another camera')
         for key in ('scene_id','shot_id'):
-            if camera[key] != shot_request[key] or submission.get(key) != camera[key]: raise ValueError('shot identity mismatch: ' + key)
-        if set(value['subjects']) != set(camera['visible_subjects']): raise ValueError('visual subjects must match the camera visible subjects')
+            if camera[key] != shot_request[key]:
+                raise ValueError(f'the shot camera names {key} {camera[key]!r} and the shot request names {shot_request[key]!r}')
+            if submission.get(key) != camera[key]:
+                named = repr(submission[key]) if submission.get(key) is not None else 'none'
+                raise ValueError(f'the shot camera names {key} {camera[key]!r} and the submission names {named}')
+        if set(value['subjects']) != set(camera['visible_subjects']):
+            raise ValueError(f'the subjects {sorted(value["subjects"])} differ from the visible_subjects '
+                             f'{sorted(camera["visible_subjects"])} of the shot camera')
         for ident, subject in value['subjects'].items():
             if subject['character_id'] != ident: raise ValueError('shot subject must retain its declared work character ID')
     evidence = []; unmeasured = []; settled = None; deliveries = []
@@ -261,23 +299,202 @@ def selection_choice(root: Path, choice: dict, registry: dict) -> dict:
             'selection_sha256': matches[0]['sha256']}
 
 
-def build_record(choices: dict, *, submission: dict, root: Path, profile: dict | None = None) -> dict:
+def seal(choices: dict, root: Path) -> dict:
+    """The block the choices describe, with the bytes of every chosen file bound by hash.
+
+    A choice names a file by its project-relative path, and a basis also by the
+    locator of the part that decides the subjects. An identity image names its
+    adoption by a recorded run and selection, or by a public receipt.
+    """
     result = copy.deepcopy(choices)
     for key in ('basis','shot_camera','shot_request','reference_activation'):
         value = result.get(key)
         if value is not None:
-            fields = {'path','locator'} if key == 'basis' else {'path'}
-            c.exact(value, fields, key + ' choice')
+            fields(value, {'path','locator'} if key == 'basis' else {'path'}, key + ' choice')
             result[key] = file_ref(root, value['path'], locator=value.get('locator'))
     for subject in result.get('subjects', {}).values():
         for ref in subject['identity_refs']:
-            c.exact(ref['file'], {'path'}, 'identity image choice')
+            fields(ref['file'], {'path'}, 'identity image choice')
             ref['file'] = file_ref(root, ref['file']['path'])
             if ref['adoption']['kind'] == 'production-selection':
                 ref['adoption'] = selection_choice(root, ref['adoption'], ref['registry'])
             elif ref['adoption']['kind'] == 'public-receipt':
                 for key in ('manifest','receipt'):
-                    c.exact(ref['adoption'][key], {'path'}, key + ' choice')
+                    fields(ref['adoption'][key], {'path'}, key + ' choice')
                     ref['adoption'][key] = file_ref(root, ref['adoption'][key]['path'])
+    return result
+
+
+def build_record(choices: dict, *, submission: dict, root: Path, profile: dict | None = None) -> dict:
+    result = seal(choices, root)
     require(result, submission=submission, root=root, profile=profile)
     return result
+
+
+def attach(submission: dict, block: dict) -> dict:
+    """Carry the block and its hash in the submission."""
+    submission['visual_continuity'] = block
+    submission['visual_continuity_sha256'] = c.content_id(block)
+    return submission
+
+
+def default_purpose(profile: dict | None) -> str | None:
+    """The purpose a target's media kinds settle, when they settle one."""
+    kinds = set((profile or {}).get('media_kind') or [])
+    video = bool(kinds & {'video', 'video-with-audio'})
+    image = 'image' in kinds
+    if video and not image:
+        return 'video'
+    if image and not video:
+        return 'image'
+    return None
+
+
+CHOICE_FLAGS = ('purpose', 'basis', 'basis_locator', 'subject', 'shot_camera', 'shot_request',
+                'reference_activation')
+
+
+def add_choice_arguments(parser: argparse.ArgumentParser) -> None:
+    """The explicit choices a visual continuity block is built from."""
+    group = parser.add_argument_group('visual continuity choices')
+    group.add_argument('--purpose', choices=PURPOSES,
+                       help='What the output is. Defaults to image or video when the target records only one of them.')
+    group.add_argument('--basis', metavar='PATH',
+                       help='Project-relative document that decides the subjects and their continuity')
+    group.add_argument('--basis-locator', metavar='TEXT', help='The part of that document, such as a heading')
+    group.add_argument('--subject', action='append', nargs='+', metavar='VALUE',
+                       help='SUBJECT_ID CONTINUITY [CHARACTER_ID], once per depicted subject; '
+                            'CONTINUITY is recurring, one-off or undecided')
+    group.add_argument('--shot-camera', metavar='PATH', help='Project-relative shot-camera-spec of a shot')
+    group.add_argument('--shot-request', metavar='PATH', help='Project-relative shot-request of a shot')
+    group.add_argument('--reference-activation', metavar='PATH',
+                       help='Project-relative reference activation, when references are sent')
+    group.add_argument('--choices', metavar='FILE',
+                       help='All choices as one JSON object with the block fields, for identity references')
+
+
+def choices_from_arguments(args: argparse.Namespace, profile: dict | None) -> dict | None:
+    """The choices the arguments state, or None when they state none."""
+    flagged = [name for name in CHOICE_FLAGS if getattr(args, name, None)]
+    if getattr(args, 'choices', None):
+        if flagged:
+            raise ValueError('give --choices or the choice flags, not both: ' + ', '.join('--' + x.replace('_', '-') for x in flagged))
+        value = c.load(Path(args.choices))
+        if not isinstance(value, dict):
+            raise ValueError('the choices file must hold one object with the block fields')
+        return value
+    if not flagged:
+        return None
+    purpose = args.purpose or default_purpose(profile)
+    if purpose is None:
+        raise ValueError('declare --purpose: the target profile records media kinds '
+                         + (', '.join((profile or {}).get('media_kind') or []) or 'none'))
+    if purpose == 'nonvisual':
+        extra = [name for name in flagged if name != 'purpose']
+        if extra:
+            raise ValueError('a nonvisual block carries no basis, subjects, camera, request or activation')
+        return {'purpose': 'nonvisual', 'basis': None, 'subjects': {}, 'shot_camera': None,
+                'shot_request': None, 'reference_activation': None}
+    if not args.basis or not args.basis_locator:
+        raise ValueError('a visual block needs --basis PATH and --basis-locator TEXT: the document, and the '
+                         'part of it, that decides the subjects and their continuity')
+    subjects: dict[str, dict] = {}
+    for entry in args.subject or []:
+        if len(entry) not in (2, 3):
+            raise ValueError('--subject takes SUBJECT_ID CONTINUITY [CHARACTER_ID]; got ' + ' '.join(entry))
+        ident, continuity = entry[0], entry[1]
+        if continuity not in CONTINUITIES:
+            raise ValueError(f'{ident}: continuity must be one of {", ".join(sorted(CONTINUITIES))}; got {continuity!r}')
+        if ident in subjects:
+            raise ValueError('a subject is named twice: ' + ident)
+        subjects[ident] = {'continuity': continuity, 'character_id': entry[2] if len(entry) == 3 else None,
+                           'identity_refs': []}
+
+    def chosen(path: str | None) -> dict | None:
+        return {'path': path} if path else None
+
+    return {'purpose': purpose, 'basis': {'path': args.basis, 'locator': args.basis_locator},
+            'subjects': subjects, 'shot_camera': chosen(args.shot_camera),
+            'shot_request': chosen(args.shot_request),
+            'reference_activation': chosen(args.reference_activation)}
+
+
+def build_block(submission: dict, choices: dict, root: Path, profile: dict | None) -> dict:
+    """Seal the choices and check the block against the submission it belongs to."""
+    from submission_gate import placeholders
+    # The inputs matter only to an activation, which is delivered through them.
+    reads = [name for name in SUBMISSION_READS if name != 'inputs' or choices.get('reference_activation')]
+    for name in reads:
+        if placeholders(submission.get(name)):
+            raise ValueError(f'fill {name} before building the visual block, which is checked against it')
+    return build_record(choices, submission=submission, root=root, profile=profile)
+
+
+def _load_submission(path: Path) -> dict:
+    value = c.load(path)
+    if not isinstance(value, dict):
+        raise ValueError('the submission must be one JSON object')
+    return value
+
+
+def _profile(submission: dict, profiles: list[Path] | None) -> dict | None:
+    from submission_gate import DEFAULT_PROFILES, load_profile
+    return load_profile(str(submission.get('target') or ''), [*(profiles or []), DEFAULT_PROFILES])
+
+
+def build_command(args: argparse.Namespace) -> dict:
+    submission = _load_submission(args.submission)
+    profile = _profile(submission, args.profiles)
+    choices = choices_from_arguments(args, profile)
+    if choices is None:
+        raise ValueError('state the choices: --basis, --basis-locator and one --subject per depicted '
+                         'subject, or --purpose nonvisual, or --choices FILE')
+    block = build_block(submission, choices, args.root, profile)
+    if args.write:
+        from submission_gate import submission_bytes
+        c.atomic(args.submission, submission_bytes(attach(submission, block)), replace=True)
+    return {'ok': True, 'written': bool(args.write), 'visual_continuity': block,
+            'visual_continuity_sha256': c.content_id(block)}
+
+
+def verify_command(args: argparse.Namespace) -> dict:
+    submission = _load_submission(args.submission)
+    block = submission.get('visual_continuity')
+    if block is None:
+        raise ValueError('the submission carries no visual_continuity; write it with the build command')
+    if c.content_id(block) != submission.get('visual_continuity_sha256'):
+        raise ValueError('visual_continuity_sha256 does not match the visual_continuity block; rebuild it')
+    result = require(block, submission=submission, root=args.root, profile=_profile(submission, args.profiles))
+    return {'ok': True, **result}
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    commands = parser.add_subparsers(dest='command', required=True)
+    build = commands.add_parser('build', help='Write the block from explicit choices and check it')
+    verify = commands.add_parser('verify', help='Check the block a submission carries')
+    for command in (build, verify):
+        command.add_argument('submission', type=Path)
+        command.add_argument('--root', type=Path, required=True, help='The project root paths resolve from')
+        command.add_argument('--profiles', type=Path, action='append', default=[],
+                             help='A target profile directory searched before the suite\'s; repeatable')
+    add_choice_arguments(build)
+    build.add_argument('--write', action='store_true',
+                       help='Replace visual_continuity and visual_continuity_sha256 in the submission')
+    for command in (build, verify):
+        report_output.add_json_flag(command)
+    args = parser.parse_args(argv)
+    report_output.use_json(args.json)
+    try:
+        result = build_command(args) if args.command == 'build' else verify_command(args)
+    except (ValueError, OSError, KeyError, TypeError) as exc:
+        report_output.emit({'ok': False, 'error': str(exc)})
+        return 1
+    report_output.emit(result)
+    return 0
+
+
+if __name__ == '__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    raise SystemExit(main())

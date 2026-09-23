@@ -147,4 +147,7 @@ class ReservationTests(unittest.TestCase):
         self.assertCountEqual(result,['success','rejected'])
         self.assertIn(self.states()[self.token]['status'],{'started','released'})
 
-if __name__=='__main__':unittest.main()
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    unittest.main()

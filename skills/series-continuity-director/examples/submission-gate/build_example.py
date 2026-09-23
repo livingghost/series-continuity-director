@@ -45,7 +45,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix='submission-example-') as directory:
         root = Path(directory)
         report = build(root)
-        generated = [path for path in root.rglob('*') if path.is_file() and path.name != '.execution.lock']
+        generated = [path for path in root.rglob('*') if path.is_file() and path.name != c.LOCK_NAME]
         for path in generated:
             target = HERE / path.relative_to(root)
             if args.check:
@@ -59,4 +59,6 @@ def main() -> int:
 
 
 if __name__ == '__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

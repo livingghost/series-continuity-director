@@ -2,13 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "target-profile.schema.json",
   "title": "Target Profile",
-  "description": "Durable, per-model facts about a generation or editing surface: what it accepts and how it wants to be addressed. Separate from any project's decisions about what to send it.",
+  "description": "Durable, per-model facts about a generation or editing surface: what it accepts and how it wants to be addressed. The top level describes the model independent of any service; each offering describes the model as one service exposes it. Separate from any project's decisions about what to send it.",
   "type": "object",
   "required": [
     "artifact_type",
     "target_id",
     "label",
-    "model_identifier",
+    "model",
     "media_kind",
     "evidence",
     "prompt_contract",
@@ -28,10 +28,29 @@
       "type": "string",
       "minLength": 1
     },
-    "model_identifier": {
-      "type": "string",
-      "minLength": 1,
-      "description": "The exact identifier the surface accepts, not a product family name."
+    "model": {
+      "type": "object",
+      "description": "The model as its maker names it. A service's identifier for the model belongs to that service's offering.",
+      "required": [
+        "maker",
+        "name"
+      ],
+      "properties": {
+        "maker": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The version the maker publishes, when it publishes one."
+        }
+      },
+      "additionalProperties": false
     },
     "media_kind": {
       "type": "array",
@@ -302,7 +321,7 @@
     },
     "input_modes": {
       "type": "array",
-      "description": "Each mode changes what the media supplies and therefore what the text must still establish.",
+      "description": "Each mode changes what the media supplies and therefore what the text must still establish. A mode is named for the model; the request keys that carry it belong to each offering.",
       "items": {
         "type": "object",
         "required": [
@@ -315,15 +334,13 @@
             "type": "string",
             "minLength": 1
           },
-          "request_keys": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
           "limits": {
             "type": "string"
+          },
+          "max_inputs": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "How many inputs this mode takes in one request, where the limits state a number."
           },
           "media_supplies": {
             "type": "string",
@@ -335,6 +352,7 @@
           },
           "excludes": {
             "type": "array",
+            "description": "The names of the modes this mode cannot share a request with.",
             "items": {
               "type": "string",
               "minLength": 1
@@ -377,7 +395,7 @@
     },
     "offerings": {
       "type": "array",
-      "description": "How this model is exposed on each service: identifier there, the request key each input mode occupies, and the limits that service enforces for it. One entry per service; a submission names the service when there is more than one.",
+      "description": "How this model is exposed on each service: the service's identifier for it, the request keys each input mode occupies, how that service forms a request, the limits it enforces, and the evidence for all of them. One entry per service; a submission names the service whose rules apply.",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -385,6 +403,7 @@
           "service",
           "model_identifier",
           "request_keys",
+          "request_shape",
           "constraints",
           "observed_at"
         ],
@@ -395,16 +414,58 @@
           },
           "model_identifier": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "The exact identifier this service accepts for the model."
           },
           "request_keys": {
             "type": "object",
+            "description": "For each input mode of the model, the dotted request paths that carry it on this service.",
             "additionalProperties": {
               "type": "array",
               "items": {
-                "type": "string"
+                "type": "string",
+                "minLength": 1
               }
             }
+          },
+          "request_shape": {
+            "type": "object",
+            "description": "How this service forms a request: the dotted path of the model identifier and the text, the negative text where it has one, how a media reference appears, and which media keys take one value rather than a list.",
+            "required": [
+              "model_key",
+              "text_key",
+              "media_reference",
+              "single_value_keys"
+            ],
+            "properties": {
+              "model_key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "text_key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "negative_text_key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "media_reference": {
+                "enum": [
+                  "uuid",
+                  "url",
+                  "data-uri"
+                ]
+              },
+              "single_value_keys": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "additionalProperties": false
           },
           "constraints": {
             "type": "object"
@@ -415,7 +476,33 @@
           },
           "schema_snapshot": {
             "type": "string",
-            "description": "Path, relative to the suite root, of the observed parameter schema for this offering (an observed-parameter-schema artifact)."
+            "description": "Path of the parameter schema observed for this offering, relative to the profile's project or to the suite root: an observed-parameter-schema or a model-schema-contract."
+          },
+          "sources": {
+            "type": "array",
+            "description": "Evidence that belongs to this service rather than to the model.",
+            "items": {
+              "type": "object",
+              "required": [
+                "kind",
+                "reference"
+              ],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "surface-control",
+                    "vendor-documentation",
+                    "user-supplied",
+                    "preserved-run"
+                  ]
+                },
+                "reference": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            }
           }
         }
       }

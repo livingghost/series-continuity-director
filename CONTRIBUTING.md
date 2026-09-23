@@ -21,7 +21,7 @@ The product release uses UTC CalVer, `YYYY.MM.DD.N`, as declared in [package-man
 
 Preserve the existing dated entries in [CHANGELOG.md](CHANGELOG.md), and prepend a current entry in `## [YYYY.MM.DD.N] - YYYY-MM-DD` form. The explicit date must match the CalVer date. Generated host plugin metadata derives its release from the package manifest. The skill trigger and runtime artifacts do not need duplicate product numbers.
 
-Run `python skills/series-continuity-director/scripts/release_contract.py` and `python skills/series-continuity-director/scripts/release_management_smoke_test.py`. CI, source validation, and extracted release checks enforce the same identity. Publication also verifies `--tag` against `v` plus the declared CalVer.
+Run `python skills/series-continuity-director/scripts/release_contract.py` and `python skills/series-continuity-director/scripts/release_management_smoke_test.py`. `validate_skill.py` runs both, so CI and the release build enforce the same identity. Publication also verifies `--tag` against `v` plus the declared CalVer.
 
 Do not add independent version numbers to internal schemas, protocols, templates, project state files, examples, manifests, or validation reports. Internal artifacts are identified by `artifact_type`, validated structurally against the schema files shipped in the same product release, and sealed with their content hashes where required.
 
@@ -137,16 +137,48 @@ rewrites them, and `--check` proves what is on disk still matches.
 Use your Python interpreter command in the examples. Replace `PROJECT` with a new directory for the validation project.
 
 Before proposing a release, regenerate the generated members and run the
-aggregate check. The first three write files that the fourth compares, so the
-order matters, and `validate_skill.py` runs every protocol validator, the host
-manifest checks, and the smoke tests:
+aggregate check, in this order:
 
 ```text
-python skills/series-continuity-director/scripts/build_flat.py
-python skills/series-continuity-director/scripts/build_example.py
-python skills/series-continuity-director/scripts/build_host_packages.py
+python skills/series-continuity-director/scripts/build_derived.py
 python skills/series-continuity-director/scripts/validate_skill.py
 ```
+
+The first rebuilds every derived file after the sources it comes from, and the
+second compares them, so a check never reads what a build has yet to write.
+`build_derived.py --check` reports what is out of date and writes nothing.
+
+`validate_skill.py` runs the static checks in its own process. It then runs
+every protocol validator, every generator's `--check`, the host manifest checks
+and every `scripts/*_smoke_test.py`, each as its own process. It is slow. A
+smoke test that is neither in its `CHECKS` list nor in `UNLISTED_SMOKE_TESTS`
+with a reason fails the run. Its options:
+
+- `--list` prints the name of every check and runs nothing.
+- `--only NAME` runs one check by the name `--list` prints, or every check a
+  glob matches, such as `'examples/*'`. Repeat it for more. `static` names the
+  in-process checks.
+- `--jobs N` runs at most N commands at a time. The default is the processor
+  count, and `--jobs 1` runs them one after another.
+
+The JSON report goes to standard output, with results in the declared order.
+Standard error carries one line per finished check, in the order they finish,
+and prints the output of each failure in full. Under GitHub Actions a failure's
+output folds into a group and each error becomes an annotation. Trimmed actual
+output of a subset:
+
+```text
+$ python skills/series-continuity-director/scripts/validate_skill.py --only static --only scripts/release_contract.py
+validate_skill: 2 checks, at most 24 at a time
+[1/2] pass scripts/release_contract.py
+[2/2] pass static
+warning: SKILL.md body is an estimated 7631 tokens (characters / 4); the specification states under 5000
+validate_skill: 2 of 2 checks passed
+```
+
+A check writes only into temporary directories of its own, so any two can run
+at the same time. The run fails when a file the release ships changed while the
+checks ran. A check that has to run by itself declares the reason in `alone`.
 
 Initialize and validate a temporary project when changing public project interfaces:
 
@@ -155,17 +187,35 @@ python skills/series-continuity-director/scripts/init_project.py  --out PROJECT 
 python skills/series-continuity-director/scripts/validate_project.py PROJECT
 ```
 
-Build the release with [scripts/build_release.py](skills/series-continuity-director/scripts/build_release.py). The release process must:
+Build the release with [scripts/build_release.py](skills/series-continuity-director/scripts/build_release.py). The release process:
 
-1. reject stale generated adapters before staging;
-2. create a clean stage from Git-tracked files selected by the release manifest;
-3. run all checks on the stage;
-4. build a deterministic ZIP;
-5. extract it into a fresh directory;
-6. rerun all checks on the extracted copy;
-7. verify archive structure, forbidden files, and SHA-256.
+1. checks the release identity in the source tree;
+2. creates a clean stage from Git-tracked files selected by the release manifest;
+3. runs `validate_skill.py` once on the stage, which refuses a stale generated file;
+4. builds a deterministic ZIP;
+5. extracts it into a fresh directory;
+6. compares every extracted file with the stage byte for byte;
+7. verifies archive structure, forbidden files, and SHA-256.
 
-Untracked and ignored files under an included directory are reported but never packaged. Release builds require a Git worktree; an extracted source directory is validated as an archive boundary, not used as a new release source.
+The byte comparison stands in for a second validation run: identical files in
+the same layout pass the same checks. Untracked and ignored files under an
+included directory are reported but never packaged. Release builds require a
+Git worktree; an extracted source directory is validated as an archive boundary,
+not used as a new release source.
+
+## Continuous integration
+
+Each operating system's CI job runs these steps in order:
+
+1. `validate_skill.py --only static --only scripts/release_contract.py` on the
+   checkout, before any install. The checkout holds files the release leaves
+   out, such as the workflows.
+2. On Windows, `scripts/cli_encoding_smoke_test.py` with UTF-8 mode off.
+3. `build_release.py`, which runs every check once on the staged tree.
+
+The release workflow first requires the tagged commit to be on `main` with a
+successful CI run there. It then builds on both systems and publishes only when
+the two archives match.
 
 ## Pull request description
 

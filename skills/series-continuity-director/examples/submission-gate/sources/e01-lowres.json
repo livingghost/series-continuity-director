@@ -18,7 +18,7 @@
   },
   "expected_status": "refused",
   "expected_code": "IDENTITY_REFERENCE_TOO_SMALL",
-  "expected_unmeasured": "inputs.referenceImages",
+  "expected_unmeasured": "'reference images'",
   "narrative": "fixtures/narrative.json",
   "characters": [
     "C01"

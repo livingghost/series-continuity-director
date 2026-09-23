@@ -1,9 +1,14 @@
-"""Synthetic request construction, source tracing and exact tuple tests."""
+"""Synthetic request construction, source tracing, exact tuple and input media tests."""
 from __future__ import annotations
+import base64
 import copy
+import io
+import struct
 import tempfile
 import unittest
+import zlib
 from pathlib import Path
+from unittest.mock import patch
 import execution_contract as c
 import request_contract as rc
 from input_evidence import InputEvidence
@@ -104,7 +109,7 @@ class RequestContractTests(unittest.TestCase):
     def test_29_two_metadata_paths_do_not_change_media_commitment(self):
         first=self.seal();self.media[0]['path']='/different/input.png';self.assertEqual(first['request_sha256'],self.seal()['request_sha256'])
     def test_30_bytes_are_rechecked(self):
-        path=self.root/'input.bin';path.write_bytes(b'abc');item=rc.media_metadata(path,role='source');sealed=self.seal();sealed['media']=[item]
+        path=self.root/'input.wav';path.write_bytes(b'abc');item=rc.media_metadata(path,role='source');sealed=self.seal();sealed['media']=[item]
         rc.verify_media_bytes(sealed);path.write_bytes(b'abd')
         with self.assertRaises(ValueError):rc.verify_media_bytes(sealed)
     def test_31_evidence_captures_actual_bytes(self):
@@ -268,4 +273,135 @@ class RenditionTests(unittest.TestCase):
     def test_18_no_automatic_assessment_is_added(self):
         result=mr.compose('text',**self.kw);self.assertNotIn('assessment',result);self.assertEqual(result['review_requirements'],[])
 
-if __name__=='__main__':unittest.main()
+
+def png_header(width: int, height: int) -> bytes:
+    """A PNG that declares its dimensions and carries no pixel data."""
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
+    return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))
+            + chunk(b'IDAT', b'') + chunk(b'IEND', b''))
+
+
+class MediaInputTests(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.root=Path(self.temp.name)
+
+    def test_table_covers_the_registry_media_extensions(self):
+        import asset_registry
+        self.assertEqual(set(rc.MEDIA_TYPES),asset_registry.MEDIA_SUFFIXES)
+
+    def test_recorded_type_does_not_depend_on_mimetypes(self):
+        import mimetypes
+        expected={'clip.mkv':'video/matroska','voice.wav':'audio/wav','SCENE.MP4':'video/mp4','take.m4a':'audio/mp4'}
+        with patch.object(mimetypes,'guess_type',side_effect=AssertionError('host media table consulted')), \
+             patch.dict(mimetypes.types_map,{'.mkv':'video/x-matroska','.wav':'audio/x-wav'}):
+            for name,media in expected.items():
+                path=self.root/name;path.write_bytes(b'synthetic timed bytes')
+                self.assertEqual(rc.media_metadata(path,role='source')['media_type'],media)
+
+    def test_extension_outside_the_table_is_refused(self):
+        for name in ('input.bin','notes.txt','noextension'):
+            path=self.root/name;path.write_bytes(b'abc')
+            with self.subTest(name=name),self.assertRaisesRegex(ValueError,'unsupported input media extension'):
+                rc.media_metadata(path,role='source')
+
+    def test_decompression_bomb_input_is_refused_with_its_reason(self):
+        path=self.root/'large.png';path.write_bytes(png_header(100000,100000))
+        with self.assertRaisesRegex(ValueError,'decompression-bomb'):rc.media_metadata(path,role='source')
+
+    def test_decompression_bomb_output_is_unmeasured(self):
+        import media_evidence
+        path=self.root/'large.png';raw=png_header(100000,100000)
+        result=media_evidence.inspect(path,raw)
+        self.assertEqual(result['kind'],'unmeasured');self.assertIn('decompression-bomb',result['reason'])
+
+
+SVG_OPEN = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="4" height="4" viewBox="0 0 4 4">'
+
+
+def svg(body: str, opening: str = SVG_OPEN) -> bytes:
+    return (opening + body + '</svg>').encode('utf-8')
+
+
+def data_uri(media: str, raw: bytes) -> str:
+    return f'data:{media};base64,' + base64.b64encode(raw).decode('ascii')
+
+
+class SvgSafetyTests(unittest.TestCase):
+    def png(self) -> bytes:
+        from PIL import Image
+        stream=io.BytesIO();Image.new('RGB',(1,1),(200,40,40)).save(stream,'PNG');return stream.getvalue()
+
+    def safe(self) -> bytes:
+        return svg('<defs><linearGradient id="g"><stop offset="0" stop-color="#123456"/></linearGradient>'
+                   '<style>.a { fill: url(#g); }</style><rect id="r" width="2" height="2"/></defs>'
+                   '<use href="#r" class="a"/><use xlink:href="#r" x="2" style="fill: url(\'#g\')"/>'
+                   f'<image width="1" height="1" href="{data_uri("image/png", self.png())}"/>'
+                   f'<image width="1" height="1" href="{data_uri("image/svg+xml", svg("<circle r=\'1\'/>"))}"/>'
+                   '<text font-family="Noto Sans" fill="url(#g)">Synthetic</text>')
+
+    def test_static_embedded_document_is_accepted(self):
+        from svg_safety import require_embedded_svg
+        require_embedded_svg(self.safe())
+
+    def test_editor_metadata_is_accepted(self):
+        from svg_safety import require_embedded_svg
+        opening=SVG_OPEN.replace('<svg ','<svg xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
+            'xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" '
+            'xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" '
+            'inkscape:version="1.3" sodipodi:docname="sheet.svg" ')
+        require_embedded_svg(svg('<sodipodi:namedview id="view" inkscape:zoom="2"/>'
+            '<metadata><rdf:RDF><rdf:Description rdf:about=""><dc:title>Synthetic sheet</dc:title>'
+            '</rdf:Description></rdf:RDF></metadata>'
+            '<g inkscape:label="Layer 1" inkscape:groupmode="layer" data-part="coat" aria-label="Coat" role="img">'
+            '<rect width="1" height="1" sodipodi:nodetypes="cccc"/></g>', opening))
+
+    def test_active_and_external_content_is_refused(self):
+        from svg_safety import require_embedded_svg
+        unsafe_nested=svg('<rect width="1" height="1"/>',SVG_OPEN.replace('<svg ','<svg onload="alert(1)" '))
+        cases={
+            'onload attribute':svg('',SVG_OPEN.replace('<svg ','<svg onload="alert(1)" ')),
+            'set to javascript':svg('<rect width="1" height="1"><set attributeName="fill" to="javascript:alert(1)"/></rect>'),
+            'link element':svg('<a href="#r"><rect width="1" height="1"/></a>'),
+            'xhtml script':svg('<script xmlns="http://www.w3.org/1999/xhtml">alert(1)</script>'),
+            'svg script':svg('<script>alert(1)</script>'),
+            'foreign object':svg('<foreignObject width="1" height="1"/>'),
+            'remote fill':svg('<rect width="1" height="1" fill="url(http://example.invalid/p.svg#x)"/>'),
+            'remote filter':svg('<rect width="1" height="1" filter="url(http://example.invalid/f.svg#x)"/>'),
+            'escaped remote url in style':svg('<rect width="1" height="1" style="fill: u\\72l(http://example.invalid/x)"/>'),
+            'remote url in style element':svg('<style>rect { fill: url("http://example.invalid/p.svg#x"); }</style>'),
+            'import in style element':svg('<style>@import "http://example.invalid/a.css";</style>'),
+            'image-set in style':svg('<rect width="1" height="1" style="mask-image: image-set(\'http://example.invalid/m.png\' 1x)"/>'),
+            'remote use':svg('<use href="http://example.invalid/sprite.svg#x"/>'),
+            'remote image':svg('<image width="1" height="1" href="https://example.invalid/a.png"/>'),
+            'javascript href':svg('<use xlink:href="javascript:alert(1)"/>'),
+            'nested unsafe svg':svg(f'<image width="1" height="1" href="{data_uri("image/svg+xml", unsafe_nested)}"/>'),
+            'svg declared as png':svg(f'<image width="1" height="1" href="{data_uri("image/png", unsafe_nested)}"/>'),
+            'raster bytes of another type':svg(f'<image width="1" height="1" href="{data_uri("image/jpeg", self.png())}"/>'),
+            'unlisted attribute':svg('<rect width="1" height="1" requiredExtensions="x"/>'),
+            'javascript in editor metadata':svg('<rect width="1" height="1" inkscape:label="javascript:alert(1)"/>',
+                                                SVG_OPEN.replace('<svg ','<svg xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" ')),
+            'event handler in data attribute element':svg('<rect width="1" height="1" data-x="1" onclick="alert(1)"/>'),
+            'stylesheet instruction':b'<?xml-stylesheet href="http://example.invalid/a.css"?>'+svg(''),
+            'document type':b'<!DOCTYPE svg [<!ENTITY x "y">]>'+svg(''),
+        }
+        for label,raw in cases.items():
+            with self.subTest(label=label),self.assertRaises(ValueError):require_embedded_svg(raw)
+
+    def test_raster_derivation_checks_the_source_before_rendering(self):
+        from importlib.metadata import version
+        import cairosvg
+        import execution_contract as ec
+        from reference_raster import verify_raster
+        source=self.safe();size={'width':8,'height':8}
+        derivation={'mode':'svg-rasterization','source_sha256':ec.digest(source),'renderer_id':'cairosvg',
+                    'renderer_release':version('CairoSVG'),'output_dimensions':size}
+        verify_raster(source,cairosvg.svg2png(bytestring=source,output_width=8,output_height=8),derivation)
+        unsafe=svg('<rect width="1" height="1" fill="url(http://example.invalid/p.svg#x)"/>')
+        with patch.object(cairosvg,'svg2png',side_effect=AssertionError('rendered an unsafe source')),self.assertRaises(ValueError):
+            verify_raster(unsafe,b'',dict(derivation,source_sha256=ec.digest(unsafe)))
+
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    unittest.main()

@@ -35,7 +35,7 @@ class ModelInputTests(unittest.TestCase):
         self.write('submission-source.json', self.spec)
         self.write('profile.json', self.profile)
         self.write('services.json', {'services': {self.target['service']: {
-            'operations': {'imageInference': {}},
+            'transport': 'runware', 'operations': {'imageInference': {}},
             'endpoint': {'base_url': 'https://example.invalid/synthetic-interface'}}}})
         (self.root / 'basis.txt').write_text('Synthetic single-subject exploration. Not an author approval.\n')
         (self.root / 'delivery.txt').write_text(self.spec['text'])
@@ -203,4 +203,6 @@ class SelectionInputTests(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     unittest.main()

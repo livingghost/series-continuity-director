@@ -9,12 +9,12 @@
     {
       "role": "first_frame",
       "path": "fixtures/large.jpg",
-      "request_key": "inputs.frameImages"
+      "mode": "frame images"
     },
     {
       "role": "reference",
       "path": "fixtures/large.jpg",
-      "request_key": "inputs.referenceImages"
+      "mode": "reference images"
     }
   ],
   "obligations": {

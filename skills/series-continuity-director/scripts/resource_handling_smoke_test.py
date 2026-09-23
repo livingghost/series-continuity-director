@@ -278,4 +278,7 @@ class LockAndPublishTests(unittest.TestCase):
         finally:
             release.set(); t.join(30)
 
-if __name__ == '__main__': unittest.main(verbosity=2)
+if __name__ == '__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    unittest.main(verbosity=2)

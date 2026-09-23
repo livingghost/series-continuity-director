@@ -1,6 +1,6 @@
 # Consult and apply directing knowledge
 
-Use the `craft-consultation` route feature to include these rules in the selected route reading.
+Use the `tactic-consultation` route feature to include these rules in the selected route reading.
 
 ## 1. Ask during production
 

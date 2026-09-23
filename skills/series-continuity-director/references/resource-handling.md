@@ -59,10 +59,12 @@ A new content ceiling needs a reason beyond keeping fixtures, context or a relea
 
 ## 6. Network and media execution deadlines
 
-`PRODUCTION_HTTP_TIMEOUT_SECONDS` sets an optional positive finite timeout for
-HTTP operations. `PRODUCTION_MEDIA_TIMEOUT_SECONDS` similarly bounds media
-probing and composition/extraction when an explicit command timeout is absent.
-An absent variable leaves the application free of a deadline of its own. These
+`PRODUCTION_HTTP_TIMEOUT_SECONDS`, or a service record's `http_timeout_seconds`,
+sets the deadline for each network wait of a send, poll or download. The
+variable takes precedence, and dispatch refuses when neither is set.
+`PRODUCTION_MEDIA_TIMEOUT_SECONDS` bounds media probing and
+composition/extraction when an explicit command timeout is absent; without it,
+those operations run free of a deadline of their own. These
 are execution settings rather than permission to submit: an ambiguous network
 result still follows the recorded recovery path instead of a blind resubmission.
 

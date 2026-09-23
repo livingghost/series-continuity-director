@@ -173,4 +173,7 @@ class SourceMaterialTests(unittest.TestCase):
         self.assertFalse((self.root/'archive').exists())
 
 
-if __name__=='__main__':unittest.main()
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    unittest.main()

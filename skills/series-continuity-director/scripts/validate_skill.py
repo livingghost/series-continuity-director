@@ -1,26 +1,44 @@
 #!/usr/bin/env python3
-"""Validate Series Continuity Director source, protocols, example, and adapters."""
+"""Validate Series Continuity Director source, protocols, example, and adapters.
+
+The static checks read the tree in this process. Every command in CHECKS runs
+as its own process, several at a time, and the report lists them in the order
+they are declared. The report is JSON on standard output. Progress, failure
+output and warnings go to standard error, one line per finished check.
+"""
 from __future__ import annotations
 
-import ast
-import hashlib
-import json
-import os
-import py_compile
-import re
-import subprocess
 import sys
-import tomllib
-import unicodedata
-from pathlib import Path
-from urllib.parse import unquote
 
-import narrative_corpus
-import refusal_coverage
-from project_layout import NARRATIVE_SUBDIRECTORIES, STATE_SUBDIRECTORIES
-from state_protocol import unsupported_schema_keywords as unsupported_state_schema_keywords
-from validate_test_cases import EDITORIAL_CASE_NUMBERS, EXECUTED_CASE_NUMBERS
-from viewpoint_protocol import unsupported_schema_keywords as unsupported_viewpoint_schema_keywords
+# The static checks read the tree while the commands run beside them, so this
+# process writes no bytecode into it either.
+sys.dont_write_bytecode = True
+
+import argparse  # noqa: E402
+import ast  # noqa: E402
+import fnmatch  # noqa: E402
+import hashlib  # noqa: E402
+import json  # noqa: E402
+import os  # noqa: E402
+import py_compile  # noqa: E402
+import re  # noqa: E402
+import subprocess  # noqa: E402
+import tempfile  # noqa: E402
+import tomllib  # noqa: E402
+import traceback  # noqa: E402
+import unicodedata  # noqa: E402
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed  # noqa: E402
+from contextlib import nullcontext  # noqa: E402
+from dataclasses import dataclass, field  # noqa: E402
+from pathlib import Path  # noqa: E402
+from urllib.parse import unquote  # noqa: E402
+
+import narrative_corpus  # noqa: E402
+import refusal_coverage  # noqa: E402
+from project_layout import NARRATIVE_SUBDIRECTORIES, STATE_SUBDIRECTORIES  # noqa: E402
+from state_protocol import unsupported_schema_keywords as unsupported_state_schema_keywords  # noqa: E402
+from validate_test_cases import EDITORIAL_CASE_NUMBERS, EXECUTED_CASE_NUMBERS  # noqa: E402
+from viewpoint_protocol import unsupported_schema_keywords as unsupported_viewpoint_schema_keywords  # noqa: E402
 
 from tree_layout import (  # noqa: E402
     REPO_FILES,
@@ -34,6 +52,9 @@ ROOT = SUITE
 FORBIDDEN_PUNCTUATION = {"\u2014": "Unicode em dash", "\u2013": "Unicode en dash"}
 
 EXCLUDED_PARTS = {"__pycache__", ".git", ".pytest_cache", "dist"}
+# A host keeps its own session data at the repository root, such as the
+# worktrees an agent host creates under .claude/. None of it is a release member.
+HOST_LOCAL_ROOTS = {".claude"}
 EXPECTED_KNOWLEDGE_SOURCES = [
     "references/scene-persona.md",
     "references/source-material.md",
@@ -166,10 +187,239 @@ def check_contract_document(root, contract_relative, errors) -> None:
         )
 
 
-def run(command: list[str]) -> tuple[int, str, str]:
+STATIC = "static"
+# The Agent Skills specification states that a loaded SKILL.md body stays under
+# this many tokens.
+TOKEN_BUDGET = 5000
+
+
+@dataclass(frozen=True)
+class Check:
+    """A command the aggregate runs, under the name `--only` and `--list` use.
+
+    Each step is a script path relative to the suite, then its arguments. The
+    steps run in order, and `{temp}` in an argument names one fresh temporary
+    directory the steps share. A check writes only into temporary directories
+    of its own, so any two checks can run at the same time. `alone` states why
+    a check cannot, and such a check runs by itself after the others.
+    """
+
+    name: str
+    steps: tuple[tuple[str, ...], ...]
+    alone: str = ""
+
+
+def command(*argv: str) -> Check:
+    return Check(" ".join(argv), (argv,))
+
+
+# Generated outputs, protocol validators and every smoke test. Each check is
+# declared once, and the release build runs all of them on the staged tree.
+CHECKS: tuple[Check, ...] = (
+    command("scripts/dependencies_smoke_test.py"),
+    command("scripts/release_management_smoke_test.py"),
+    command("scripts/release_contract.py"),
+    command("scripts/readme_smoke_test.py"),
+    command("scripts/scene_material_smoke_test.py"),
+    command("scripts/agent_evaluation_smoke_test.py"),
+    command("scripts/resource_handling_smoke_test.py"),
+    command("scripts/evidence_tools_smoke_test.py"),
+    command("scripts/creative_options_smoke_test.py"),
+    command("scripts/dependencies.py", "--scope", "media"),
+    command("scripts/production_direction_smoke_test.py"),
+    command("scripts/production_workflow_smoke_test.py"),
+    command("scripts/production_resume_smoke_test.py"),
+    command("scripts/production_inputs_smoke_test.py"),
+    command("scripts/tactic_consultation_smoke_test.py"),
+    command("examples/tactic-consultation/build_example.py", "--check"),
+    command("scripts/production_input_model_smoke_test.py"),
+    command("scripts/dispatch_preview_smoke_test.py"),
+    command("scripts/schema_observation_smoke_test.py"),
+    command("examples/model-evidence/build_example.py", "--check"),
+    command("scripts/production_variation_smoke_test.py"),
+    command("scripts/route_reading_smoke_test.py"),
+    command("scripts/visual_continuity_smoke_test.py"),
+    command("scripts/request_contract_smoke_test.py"),
+    command("scripts/request_validation_smoke_test.py"),
+    command("scripts/reservation_lifecycle_smoke_test.py"),
+    command("scripts/reference_activation_gate_smoke_test.py"),
+    command("examples/input-assembly/build_example.py", "--check"),
+    command("examples/submission-gate/build_example.py", "--check"),
+    command("examples/resume-recording/build_example.py", "--check"),
+    command("scripts/production_integrity_smoke_test.py"),
+    command("scripts/production_dispatch_smoke_test.py"),
+    command("scripts/timed_sequence_smoke_test.py"),
+    command("scripts/production_examples_smoke_test.py"),
+    command("scripts/build_resources.py", "--check"),
+    command("scripts/layer_boundaries_smoke_test.py"),
+    command("scripts/public_boundary_smoke_test.py"),
+    command("scripts/protocol_contract_smoke_test.py"),
+    command("scripts/project_workflow_smoke_test.py"),
+    command("scripts/build_example.py", "--check"),
+    command("scripts/build_flat.py", "--check"),
+    command("scripts/validate_state_protocol.py"),
+    command("scripts/validate_viewpoint_protocol.py"),
+    command("scripts/validate_target_protocol.py"),
+    command("scripts/validate_integration.py"),
+    command("scripts/validate_test_cases.py"),
+    command("scripts/validate_knowledge_integrity.py"),
+    command("scripts/submission_gate_smoke_test.py"),
+    command("scripts/narrative_smoke_test.py"),
+    command("scripts/scene_plot_smoke_test.py"),
+    command("scripts/narrative_index_smoke_test.py"),
+    command("scripts/asset_registry_smoke_test.py"),
+    command("scripts/build_host_packages.py", "--check"),
+    command("scripts/build_host_packages_smoke_test.py"),
+    command("scripts/validate_host_manifests.py"),
+    command("scripts/host_manifest_smoke_test.py"),
+    command("scripts/cli_encoding_smoke_test.py"),
+    command("scripts/report_output_smoke_test.py"),
+
+    # The project scaffold and its validator are current public interfaces.
+    Check("project scaffold", (
+        ("scripts/init_project.py", "--out", "{temp}/validation-series",
+         "--series-id", "VALIDATION-SERIES", "--title", "Validation Series"),
+        ("scripts/validate_project.py", "{temp}/validation-series"),
+    )),
+)
+
+# Smoke tests the aggregate leaves out, each mapped to the reason. Every other
+# scripts/*_smoke_test.py has to be a check above.
+UNLISTED_SMOKE_TESTS: dict[str, str] = {}
+
+
+@dataclass
+class Outcome:
+    name: str
+    returncode: int
+    # The failing step's command line and output, written for a person.
+    output: str = ""
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    stats: dict = field(default_factory=dict)
+
+
+def run_check(check: Check) -> Outcome:
+    """Run the steps of one check in order, stopping at the first that fails."""
+
     env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
-    proc = subprocess.run(command, cwd=ROOT, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
-    return proc.returncode, proc.stdout, proc.stderr
+    uses_temp = any("{temp}" in part for step in check.steps for part in step)
+    with (tempfile.TemporaryDirectory(prefix="scd-check-") if uses_temp else nullcontext("")) as temp:
+        for step in check.steps:
+            argv = [sys.executable, *(part.replace("{temp}", temp) for part in step)]
+            # A child may write in the console's code page or in UTF-8; either
+            # decodes here without stopping the run.
+            proc = subprocess.run(
+                argv, cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                encoding="utf-8", errors="replace", check=False,
+            )
+            if proc.returncode != 0:
+                sections = [f"$ python {' '.join(argv[1:])}", f"exit status {proc.returncode}"]
+                for label, text in (("standard output", proc.stdout), ("standard error", proc.stderr)):
+                    if text.strip():
+                        sections.append(f"--- {label} ---\n{text.rstrip()}")
+                return Outcome(
+                    check.name, proc.returncode, "\n".join(sections),
+                    [f"command failed: {check.name}\n{proc.stderr or proc.stdout}"],
+                )
+    return Outcome(check.name, 0)
+
+
+def select(patterns: list[str] | None) -> tuple[bool, list[Check]]:
+    """Whether the static checks run, and which commands, in declared order."""
+
+    if not patterns:
+        return True, list(CHECKS)
+    names = [STATIC, *(check.name for check in CHECKS)]
+    chosen: set[str] = set()
+    for pattern in patterns:
+        matched = [name for name in names if name == pattern or fnmatch.fnmatchcase(name, pattern)]
+        if not matched:
+            raise ValueError(f"no check is named {pattern!r}; --list prints the names")
+        chosen.update(matched)
+    return STATIC in chosen, [check for check in CHECKS if check.name in chosen]
+
+
+def smoke_test_coverage(errors: list[str]) -> None:
+    """Every smoke test on disk is a check, or is left out with a stated reason."""
+
+    present = {path.name for path in (ROOT / "scripts").glob("*_smoke_test.py")}
+    listed = {
+        Path(step[0]).name for check in CHECKS for step in check.steps
+        if step[0].startswith("scripts/")
+    }
+    for name in sorted(present - listed - set(UNLISTED_SMOKE_TESTS)):
+        errors.append(
+            f"scripts/{name} runs nowhere: add it to CHECKS in scripts/validate_skill.py, "
+            "or to UNLISTED_SMOKE_TESTS with the reason it is left out"
+        )
+    for name, reason in sorted(UNLISTED_SMOKE_TESTS.items()):
+        if name in listed:
+            errors.append(f"scripts/{name} is both a check and left out in UNLISTED_SMOKE_TESTS")
+        if name not in present:
+            errors.append(f"UNLISTED_SMOKE_TESTS names scripts/{name}, which does not exist")
+        if not reason.strip():
+            errors.append(f"UNLISTED_SMOKE_TESTS leaves out scripts/{name} without a reason")
+
+
+def tree_state(repo: Path, includes: list[str]) -> dict[str, tuple[int, int]]:
+    """Size and modification time of every file the release ships.
+
+    A check writes only into its own temporary directories. Comparing this
+    state before and after the run is what establishes that for the checks
+    running side by side.
+    """
+
+    state: dict[str, tuple[int, int]] = {}
+    for item in includes:
+        base = repo / item
+        paths = [base] if base.is_file() else base.rglob("*") if base.is_dir() else []
+        for path in paths:
+            relative = path.relative_to(repo)
+            if any(part in EXCLUDED_PARTS for part in relative.parts) or not path.is_file():
+                continue
+            status = path.stat()
+            state[relative.as_posix()] = (status.st_size, status.st_mtime_ns)
+    return state
+
+
+class Progress:
+    """One line per finished check on standard error, and readable failures.
+
+    Under GitHub Actions a failure's output folds into a group and each error
+    becomes an annotation on the run.
+    """
+
+    def __init__(self, total: int) -> None:
+        self.total = total
+        self.done = 0
+        self.github = bool(os.environ.get("GITHUB_ACTIONS"))
+
+    @staticmethod
+    def escape(text: str) -> str:
+        return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+    def emit(self, line: str = "") -> None:
+        print(line, file=sys.stderr, flush=True)
+
+    def finished(self, outcome: Outcome) -> None:
+        self.done += 1
+        width = len(str(self.total))
+        state = "pass" if outcome.returncode == 0 else "FAIL"
+        self.emit(f"[{self.done:>{width}}/{self.total}] {state} {outcome.name}")
+        if outcome.returncode == 0 or not outcome.output:
+            return
+        self.emit("::group::" + outcome.name if self.github else f"----- {outcome.name} -----")
+        self.emit(outcome.output)
+        self.emit("::endgroup::" if self.github else f"----- end of {outcome.name} -----")
+
+    def report(self, errors: list[str], warnings: list[str]) -> None:
+        """Each message on one line, after the progress lines."""
+
+        for message in warnings:
+            self.emit(("::warning::" + self.escape(message)) if self.github else "warning: " + message)
+        for message in errors:
+            self.emit(("::error::" + self.escape(message)) if self.github else "error: " + message)
 
 
 def read_text(path: Path, errors: list[str]) -> str:
@@ -252,23 +502,12 @@ def english_instruction_document(repo: Path, path: Path) -> bool:
     return path.relative_to(ROOT).parts[0] not in {"assets", "examples"}
 
 
-def main() -> int:
+def static_checks(repo: Path, manifest: dict) -> tuple[list[str], list[str], dict]:
+    """Every check that reads the tree in this process, with its errors, warnings and stats."""
+
     errors: list[str] = []
     warnings: list[str] = []
-    stats: dict[str, int | str | list[str]] = {}
-
-    try:
-        repo = require_repository_root()
-    except RuntimeError as exc:
-        print(json.dumps({"ok": False, "errors": [str(exc)]}, indent=2))
-        return 1
-    manifest_path = repo / "package-manifest.toml"
-    try:
-        with manifest_path.open("rb") as handle:
-            manifest = tomllib.load(handle)
-    except Exception as exc:
-        print(json.dumps({"ok": False, "errors": [f"package-manifest.toml: {exc}"]}, indent=2))
-        return 1
+    stats: dict = {}
 
     # The declared shape, compared against the tree.
     errors.extend(check_layout(repo))
@@ -304,6 +543,15 @@ def main() -> int:
     stats["skill_body_lines"] = body_lines
     # Body length is observable, not a release failure. A recommended length
     # cannot establish whether a reader has the explanations needed to use it.
+    # No tokenizer ships here, so four characters per token stands in for one,
+    # and the stat and the warning both say it is an estimate.
+    estimated_tokens = -(-len(body[-1]) // 4)
+    stats["skill_body_tokens_estimate"] = estimated_tokens
+    if estimated_tokens > TOKEN_BUDGET:
+        warnings.append(
+            f"SKILL.md body is an estimated {estimated_tokens} tokens (characters / 4); "
+            f"the specification states under {TOKEN_BUDGET}"
+        )
     agent = read_text(ROOT / "agents" / "openai.yaml", errors)
     for key in ("interface:", "policy:"):
         if key not in agent:
@@ -331,6 +579,18 @@ def main() -> int:
     readme = read_text(repo / "README.md", errors)
     if re.search(r"(?m)^# Series Continuity Director$", readme) is None:
         errors.append("README must use the stable product heading without embedding the release version")
+
+    # Both workflows run the release build, which runs every check on the staged
+    # tree, and publication binds the tag to the product version. A release
+    # archive carries no workflows, so this reads them only in a checkout.
+    workflows = repo / ".github" / "workflows"
+    for name in ("ci.yml", "release.yml"):
+        if (workflows / name).is_file():
+            text = read_text(workflows / name, errors)
+            if "scripts/build_release.py" not in text:
+                errors.append(f".github/workflows/{name} must run scripts/build_release.py")
+            if name == "release.yml" and 'release_contract.py --tag "$GITHUB_REF_NAME"' not in text:
+                errors.append(".github/workflows/release.yml must bind the tag with release_contract.py --tag")
 
     for rel in REPO_FILES:
         if not (repo / rel).is_file():
@@ -381,7 +641,9 @@ def main() -> int:
     repository_link_errors = 0
     # Links are checked across the whole repository, not only the suite.
     for path in sorted(repo.rglob("*")):
-        if not path.is_file() or any(part in EXCLUDED_PARTS for part in path.parts):
+        relative_parts = path.relative_to(repo).parts
+        if (not path.is_file() or any(part in EXCLUDED_PARTS for part in relative_parts)
+                or relative_parts[0] in HOST_LOCAL_ROOTS):
             continue
         if path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".zip"}:
             continue
@@ -465,7 +727,7 @@ def main() -> int:
 
     # Python syntax without leaving bytecode in the tree.
     python_files = 0
-    with __import__("tempfile").TemporaryDirectory(prefix="scd-pyc-") as temp:
+    with tempfile.TemporaryDirectory(prefix="scd-pyc-") as temp:
         temp_root = Path(temp)
         for path in sorted(ROOT.rglob("*.py")):
             if any(part in EXCLUDED_PARTS for part in path.parts):
@@ -484,85 +746,8 @@ def main() -> int:
     for path in sorted((ROOT / "scripts").glob("*.py")):
         errors.extend(source_import_errors(path, dependency_rules, local_modules))
 
-    # Generated outputs and protocol validators.
-    commands = [
-        [sys.executable, "scripts/dependencies_smoke_test.py"],
-        [sys.executable, "scripts/release_management_smoke_test.py"],
-        [sys.executable, "scripts/release_contract.py"],
-        [sys.executable, "scripts/readme_smoke_test.py"],
-        [sys.executable, "scripts/scene_material_smoke_test.py"],
-        [sys.executable, "scripts/agent_evaluation_smoke_test.py"],
-        [sys.executable, "scripts/resource_handling_smoke_test.py"],
-        [sys.executable, "scripts/evidence_tools_smoke_test.py"],
-        [sys.executable, "scripts/creative_options_smoke_test.py"],
-        [sys.executable, "scripts/dependencies.py", "--scope", "media"],
-        [sys.executable, "scripts/production_direction_smoke_test.py"],
-        [sys.executable, "scripts/production_workflow_smoke_test.py"],
-        [sys.executable, "scripts/production_resume_smoke_test.py"],
-        [sys.executable, "scripts/production_inputs_smoke_test.py"],
-        [sys.executable, "scripts/tactic_consultation_smoke_test.py"],
-        [sys.executable, "examples/tactic-consultation/build_example.py", "--check"],
-        [sys.executable, "scripts/production_input_model_smoke_test.py"],
-        [sys.executable, "scripts/dispatch_preview_smoke_test.py"],
-        [sys.executable, "scripts/schema_observation_smoke_test.py"],
-        [sys.executable, "examples/model-evidence/build_example.py", "--check"],
-        [sys.executable, "scripts/production_variation_smoke_test.py"],
-        [sys.executable, "scripts/route_reading_smoke_test.py"],
-        [sys.executable, "scripts/visual_continuity_smoke_test.py"],
-        [sys.executable, "scripts/request_contract_smoke_test.py"],
-        [sys.executable, "scripts/request_validation_smoke_test.py"],
-        [sys.executable, "scripts/reservation_lifecycle_smoke_test.py"],
-        [sys.executable, "examples/input-assembly/build_example.py", "--check"],
-        [sys.executable, "examples/submission-gate/build_example.py", "--check"],
-        [sys.executable, "examples/resume-recording/build_example.py", "--check"],
-        [sys.executable, "scripts/production_integrity_smoke_test.py"],
-        [sys.executable, "scripts/production_dispatch_smoke_test.py"],
-        [sys.executable, "scripts/timed_sequence_smoke_test.py"],
-        [sys.executable, "scripts/production_examples_smoke_test.py"],
-        [sys.executable, "scripts/build_resources.py", "--check"],
-        [sys.executable, "scripts/layer_boundaries_smoke_test.py"],
-        [sys.executable, "scripts/public_boundary_smoke_test.py"],
-        [sys.executable, "scripts/protocol_contract_smoke_test.py"],
-        [sys.executable, "scripts/project_workflow_smoke_test.py"],
-        [sys.executable, "scripts/build_example.py", "--check"],
-        [sys.executable, "scripts/build_flat.py", "--check"],
-        [sys.executable, "scripts/validate_state_protocol.py"],
-        [sys.executable, "scripts/validate_viewpoint_protocol.py"],
-        [sys.executable, "scripts/validate_target_protocol.py"],
-        [sys.executable, "scripts/validate_integration.py"],
-        [sys.executable, "scripts/validate_test_cases.py"],
-        [sys.executable, "scripts/validate_knowledge_integrity.py"],
-        [sys.executable, "scripts/submission_gate_smoke_test.py"],
-        [sys.executable, "scripts/narrative_smoke_test.py"],
-        [sys.executable, "scripts/scene_plot_smoke_test.py"],
-        [sys.executable, "scripts/narrative_index_smoke_test.py"],
-        [sys.executable, "scripts/asset_registry_smoke_test.py"],
-        [sys.executable, "scripts/build_host_packages.py", "--check"],
-        [sys.executable, "scripts/build_host_packages_smoke_test.py"],
-        [sys.executable, "scripts/validate_host_manifests.py"],
-        [sys.executable, "scripts/host_manifest_smoke_test.py"],
-    ]
-    command_results = []
-    for command in commands:
-        code, stdout, stderr = run(command)
-        command_results.append({"command": " ".join(command[1:]), "returncode": code})
-        if code != 0:
-            errors.append(f"command failed: {' '.join(command)}\n{stderr or stdout}")
-
-    # Project scaffold and project validator are current public interfaces.
-    with __import__("tempfile").TemporaryDirectory(prefix="scd-project-check-") as temp:
-        project = Path(temp) / "validation-series"
-        init_command = [sys.executable, "scripts/init_project.py", "--out", str(project), "--series-id", "VALIDATION-SERIES", "--title", "Validation Series"]
-        code, stdout, stderr = run(init_command)
-        command_results.append({"command": "scripts/init_project.py", "returncode": code})
-        if code != 0:
-            errors.append(f"project initialization failed:\n{stderr or stdout}")
-        else:
-            validate_command = [sys.executable, "scripts/validate_project.py", str(project)]
-            code, stdout, stderr = run(validate_command)
-            command_results.append({"command": "scripts/validate_project.py", "returncode": code})
-            if code != 0:
-                errors.append(f"project validation failed:\n{stderr or stdout}")
+    # Every smoke test on disk runs, or is left out with its reason.
+    smoke_test_coverage(errors)
 
     example_result = read_text(ROOT / "examples/mixed-viewpoint-workshop/result-log.md", errors)
     if not re.search(r"Run status:\s*not run", example_result, re.IGNORECASE):
@@ -1077,12 +1262,168 @@ def main() -> int:
         "jsonl_records": jsonl_records,
         "python_files": python_files,
         "repository_link_errors": repository_link_errors,
-        "commands": command_results,
     })
-    report = {"ok": not errors, "errors": errors, "warnings": warnings, "stats": stats, "generated_media_quality": "not evaluated"}
-    print(json.dumps(report, ensure_ascii=False, indent=2))
-    return 0 if not errors else 1
+    return errors, warnings, stats
+
+
+def run_static(repo: Path, manifest: dict) -> Outcome:
+    try:
+        errors, warnings, stats = static_checks(repo, manifest)
+    except Exception:
+        errors, warnings, stats = [f"the static checks raised:\n{traceback.format_exc()}"], [], {}
+    return Outcome(STATIC, 1 if errors else 0, errors=errors, warnings=warnings, stats=stats)
+
+
+def job_count(value: str) -> int:
+    count = int(value)
+    if count < 1:
+        raise argparse.ArgumentTypeError("--jobs takes 1 or more")
+    return count
+
+
+def arguments(argv: list[str] | None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Run every repository check. The static checks read the tree in this process, "
+            "and each command runs as its own process, several at a time."
+        ),
+        epilog=(
+            "The report is JSON on standard output. Standard error carries one line per "
+            "finished check, the output of each failure, and the warnings."
+        ),
+    )
+    parser.add_argument(
+        "--list", action="store_true",
+        help="print the name of every check, one per line, and run nothing",
+    )
+    parser.add_argument(
+        "--only", action="append", metavar="NAME",
+        help=(
+            "run only this check; repeat for more. NAME is a name --list prints, such as "
+            f"{STATIC!r} or 'scripts/narrative_smoke_test.py', or a glob such as 'examples/*'"
+        ),
+    )
+    parser.add_argument(
+        "--jobs", type=job_count, default=os.cpu_count() or 1, metavar="N",
+        help=(
+            "run at most N commands at a time (default: the processor count, %(default)s "
+            "here); 1 runs them one after another"
+        ),
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = arguments(argv)
+    # A failure's output can hold characters the console cannot encode; they
+    # print escaped instead of ending the run.
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(errors="backslashreplace")
+    if args.list:
+        print("\n".join([STATIC, *(check.name for check in CHECKS)]))
+        return 0
+    try:
+        with_static, checks = select(args.only)
+    except ValueError as exc:
+        print(f"validate_skill.py: {exc}", file=sys.stderr)
+        return 2
+
+    try:
+        repo = require_repository_root()
+    except RuntimeError as exc:
+        print(json.dumps({"ok": False, "errors": [str(exc)]}, indent=2))
+        return 1
+    try:
+        with (repo / "package-manifest.toml").open("rb") as handle:
+            manifest = tomllib.load(handle)
+    except Exception as exc:
+        print(json.dumps({"ok": False, "errors": [f"package-manifest.toml: {exc}"]}, indent=2))
+        return 1
+
+    includes = manifest.get("release", {}).get("include", [])
+    progress = Progress(len(checks) + int(with_static))
+    progress.emit(f"validate_skill: {progress.total} checks, at most {args.jobs} at a time")
+    before = tree_state(repo, includes)
+    outcomes: dict[str, Outcome] = {}
+    running: dict[Future, str] = {}
+    pool = ThreadPoolExecutor(max_workers=args.jobs)
+    try:
+        if with_static:
+            running[pool.submit(run_static, repo, manifest)] = STATIC
+        for check in checks:
+            if not check.alone:
+                running[pool.submit(run_check, check)] = check.name
+        for future in as_completed(list(running)):
+            outcome = future.result()
+            outcomes[outcome.name] = outcome
+            progress.finished(outcome)
+        # Nothing else runs by now, so each of these runs by itself.
+        for check in checks:
+            if check.alone:
+                future = pool.submit(run_check, check)
+                running[future] = check.name
+                outcomes[check.name] = future.result()
+                progress.finished(outcomes[check.name])
+    except KeyboardInterrupt:
+        # A check that never returns, such as one waiting on a lock, is named
+        # here when the run is interrupted.
+        unfinished = [name for future, name in running.items() if not future.done()]
+        progress.emit("interrupted; unfinished: " + (", ".join(unfinished) or "none"))
+        pool.shutdown(wait=False, cancel_futures=True)
+        raise
+    pool.shutdown()
+    after = tree_state(repo, includes)
+
+    errors: list[str] = []
+    warnings: list[str] = []
+    stats: dict = {}
+    # What standard error lists at the end: each static error, and one line
+    # per failed command, whose output was printed when it finished.
+    shown: list[str] = []
+    if STATIC in outcomes:
+        errors += outcomes[STATIC].errors
+        warnings += outcomes[STATIC].warnings
+        stats.update(outcomes[STATIC].stats)
+        shown += outcomes[STATIC].errors
+    results = []
+    for check in checks:
+        outcome = outcomes[check.name]
+        results.append({"command": check.name, "returncode": outcome.returncode})
+        errors += outcome.errors
+        if outcome.returncode:
+            shown.append(f"command failed with exit status {outcome.returncode}: {check.name}")
+    changed = sorted(
+        (set(before) ^ set(after))
+        | {path for path in set(before) & set(after) if before[path] != after[path]}
+    )
+    if changed:
+        message = (
+            "the shipped tree changed while the checks ran, and a check writes only into its "
+            f"own temporary directories: {', '.join(changed[:10])}"
+            + (f" and {len(changed) - 10} more" if len(changed) > 10 else "")
+        )
+        errors.append(message)
+        shown.append(message)
+    stats["commands"] = results
+    stats["jobs"] = args.jobs
+
+    report = {"ok": not errors, "errors": errors, "warnings": warnings, "stats": stats,
+              "generated_media_quality": "not evaluated"}
+    if args.only:
+        report["selected"] = [STATIC] * int(with_static) + [check.name for check in checks]
+    progress.report(shown, warnings)
+    failed = [name for name, outcome in outcomes.items() if outcome.returncode]
+    progress.emit(
+        f"validate_skill: {progress.total - len(failed)} of {progress.total} checks passed"
+        + (f"; failed: {', '.join(failed)}" if failed else "")
+        + ("" if report["ok"] or failed else "; the errors above fail the run")
+    )
+    # ASCII escapes keep the report readable whatever decoder its reader uses.
+    print(json.dumps(report, indent=2))
+    return 0 if report["ok"] else 1
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

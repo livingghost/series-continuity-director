@@ -194,7 +194,7 @@ class LayerBoundaries(unittest.TestCase):
     def test_cli_reports_the_declaration_it_actually_validated(self):
         env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'}
         result = subprocess.run([sys.executable, str(ROOT / 'scripts/validate_integration.py')],
-            cwd=self.root, env=env, capture_output=True, text=True, timeout=45)
+            cwd=self.root, env=env, capture_output=True, text=True, encoding='utf-8', timeout=45)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         report = json.loads(result.stdout)
         self.assertTrue(report['declaration_validation']['ok'])
@@ -202,6 +202,8 @@ class LayerBoundaries(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     buffer = io.StringIO()
     result = unittest.TextTestRunner(stream=buffer, verbosity=2).run(
         unittest.defaultTestLoader.loadTestsFromTestCase(LayerBoundaries))

@@ -4,8 +4,10 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import os
 import re
 import hashlib
+import stat
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 import protocol_contract as public_contract
@@ -202,6 +204,22 @@ def _mapping(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
+def _linked(path: Path) -> bool:
+    """Whether a path component is a symbolic link or a Windows directory junction.
+
+    A resolved path passes through neither. Its spelling may still differ from
+    what resolve() returns, such as a lowercase drive letter or an 8.3 short
+    name, so the components are inspected instead of the strings compared.
+    """
+    try:
+        info = os.lstat(path)
+    except OSError:
+        return False
+    # Only Windows reports a reparse tag, and only Windows defines the junction tag.
+    tag = getattr(info, "st_reparse_tag", None)
+    return stat.S_ISLNK(info.st_mode) or (tag is not None and tag == stat.IO_REPARSE_TAG_MOUNT_POINT)
+
+
 def validate_source_bytes(source: Any, field: str = "source") -> dict[str, Any]:
     """Verify an explicitly selected file source; this check neither fetches URIs nor records adoption."""
     if not isinstance(source, dict):
@@ -214,7 +232,7 @@ def validate_source_bytes(source: Any, field: str = "source") -> dict[str, Any]:
     if errors:
         raise ValueError(f"{field}: " + "; ".join(errors))
     path = Path(source["resolved_path"])
-    if not path.is_absolute() or path.is_symlink() or not path.is_file() or str(path.resolve()) != str(path):
+    if not path.is_absolute() or ".." in path.parts or any(map(_linked, [path, *path.parents])) or not path.is_file():
         raise ValueError(f"{field}: select an explicitly resolved regular file")
     raw = path.read_bytes()
     if hashlib.sha256(raw).hexdigest() != source["sha256"]:
@@ -1593,11 +1611,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
 
         raise AssertionError(args.command)
-    except (ValueError, TypeError, KeyError, OSError, json.JSONDecodeError) as exc:
+    except (ValueError, TypeError, KeyError, IndexError, AttributeError, OSError, RecursionError) as exc:
         print(json.dumps({"ok": False, "errors": [str(exc)]}, ensure_ascii=False, indent=2))
         return 1
 
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

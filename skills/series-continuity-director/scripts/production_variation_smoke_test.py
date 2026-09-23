@@ -52,4 +52,7 @@ class RecordedVariationTests(dispatch_fixture.DispatchTests):
         (self.root/'changes.json').write_bytes(c.encoded(data))
         with self.assertRaises(ValueError):variation.draft(self.root,self.run,'changes.json','variation')
 
-if __name__=='__main__':unittest.main(verbosity=2)
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    unittest.main(verbosity=2)

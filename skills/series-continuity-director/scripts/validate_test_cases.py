@@ -333,7 +333,7 @@ def case_42() -> list[str]:
         [sys.executable, "scripts/build_example.py", "--check"],
         cwd=ROOT,
         env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
-        text=True,
+        text=True, encoding='utf-8',
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
@@ -516,7 +516,7 @@ def case_63() -> list[str]:
             "--payload-id", "CASE-63",
             "--out", str(payload),
         ]
-        process = subprocess.run(command, cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+        process = subprocess.run(command, cwd=ROOT, text=True, encoding='utf-8', stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
         findings: list[str] = []
         if process.returncode == 0:
             findings.append("case 63 envelope collision: payload/output collision was accepted")
@@ -564,7 +564,7 @@ def case_65() -> list[str]:
         project = Path(temp) / "project"
         init = subprocess.run(
             [sys.executable, "scripts/init_project.py", "--out", str(project), "--series-id", "CASE-65", "--title", "Case 65"],
-            cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+            cwd=ROOT, text=True, encoding='utf-8', stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
         )
         if init.returncode != 0:
             return [f"case 65 project setup failed: {init.stderr or init.stdout}"]
@@ -575,14 +575,14 @@ def case_65() -> list[str]:
         manifest_path.write_text(json.dumps(incomplete, indent=2) + "\n", encoding="utf-8", newline="\n")
         first = subprocess.run(
             [sys.executable, "scripts/validate_project.py", str(project)],
-            cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+            cwd=ROOT, text=True, encoding='utf-8', stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
         )
         manifest_path.write_text(json.dumps(original, indent=2) + "\n", encoding="utf-8", newline="\n")
         type_less = project / "state" / "snapshots" / "type-less.json"
         type_less.write_text("{}\n", encoding="utf-8", newline="\n")
         second = subprocess.run(
             [sys.executable, "scripts/validate_project.py", str(project)],
-            cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+            cwd=ROOT, text=True, encoding='utf-8', stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
         )
     findings: list[str] = []
     if first.returncode == 0 or "project manifest missing fields" not in first.stdout:
@@ -649,7 +649,7 @@ def case_69() -> list[str]:
                 "--story-order", "1",
                 "--out", str(output),
             ],
-            cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+            cwd=ROOT, text=True, encoding='utf-8', stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
         )
     if process.returncode == 0 or "expected artifact_type" not in process.stdout:
         return [f"case 69 CLI artifact type: wrong result: {process.stdout or process.stderr}"]
@@ -847,4 +847,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

@@ -16,8 +16,8 @@ validates links and supported shapes; meaning is unchecked. Declared concerns an
 traced to scenes, yet a creative decision may originate outside any theme, and parts of the work
 may stay unconnected.
 
-The neutral initializer creates `design/project.md` from the full design form and a narrative
-with empty tables; adding any persona, arc, theme, prohibition or chapter is the author's work.
+The neutral initializer creates a narrative with empty tables and no design record, persona or
+scene. Adding any of them, or any arc, theme, prohibition or chapter, is the author's work.
 An empty table is unspecified unless the design record establishes intentional absence. Separate
 worked examples may include placeholder characters and a teaching outline as examples rather than
 creative defaults. Persona creation always uses the full installed form, and unresolved content
@@ -30,7 +30,10 @@ fields, and keep the intended form rather than silently substituting a screen pr
 
 Use:
 
-- `narrative.py` for the JSON contract;
+- `narrative.py` for the JSON contract, and `narrative.py approve` to record the author's approval;
+- `narrative_entity.py --project <project> add` to create a design, persona, world or glossary file;
+- `scene_plot.py draft` to start a scene plot, and `scene_plot.py approve` to record its approval;
+- `scene_plot.py behind` to list the plots written against an earlier narrative;
 - `narrative_index.py` for links and unfinished fields;
 - `narrative_coverage.py` for declared scene coverage.
 

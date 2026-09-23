@@ -12,7 +12,12 @@ _WORK = tempfile.TemporaryDirectory(prefix='synthetic-reading-')
 
 def fixture_reading(*, route: str = 'generation', features: list[str] | None = None,
                     project: Path | None = None, ledger: Path | None = None) -> dict:
-    """Read full fixture documents, then author a labeled synthetic application."""
+    """Read full fixture documents, then author a labeled synthetic application.
+
+    The documents that need an application are the ones `submission_draft.py`
+    names in the placeholder it leaves for them.
+    """
+    from submission_draft import application_paths
     if ledger is None and project is None:
         raise ValueError('a synthetic project root is required')
     ledger = ledger if ledger is not None else project/'work/reads.jsonl'
@@ -20,8 +25,8 @@ def fixture_reading(*, route: str = 'generation', features: list[str] | None = N
     key = c.content_id({'fixture': 'synthetic reading', 'manifest': manifest})[:32]
     issued = r.issue(route, features, ledger=ledger, stream=io.StringIO(), key=key,
                      at='2000-01-01T00:00:00Z', cwd='synthetic-fixture')
-    required = {x['path'] for x in manifest['documents']} - set(c.load(r.ROOT/r.execution_routes.MANIFEST)['always_read'])
-    applications = {'applied': [], 'resource_applied': []}
+    required = set(application_paths(manifest['documents']))
+    applications = {'applied': []}
     for meta, raw in bodies:
         if meta['kind'] == 'document' and meta['path'] in required:
             candidates = [block for block in r.prose_blocks(raw.decode('utf-8')) if len(block.split()) >= 12]
@@ -29,15 +34,6 @@ def fixture_reading(*, route: str = 'generation', features: list[str] | None = N
                 raise ValueError('fixture needs a paragraph quotation in ' + meta['path'])
             applications['applied'].append({'path':meta['path'], 'quote':candidates[0],
                 'why':'Exercise quotation integrity with synthetic input, not evidence of a real reading session.'})
-        elif meta['kind'] == 'resource' and meta['resource'] == 'prompt-writing-guide':
-            guide = c.decode(raw)
-            candidates = [(i,j,rule) for i,section in enumerate(guide['sections']) if not section.get('dialects')
-                          for j,rule in enumerate(section['rules']) if isinstance(rule,str) and rule.strip()]
-            if not candidates:
-                raise ValueError('synthetic model fixture needs a universal guide rule')
-            i,j,rule=candidates[0]
-            applications['resource_applied'].append({'resource':'prompt-writing-guide','pointer':f'/sections/{i}/rules/{j}',
-                'quote':rule,'why':'Synthetic fixture exercises the complete decoded rule and its source pointer.'})
     return r.build_record(issued, applications, ledgers=[ledger])
 
 

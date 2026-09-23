@@ -114,6 +114,9 @@ def build(root: Path, *, document: dict[str, Any] | None = None,
           plot: dict[str, Any] | None = None) -> Path:
     """A project holding a narrative and one scene, with no entity files yet."""
 
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "project-manifest.json").write_text(
+        json.dumps({"product": "series-continuity-director"}) + NL, encoding="utf-8", newline=NL)
     for relative in ("narrative/personas", "narrative/world/locations", "narrative/world/factions",
                      "narrative/world/systems", "narrative/world/artifacts", "narrative/glossary",
                      "narrative/scenes", "narrative/design"):
@@ -154,8 +157,8 @@ def main() -> int:
 
         # A project whose files the commands created answers every rule.
         settled = build(base / "settled")
-        run("--series", str(settled), "add", "location", "the-boathouse", "--name", "The boathouse")
-        run("--series", str(settled), "add", "persona", "c01", "--character", "C01")
+        run("--project", str(settled), "add", "location", "the-boathouse", "--name", "The boathouse")
+        run("--project", str(settled), "add", "persona", "c01", "--character", "C01")
         report = scan(settled)
         expect("a project the commands built", report["errors"], None)
         # Everything the commands write is a blank until somebody fills it, and that
@@ -166,22 +169,44 @@ def main() -> int:
 
         # A place a scene names and no file describes.
         missing = build(base / "missing")
-        run("--series", str(missing), "add", "persona", "c01", "--character", "C01")
+        run("--project", str(missing), "add", "persona", "c01", "--character", "C01")
         expect("a place nothing describes", scan(missing)["errors"],
                "'the-boathouse' is named by narrative/scenes/sc01-plot.json")
 
+        # A name one letter away from a file is reported beside that file's id.
+        near = build(base / "near", plot=approved_scene(
+            setting={**scene()["setting"], "location": "the-boathouses"}))
+        run("--project", str(near), "add", "persona", "c01", "--character", "C01")
+        run("--project", str(near), "add", "location", "the-boathouse")
+        expect("a name close to a file", scan(near)["errors"], "did you mean 'the-boathouse'?")
+
+        # The commands write into a project and nowhere else.
+        loose_directory = base / "not-a-project"
+        loose_directory.mkdir()
+        code, report = run("--project", str(loose_directory), "add", "persona", "c03",
+                           "--character", "C03")
+        results.append({"case": "add refuses a directory that is not a project", "report": report})
+        if code == 0 or "has no project-manifest.json" not in "; ".join(report.get("errors", [])) \
+                or (loose_directory / "narrative").exists():
+            failures.append(f"add wrote into a directory that is not a project: {report}")
+        code, report = run("--project", str(ROOT), "add", "persona", "c03", "--character", "C03")
+        results.append({"case": "add refuses the installed suite", "report": report})
+        if code == 0 or "inside the installed suite" not in "; ".join(report.get("errors", [])) \
+                or (ROOT / "narrative").exists():
+            failures.append(f"add wrote into the installed suite: {report}")
+
         # A file nothing names.
         orphan = build(base / "orphan")
-        run("--series", str(orphan), "add", "location", "the-boathouse")
-        run("--series", str(orphan), "add", "persona", "c01", "--character", "C01")
-        run("--series", str(orphan), "add", "faction", "the-committee")
+        run("--project", str(orphan), "add", "location", "the-boathouse")
+        run("--project", str(orphan), "add", "persona", "c01", "--character", "C01")
+        run("--project", str(orphan), "add", "faction", "the-committee")
         expect("a file nothing names", scan(orphan)["gaps"],
                "nothing in the series names 'the-committee'")
 
         # Front matter that disagrees with the file it is in.
         renamed = build(base / "renamed")
-        run("--series", str(renamed), "add", "location", "the-boathouse")
-        run("--series", str(renamed), "add", "persona", "c01", "--character", "C01")
+        run("--project", str(renamed), "add", "location", "the-boathouse")
+        run("--project", str(renamed), "add", "persona", "c01", "--character", "C01")
         path = renamed / "narrative/world/locations/the-boathouse.md"
         path.rename(path.with_name("the-galley.md"))
         expect("a file renamed by hand", scan(renamed)["errors"],
@@ -189,8 +214,8 @@ def main() -> int:
 
         # A file in the wrong directory.
         misplaced = build(base / "misplaced")
-        run("--series", str(misplaced), "add", "location", "the-boathouse")
-        run("--series", str(misplaced), "add", "persona", "c01", "--character", "C01")
+        run("--project", str(misplaced), "add", "location", "the-boathouse")
+        run("--project", str(misplaced), "add", "persona", "c01", "--character", "C01")
         path = misplaced / "narrative/world/locations/the-boathouse.md"
         path.rename(misplaced / "narrative/world/factions/the-boathouse.md")
         expect("a file in the wrong directory", scan(misplaced)["errors"],
@@ -198,19 +223,21 @@ def main() -> int:
 
         # A persona whose front matter names another character.
         wrong = build(base / "wrong")
-        run("--series", str(wrong), "add", "location", "the-boathouse")
-        run("--series", str(wrong), "add", "persona", "c01", "--character", "C09")
+        run("--project", str(wrong), "add", "location", "the-boathouse")
+        run("--project", str(wrong), "add", "persona", "c01", "--character", "C09")
         expect("a persona the narrative points at for somebody else", scan(wrong)["errors"],
                "front matter says character")
 
         # Renaming reaches the scene that happens there, and drops its approval.
         moving = build(base / "moving")
-        run("--series", str(moving), "add", "location", "the-boathouse")
-        run("--series", str(moving), "add", "persona", "c01", "--character", "C01")
-        code, report = run("--series", str(moving), "rename", "the-boathouse", "the-galley")
+        run("--project", str(moving), "add", "location", "the-boathouse")
+        run("--project", str(moving), "add", "persona", "c01", "--character", "C01")
+        code, report = run("--project", str(moving), "rename", "the-boathouse", "the-galley")
         results.append({"case": "rename", "report": report})
         if code != 0 or not report.get("ok"):
             failures.append(f"rename: {report}")
+        if not any("scene_plot.py" in item and "approve" in item for item in report.get("next") or []):
+            failures.append(f"rename: no command named for approving again: {report.get('next')}")
         if not any("sc01-plot.json (approval dropped)" in item
                    for item in report.get("rewritten") or []):
             failures.append(f"rename: the scene was not rewritten: {report.get('rewritten')}")
@@ -222,23 +249,23 @@ def main() -> int:
         expect("after a rename", scan(moving)["errors"], None)
 
         # Removing something still named is refused.
-        code, report = run("--series", str(moving), "remove", "the-galley")
+        code, report = run("--project", str(moving), "remove", "the-galley")
         results.append({"case": "remove while named", "report": report})
         if code == 0 or report.get("ok"):
             failures.append("remove: a place a scene happens at was removed anyway")
-        code, report = run("--series", str(moving), "remove", "the-galley", "--force")
+        code, report = run("--project", str(moving), "remove", "the-galley", "--force")
         results.append({"case": "remove with force", "report": report})
         if code != 0 or not report.get("ok"):
             failures.append(f"remove --force: {report}")
 
         # A persona needs to say whose life it describes.
-        code, report = run("--series", str(settled), "add", "persona", "c02")
+        code, report = run("--project", str(settled), "add", "persona", "c02")
         results.append({"case": "a persona with no character", "report": report})
         if code == 0:
             failures.append("add persona: a persona was created without a character")
 
         # An id is an id.
-        code, report = run("--series", str(settled), "add", "term", "not an id")
+        code, report = run("--project", str(settled), "add", "term", "not an id")
         results.append({"case": "an id that is not an id", "report": report})
         if code == 0:
             failures.append("add: a name with spaces was accepted as an id")
@@ -248,7 +275,7 @@ def main() -> int:
         (formed / "narrative/personas/persona-template.md").write_text(
             "---" + NL + "title: form" + NL + "---" + NL + NL + "## 0. META" + NL,
             encoding="utf-8", newline=NL)
-        run("--series", str(formed), "add", "persona", "c01", "--character", "C01")
+        run("--project", str(formed), "add", "persona", "c01", "--character", "C01")
         written = (formed / "narrative/personas/c01.md").read_text(encoding="utf-8")
         results.append({"case": "a persona from the project's form",
                         "carries_the_form": "## 0. META" in written})
@@ -262,8 +289,8 @@ def main() -> int:
         # a line before reading it and strips one layer of quotes off the
         # value, and it walks the whole tree.
         deep = build(base / "deep")
-        run("--series", str(deep), "add", "persona", "c01", "--character", "C01")
-        run("--series", str(deep), "add", "location", "the-boathouse", "--name", "The boathouse")
+        run("--project", str(deep), "add", "persona", "c01", "--character", "C01")
+        run("--project", str(deep), "add", "location", "the-boathouse", "--name", "The boathouse")
         place = deep / "narrative/world/locations/the-boathouse.md"
         place.write_text(
             place.read_text(encoding="utf-8").replace("id: the-boathouse", 'id: "the-boathouse"'),
@@ -277,7 +304,7 @@ def main() -> int:
             + NL, encoding="utf-8", newline=NL)
         expect("a tree the reader reads before a rename", scan(deep)["errors"], None)
 
-        code, report = run("--series", str(deep), "rename", "the-boathouse", "the-galley")
+        code, report = run("--project", str(deep), "rename", "the-boathouse", "the-galley")
         results.append({"case": "a rename across a tree", "report": report})
         if code != 0 or not report.get("ok"):
             failures.append(f"rename across a tree: {report}")
@@ -318,24 +345,24 @@ def main() -> int:
         # cannot rename it, cannot remove it, and writes a second file claiming
         # the same id.
         below = build(base / "below")
-        run("--series", str(below), "add", "persona", "c01", "--character", "C01")
-        run("--series", str(below), "add", "location", "the-boathouse")
+        run("--project", str(below), "add", "persona", "c01", "--character", "C01")
+        run("--project", str(below), "add", "location", "the-boathouse")
         entity_file(below / "narrative/world/locations/east/the-annex.md", "location",
                     "the-annex")
         expect("an entity below the top of its directory", scan(below)["errors"], None)
         if "the-annex" not in scan(below)["entities"]:
             failures.append("the index did not register an entity in a subdirectory")
-        code, report = run("--series", str(below), "add", "location", "the-annex")
+        code, report = run("--project", str(below), "add", "location", "the-annex")
         results.append({"case": "add refuses an id a subdirectory already holds", "report": report})
         if code == 0 or report.get("ok"):
             failures.append("add wrote a second file for an id a subdirectory already held")
-        code, report = run("--series", str(below), "rename", "the-annex", "the-back-room")
+        code, report = run("--project", str(below), "rename", "the-annex", "the-back-room")
         results.append({"case": "rename reaches a subdirectory", "report": report})
         if code != 0 or not report.get("ok"):
             failures.append(f"rename could not reach an entity in a subdirectory: {report}")
         elif not (below / "narrative/world/locations/east/the-back-room.md").is_file():
             failures.append("a renamed entity did not stay where it was written")
-        code, report = run("--series", str(below), "remove", "the-back-room")
+        code, report = run("--project", str(below), "remove", "the-back-room")
         results.append({"case": "remove reaches a subdirectory", "report": report})
         if code != 0 or not report.get("ok"):
             failures.append(f"remove could not reach an entity in a subdirectory: {report}")
@@ -345,8 +372,8 @@ def main() -> int:
         # own name spells a path nothing sits at, and spells the same one twice
         # when two files collide.
         twice = build(base / "twice")
-        run("--series", str(twice), "add", "persona", "c01", "--character", "C01")
-        run("--series", str(twice), "add", "location", "the-boathouse")
+        run("--project", str(twice), "add", "persona", "c01", "--character", "C01")
+        run("--project", str(twice), "add", "location", "the-boathouse")
         entity_file(twice / "narrative/world/locations/north/the-depot.md", "location",
                     "the-depot")
         entity_file(twice / "narrative/world/locations/south/the-depot.md", "location",
@@ -376,7 +403,7 @@ def main() -> int:
         # made the report say the same thing about a file somebody wrote and a
         # file nobody has started.
         shown = build(base / "shown")
-        run("--series", str(shown), "add", "persona", "c01", "--character", "C01")
+        run("--project", str(shown), "add", "persona", "c01", "--character", "C01")
         entity_file(
             shown / "narrative/world/locations/the-boathouse.md", "location", "the-boathouse",
             "A place is written `name: [name]` until somebody fills it in:",
@@ -407,8 +434,8 @@ def main() -> int:
         # entity files cannot reach it.
         unsettled = build(base / "unsettled",
                           document=narrative(themes=[{"id": "t1", "statement": "undecided"}]))
-        run("--series", str(unsettled), "add", "location", "the-boathouse")
-        run("--series", str(unsettled), "add", "persona", "c01", "--character", "C01")
+        run("--project", str(unsettled), "add", "location", "the-boathouse")
+        run("--project", str(unsettled), "add", "persona", "c01", "--character", "C01")
         told = [gap for gap in scan(unsettled)["gaps"]
                 if "narrative/narrative.json" in gap and "blank(s)" in gap]
         results.append({"case": "the narrative's own blanks are reported", "gaps": told})
@@ -424,8 +451,8 @@ def main() -> int:
         # iterable, so a value that is not one was read one character at a time
         # and reported as that many names with nothing behind them.
         loose = build(base / "loose")
-        run("--series", str(loose), "add", "persona", "c01", "--character", "C01")
-        run("--series", str(loose), "add", "location", "the-boathouse")
+        run("--project", str(loose), "add", "persona", "c01", "--character", "C01")
+        run("--project", str(loose), "add", "location", "the-boathouse")
         entity_file(loose / "narrative/world/artifacts/the-kettle.md", "artifact", "the-kettle",
                     references="references: the-boathouse")
         report = scan(loose)
@@ -446,4 +473,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

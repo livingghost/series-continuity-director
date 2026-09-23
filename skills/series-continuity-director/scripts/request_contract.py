@@ -2,10 +2,33 @@
 from __future__ import annotations
 import copy
 import io
-import mimetypes
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Any, Iterable
 import execution_contract as c
+
+# The media inputs the suite handles, by file extension. The keys equal the
+# asset registry's media extensions: the still formats the gate reads headers
+# from, and the audio and video formats the timed tools probe. Each type is the
+# IANA media type registration, except WAV: the registered audio/vnd.wave is
+# rarely accepted by services, which read audio/wav. WebM has no registration and
+# uses its own specification's.
+# A fixed table keeps a recorded type independent of the host's mimetypes data.
+MEDIA_TYPES = {
+    '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif',
+    '.bmp': 'image/bmp', '.webp': 'image/webp', '.tif': 'image/tiff', '.tiff': 'image/tiff',
+    '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm', '.mkv': 'video/matroska',
+    '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.flac': 'audio/flac',
+    '.aac': 'audio/aac', '.ogg': 'audio/ogg',
+}
+
+
+def media_type(path: str | Path) -> str:
+    """Return the suite's media type for a file name, refusing any other extension."""
+    suffix = PurePath(path).suffix.lower()
+    if suffix not in MEDIA_TYPES:
+        raise ValueError(f'unsupported input media extension {suffix or "(none)"} for {PurePath(path).name}; '
+                         'the suite handles ' + ', '.join(sorted(MEDIA_TYPES)))
+    return MEDIA_TYPES[suffix]
 
 # These fields are declared display or audit data. Every unclassified field stays
 # in the execution projection, including prose used to direct request construction.
@@ -169,16 +192,19 @@ class RequestWriter:
 
 
 def media_metadata(path: Path, *, role:str, binding_ids:list[str]|None=None) -> dict:
+    declared=media_type(path.name)
     raw=c.read(path);c.text(role,'media role')
-    media_type=mimetypes.guess_type(path.name)[0] or 'application/octet-stream'
-    result={'path':str(path),'sha256':c.digest(raw),'size':len(raw),'media_type':media_type,
+    result={'path':str(path),'sha256':c.digest(raw),'size':len(raw),'media_type':declared,
             'role':role,'binding_ids':list(binding_ids or []),'dimensions':None}
-    if media_type.split('/',1)[0]=='image':
+    if declared.split('/',1)[0]=='image':
         from PIL import Image
-        with Image.open(io.BytesIO(raw)) as image:
-            image.load();result['dimensions']={'width':image.width,'height':image.height}
-            actual=Image.MIME.get(image.format)
-            if actual is not None and actual!=media_type:raise ValueError('media bytes differ from their declared file format')
+        try:
+            with Image.open(io.BytesIO(raw)) as image:
+                image.load();result['dimensions']={'width':image.width,'height':image.height}
+                actual=Image.MIME.get(image.format)
+        except Image.DecompressionBombError as exc:
+            raise ValueError(f'{path.name} exceeds the installed Pillow decompression-bomb limit: {exc}') from exc
+        if actual is not None and actual!=declared:raise ValueError('media bytes differ from their declared file format')
     return result
 
 

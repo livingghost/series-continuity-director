@@ -8,6 +8,7 @@ checks establish executable documentation, not creative or real-model quality.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 from pathlib import Path
@@ -141,7 +142,12 @@ def introduction_errors(text: str) -> list[str]:
     return errors
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Prints a JSON report and exits 1 when any check fails. It takes no options.",
+    ).parse_args(argv)
     checks: list[dict] = []
     commands: list[dict] = []
 
@@ -321,4 +327,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

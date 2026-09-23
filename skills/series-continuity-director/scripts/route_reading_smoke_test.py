@@ -25,9 +25,9 @@ class ReadingTests(unittest.TestCase):
             'generation': {'features': [], 'reads': ['notes/work.md'], 'stages': []}},
             'features': {'extra': {'reads': ['notes/extra.md'], 'source_roles': []}}}
         (self.root/'config/execution-routes.json').write_bytes(c.encoded(self.manifest))
-        (self.root/'SKILL.md').write_text('# Skill\n\n'+PARAGRAPH+'\n')
-        (self.root/'notes/work.md').write_text('# Work\n\n'+PARAGRAPH+'\n')
-        (self.root/'notes/extra.md').write_text('# Extra\n\n'+PARAGRAPH+'\n')
+        (self.root/'SKILL.md').write_text('# Skill\n\n'+PARAGRAPH+'\n',encoding='utf-8',newline='\n')
+        (self.root/'notes/work.md').write_text('# Work\n\n'+PARAGRAPH+'\n',encoding='utf-8',newline='\n')
+        (self.root/'notes/extra.md').write_text('# Extra\n\n'+PARAGRAPH+'\n',encoding='utf-8',newline='\n')
         self.ledger = self.root/'work/reads.jsonl'
     def issued(self, route='generation', features=None):
         return r.issue(route, features, root=self.root, ledger=self.ledger,
@@ -36,7 +36,7 @@ class ReadingTests(unittest.TestCase):
         issued=self.issued(route,features)
         applied=[{'path':x['path'],'quote':PARAGRAPH,'why':'Apply the explicitly selected source to this synthetic operation.'}
                  for x in issued['row']['documents'] if x['path']!='SKILL.md']
-        apps={'applied':applied,'resource_applied':[]}
+        apps={'applied':applied}
         return r.build_record(issued,apps,root=self.root,ledgers=[self.ledger])
     def verify(self, record):
         return r.require_route_reading(record,root=self.root,ledgers=[self.ledger],routes={'generation'})
@@ -79,7 +79,7 @@ class ReadingTests(unittest.TestCase):
     def test_heading_is_not_prose(self):
         (self.root/'notes/work.md').write_text('# '+PARAGRAPH+'\n')
         issued=self.issued()
-        apps={'applied':[{'path':'notes/work.md','quote':PARAGRAPH,'why':'Synthetic'}],'resource_applied':[]}
+        apps={'applied':[{'path':'notes/work.md','quote':PARAGRAPH,'why':'Synthetic'}]}
         with self.assertRaisesRegex(ValueError,'paragraph'):r.build_record(issued,apps,root=self.root,ledgers=[self.ledger])
     def test_fenced_text_is_not_prose(self):
         self.assertEqual(r.prose_blocks('```text\n'+PARAGRAPH+'\n```\n'),[])
@@ -140,4 +140,7 @@ class ReadingTests(unittest.TestCase):
     def test_invalid_page_budget(self):
         with self.assertRaises(ValueError):r.read_page(route='generation',page_bytes=0,root=self.root,ledger=self.ledger)
 
-if __name__=='__main__':unittest.main(verbosity=2)
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    unittest.main(verbosity=2)

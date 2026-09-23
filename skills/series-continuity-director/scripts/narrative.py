@@ -19,12 +19,16 @@ from __future__ import annotations
 # The contract this reader answers, over the document with the block that
 # publishes this file's own hash removed. Without that cut the two would
 # each feed the other and neither could be computed.
-CONTRACT_SHA256 = "cbdc3ce7f2977b9ef09df5695cb21dba7d82d4e22cb83062c8c7fc458eaf1dad"
+CONTRACT_SHA256 = "d8de7a0b5ed87aee5bb6ca29c907a8c347262b5abe87d69e7fed098ae5d7cc2f"
 
 import argparse
+import difflib
 import hashlib
 import json
+import report_output
 import re
+import sys
+from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Sequence
 
@@ -76,6 +80,27 @@ def content_sha256(value: dict[str, Any]) -> str:
     body = {key: item for key, item in value.items() if key != "approved"}
     canonical = json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def did_you_mean(value: Any, known: Any) -> str:
+    """A suffix naming the declared id closest to one that does not exist, or nothing.
+
+    One typo in an id used to cost a run per id. The report names the likely
+    intended id beside the one it refuses, so every typo is fixed in one pass.
+    """
+
+    if not isinstance(value, str) or not value:
+        return ""
+    candidates = [item for item in known if isinstance(item, str)]
+    folded = [item for item in candidates if item.casefold() == value.casefold()]
+    found = folded or difflib.get_close_matches(value, candidates, n=1)
+    return f"; did you mean {found[0]!r}?" if found else ""
+
+
+def now_rfc3339() -> str:
+    """The current time as an approval records it: RFC3339, UTC, whole seconds."""
+
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _listed(value: Any) -> list[Any]:
@@ -163,7 +188,8 @@ def _refs(values: Any, known: Sequence[str], label: str, errors: list[str],
         return
     for index, value in enumerate(values):
         if not isinstance(value, str) or value not in known:
-            errors.append(f"{label}[{index}] names something that does not exist: {value!r}")
+            errors.append(f"{label}[{index}] names something that does not exist: {value!r}"
+                          f"{did_you_mean(value, known)}")
 
 
 def validate_narrative(value: Any) -> dict[str, Any]:
@@ -461,7 +487,7 @@ def validate_narrative(value: Any) -> dict[str, Any]:
             if not isinstance(chapter_id, str) or chapter_id not in chapter_ids:
                 errors.append(
                     f"{label}.chapters[{position}] names a chapter that does not exist: "
-                    f"{chapter_id!r}"
+                    f"{chapter_id!r}{did_you_mean(chapter_id, chapter_ids)}"
                 )
                 continue
             if chapter_id in grouped:
@@ -509,6 +535,7 @@ def validate_narrative(value: Any) -> dict[str, Any]:
             if not isinstance(who, str) or who not in character_ids:
                 errors.append(
                     f"{label}.{field} names somebody the series does not carry: {who!r}"
+                    f"{did_you_mean(who, character_ids)}"
                 )
         _refs(bond.get("arcs"), arc_ids, f"{label}.arcs", errors)
         pair = (str(bond.get("from")), str(bond.get("to")))
@@ -544,7 +571,8 @@ def validate_narrative(value: Any) -> dict[str, Any]:
             if item is None:
                 continue
             if not _among(item, numbers):
-                errors.append(f"{label}.{field} names a chapter that does not exist: {item!r}")
+                errors.append(f"{label}.{field} names a chapter that does not exist: {item!r}"
+                              f"{did_you_mean(item, numbers)}")
         if _among(first, numbers) and _among(last, numbers) \
                 and numbers[last] < numbers[first]:
             errors.append(
@@ -570,6 +598,7 @@ def validate_narrative(value: Any) -> dict[str, Any]:
             elif not _among(start, numbers):
                 errors.append(
                     f"{label}.phases[{position}].from_chapter names a chapter that does not exist: {start!r}"
+                    f"{did_you_mean(start, numbers)}"
                 )
             else:
                 starts.append(numbers[start])
@@ -611,7 +640,8 @@ def validate_narrative(value: Any) -> dict[str, Any]:
         payoff = promise.get("payoff")
         for field, item in (("planted", planted), ("payoff", payoff)):
             if item is not None and not _among(item, numbers):
-                errors.append(f"{label}.{field} names a chapter that does not exist: {item!r}")
+                errors.append(f"{label}.{field} names a chapter that does not exist: {item!r}"
+                              f"{did_you_mean(item, numbers)}")
         if status in ("planted", "paid-off") and not planted:
             errors.append(f"{label} is {status!r} and names no chapter it was planted in")
         if status == "paid-off" and not payoff:
@@ -655,7 +685,8 @@ def validate_narrative(value: Any) -> dict[str, Any]:
         resolved = question.get("resolved")
         for field, item in (("introduced", introduced), ("resolved", resolved)):
             if item is not None and not _among(item, numbers):
-                errors.append(f"{label}.{field} names a chapter that does not exist: {item!r}")
+                errors.append(f"{label}.{field} names a chapter that does not exist: {item!r}"
+                              f"{did_you_mean(item, numbers)}")
         # An open question with no introduced chapter is one the series intends to
         # raise and has not raised yet. Answering it, though, requires both ends.
         if status in ("answered", "resolved") and not introduced:
@@ -685,7 +716,8 @@ def validate_narrative(value: Any) -> dict[str, Any]:
         _refs(entry.get("known_by"), knowers, f"{label}.known_by", errors, required=True)
         learned = entry.get("learned_in")
         if learned is not None and not _among(learned, numbers):
-            errors.append(f"{label}.learned_in names a chapter that does not exist: {learned!r}")
+            errors.append(f"{label}.learned_in names a chapter that does not exist: {learned!r}"
+                          f"{did_you_mean(learned, numbers)}")
 
     approved = value.get("approved")
     if approved is not None:
@@ -758,24 +790,146 @@ def load_narrative(path: Path) -> dict[str, Any]:
     return report
 
 
+class Refused(ValueError):
+    """Every reason an approval cannot be recorded, reported together."""
+
+    def __init__(self, problems: Sequence[str]) -> None:
+        super().__init__("; ".join(problems))
+        self.problems = list(problems)
+
+
+def read_narrative(path: Path) -> tuple[Any, str | None]:
+    """The narrative at a path, or the one message saying why it cannot be read."""
+
+    from project_layout import read_document  # noqa: PLC0415
+
+    if path.is_dir():
+        inner = path / "narrative.json"
+        suggestion = inner if inner.is_file() else path / "narrative" / "narrative.json"
+        return None, (f"{path.as_posix()} is a directory, and this command expects the narrative "
+                      f"file; did you mean {suggestion.as_posix()}?")
+    return read_document(path, path.as_posix())
+
+
+def signature(by: Any, at: Any, note: Any) -> tuple[dict[str, Any], list[str]]:
+    """The approval block for what an author said, and what is wrong with what they said."""
+
+    problems: list[str] = []
+    if not isinstance(by, str) or not by.strip() or any(mark in by for mark in "\r\n"):
+        problems.append("--by must name who approved it, on one line")
+    when = now_rfc3339() if at is None else at
+    if not isinstance(when, str) or not APPROVED_AT.match(when):
+        problems.append(f"--at must be an RFC3339 UTC time such as 2026-09-23T09:30:00Z, got {when!r}")
+    block: dict[str, Any] = {"by": by.strip() if isinstance(by, str) else by, "at": when}
+    if note is not None:
+        if not isinstance(note, str) or not note.strip():
+            problems.append("--note must be text when it is given")
+        else:
+            block["note"] = note.strip()
+    return block, problems
+
+
+def approve(path: Path, by: str, at: str | None = None, note: str | None = None) -> dict[str, Any]:
+    """Record an approval the author gave, bound to what the narrative now says.
+
+    The author decides; this writes their decision down with the hash of the
+    content it covers. Raises `Refused` with every reason at once when the
+    narrative does not answer its contract or the approval is malformed.
+    """
+
+    from project_layout import refuse_suite, write_json  # noqa: PLC0415
+
+    refuse_suite(path)
+    value, problem = read_narrative(path)
+    if problem:
+        raise Refused([problem])
+    block, problems = signature(by, at, note)
+    report = validate_narrative(value)
+    problems.extend(report["errors"])
+    if problems:
+        raise Refused(problems)
+    value.pop("approved", None)
+    digest = content_sha256(value)
+    value["approved"] = {"by": block["by"], "at": block["at"], "content_sha256": digest,
+                         **({"note": block["note"]} if "note" in block else {})}
+    write_json(path, value)
+    result: dict[str, Any] = {
+        "ok": True,
+        "approved": path.as_posix(),
+        "by": block["by"],
+        "at": block["at"],
+        "content_sha256": digest,
+        "series_id": report["series_id"],
+        "chapters": report["chapters"],
+        "characters": report["characters"],
+    }
+    # A plot is approved against one version of this document. Approving a new
+    # version leaves every plot written against an older one behind, and says so.
+    location = path.resolve()
+    if location.parent.name == "narrative" and (location.parent / "scenes").is_dir():
+        from scene_plot import behind  # noqa: PLC0415
+
+        listing = behind(location.parent.parent)
+        result["plots_behind"] = listing["behind"]
+        if listing["behind"]:
+            result["next"] = listing["next"]
+    return result
+
+
+def _approve_main(argv: Sequence[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="narrative.py approve",
+        description="Record an approval the author gave for what the narrative now says. "
+                    "Run it only after the author has approved this content.")
+    parser.add_argument("narrative", type=Path, help="narrative/narrative.json in a project")
+    parser.add_argument("--by", required=True, help="Who approved it")
+    parser.add_argument("--at", help="When they approved it, RFC3339 UTC; defaults to now")
+    parser.add_argument("--note", help="Optional note kept in the approval")
+    report_output.add_json_flag(parser)
+    args = parser.parse_args(argv)
+    report_output.use_json(args.json)
+    try:
+        result = approve(args.narrative, args.by, args.at, args.note)
+    except Refused as exc:
+        report_output.emit({"ok": False, "errors": exc.problems})
+        return 1
+    except (OSError, ValueError) as exc:
+        report_output.emit({"ok": False, "errors": [str(exc)]})
+        return 1
+    report_output.emit(result)
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Validate one series narrative.")
-    parser.add_argument("narrative", type=Path)
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments[:1] == ["approve"]:
+        return _approve_main(arguments[1:])
+    parser = argparse.ArgumentParser(
+        description="Validate one series narrative, or record an approval the author gave.",
+        usage="%(prog)s NARRATIVE [--content-sha256]\n"
+              "       %(prog)s approve NARRATIVE --by NAME [--at TIME] [--note TEXT]")
+    parser.add_argument("narrative", type=Path, help="narrative/narrative.json in a project")
     parser.add_argument("--content-sha256", action="store_true",
                         help="Print the hash an approval has to carry, and nothing else")
-    args = parser.parse_args(argv)
-    try:
-        value = json.loads(args.narrative.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        print(json.dumps({"ok": False, "errors": [str(exc)]}, ensure_ascii=False, indent=2))
+    report_output.add_json_flag(parser)
+    args = parser.parse_args(arguments)
+    report_output.use_json(args.json)
+    value, problem = read_narrative(args.narrative)
+    if problem:
+        report_output.emit({"ok": False, "errors": [problem]})
         return 1
     if args.content_sha256:
+        if not isinstance(value, dict):
+            report_output.emit({"ok": False, "errors": ["narrative root must be an object"]})
+            return 1
         print(content_sha256(value))
         return 0
     report = validate_narrative(value)
-    print(json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False))
+    report_output.emit(report)
     return 0 if report["ok"] else 1
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

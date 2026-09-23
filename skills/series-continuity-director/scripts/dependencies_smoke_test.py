@@ -22,7 +22,7 @@ class DependencyTests(unittest.TestCase):
         for name in ('production_workflow', 'submission_gate', 'production_dispatch', 'production_inputs', 'route_reading'):
             process = subprocess.run([sys.executable, '-S', '-c',
                 'import sys,importlib;sys.path.insert(0,sys.argv[1]);importlib.import_module(sys.argv[2])',
-                str(d.ROOT / 'scripts'), name], capture_output=True, text=True, timeout=30)
+                str(d.ROOT / 'scripts'), name], capture_output=True, text=True, encoding='utf-8', timeout=30)
             self.assertEqual(process.returncode, 0, name + ': ' + process.stderr)
 
     def test_all_source_imports_are_declared_and_isolated(self):
@@ -53,6 +53,32 @@ class DependencyTests(unittest.TestCase):
         with patch.object(d.importlib.metadata, 'version', side_effect=AssertionError('media dependency queried')):
             self.assertTrue(d.check('core')['ok'])
 
+    def test_core_report_separates_required_from_optional(self):
+        report = d.check('core')
+        declared = d.declaration()['media']
+        self.assertEqual([entry['name'] for entry in report['required']], ['Python'])
+        self.assertEqual([entry['name'] for entry in report['optional']],
+                         [*declared['distributions'], *declared['executables']])
+        self.assertTrue(all(entry['status'] == 'not checked' for entry in report['optional']))
+        self.assertIn('run --scope media', report['summary'])
+        self.assertNotIn('installed', report)
+
+    def test_every_media_requirement_says_what_it_enables(self):
+        declared = d.declaration()['media']
+        self.assertEqual(sorted(d.USES), sorted([*declared['distributions'], *declared['executables']]))
+
+    def test_missing_media_names_what_it_affects(self):
+        missing = d.importlib.metadata.PackageNotFoundError
+        with patch.object(d.importlib.metadata, 'version', side_effect=missing('absent')), \
+                patch.object(d.shutil, 'which', return_value=None):
+            report = d.check('media')
+        self.assertFalse(report['ok'])
+        self.assertIn('Pillow', report['missing'])
+        self.assertIn('ffprobe', report['missing'])
+        self.assertTrue(any(message.startswith('ffprobe: missing') and 'affects probing audio' in message
+                            for message in report['errors']), report['errors'])
+        self.assertTrue(report['summary'].startswith('Not ready for media work'))
+
     def test_invalid_scope(self):
         with self.assertRaises(ValueError):
             d.check('other')
@@ -64,4 +90,6 @@ class DependencyTests(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     unittest.main()

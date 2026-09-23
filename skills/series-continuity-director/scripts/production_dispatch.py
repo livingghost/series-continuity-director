@@ -4,13 +4,21 @@ Called by dispatch.py after its normal gate. The spec, selected primary text,
 service record and every uploaded file must be pinned prepared inputs. A send
 reserves authority before any upload. Recovery only polls or retrieves the
 already accepted result, never uploads or resubmits. No credential is recorded.
+
+Recovery rebuilds the outputs from every recorded response in order: the answer
+and each poll response. A result URL uses https, or plain http on a loopback
+host, and every redirect it follows keeps to the same rule. Each output streams
+to disk under the operator's network deadline, and its digest and size are recorded.
+Each send and each recovery rewrites the project's run gallery from the records.
 """
 from __future__ import annotations
-from io_budget import environment_seconds
 
 import argparse
 import copy
+import hashlib
+import io
 import json
+import os
 import re
 import tempfile
 import time
@@ -20,6 +28,25 @@ from typing import Any
 
 import execution_contract as c
 import production_workflow as w
+import service_profile
+import transport_contract
+
+
+def preflight(service: dict, transport: Any) -> None:
+    """Refuse a send whose transport, endpoint or deadline would fail after its claim."""
+    transport_contract.check(transport)
+    service_profile.endpoint_url(service)
+    service_profile.http_timeout(service)
+
+
+def refresh_gallery(root: Path, *, quiet: bool = False) -> None:
+    """Rewrite the project's run gallery from the records; `quiet` keeps an earlier error first."""
+    import run_gallery
+    try:
+        run_gallery.write(root)
+    except (OSError, ValueError):
+        if not quiet:
+            raise
 
 
 def relative(root: Path, path: Path) -> str:
@@ -68,6 +95,18 @@ def append_trace(root: Path, run: str, claim: str, name: str, value: Any) -> dic
         return w.append_record(directory,p,rows,'dispatch-trace',{'claim':claim,'stage':name,'files':[f]})
 
 
+def require_declared_shape(offering: dict, layout: dict) -> None:
+    """Refuse a request whose fields differ from the shape the gate checked for this offering."""
+    from request_contract import path_parts
+    shape = offering.get('request_shape')
+    if not isinstance(shape, dict):
+        raise ValueError('the offering declares no request_shape, so the gate did not check this request')
+    for key, slot in (('model_key', 'model'), ('text_key', 'primary_text'), ('negative_text_key', 'negative_text')):
+        if key in shape and layout[slot] is not None and layout[slot] != path_parts(shape[key]):
+            raise ValueError(f"the transport writes {slot} at {'.'.join(map(str, layout[slot]))}, "
+                             f"but the offering's request_shape declares {shape[key]}")
+
+
 def render(root: Path, spec: dict, service: dict, offering: dict, transport: Any,
            profiles: Path, *, consumer: dict | None = None) -> tuple[dict, dict, dict]:
     """Run the ordinary gate and assemble one exact request without an external effect."""
@@ -89,6 +128,7 @@ def render(root: Path, spec: dict, service: dict, offering: dict, transport: Any
     if len(candidates) != 1 or candidates[0] != offering:
         raise ValueError('select one exact offering from the declared target profile')
     built = request_renderer.submission(spec, profile, offering, service, transport, root=root, consumer=consumer)
+    require_declared_shape(offering, built['rendered']['layout'])
     validation = production_request.validate_request(spec, built['rendered'], live_root=root)
     return built, report, validation
 
@@ -197,6 +237,87 @@ def verify_trace(root: Path, run: str, claim: str) -> tuple[Path,dict,list[dict]
     return directory,manifest,rows
 
 
+class _ResultRedirect(urllib.request.HTTPRedirectHandler):
+    """Follow a result redirect only to a URL that the download rule accepts."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        try:
+            service_profile.require_network_url(newurl, 'redirected result URL',
+                                                allow_loopback=service_profile.is_loopback(req.full_url))
+        except ValueError:
+            fp.close()
+            raise
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def open_result(url: str, seconds: float):
+    """Open one provider result URL; the deadline bounds each network wait."""
+    handlers: list[Any] = [_ResultRedirect]
+    if service_profile.is_loopback(url):
+        handlers.append(urllib.request.ProxyHandler({}))
+    return urllib.request.build_opener(*handlers).open(url, timeout=seconds)
+
+
+def download(url: str, path: Path, seconds: float) -> tuple[str, int]:
+    """Stream one result into a new file and return its SHA-256 and size."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle, temporary = tempfile.mkstemp(prefix='.pending-', dir=path.parent)
+    staged = Path(temporary)
+    try:
+        digest = hashlib.sha256()
+        size = 0
+        with os.fdopen(handle, 'wb') as stream, open_result(url, seconds) as response:
+            while chunk := response.read(io.DEFAULT_BUFFER_SIZE):
+                stream.write(chunk)
+                digest.update(chunk)
+                size += len(chunk)
+            stream.flush()
+            os.fsync(stream.fileno())
+        if not size:
+            raise ValueError('empty provider output')
+        identity = {'bytes': size, 'sha256': digest.hexdigest()}
+        if path.exists():
+            from io_budget import file_identity
+            if file_identity(path) != identity:
+                raise ValueError('refusing to overwrite an existing output')
+        else:
+            os.link(staged, path)
+            c.fsync_dir(path.parent)
+        return identity['sha256'], size
+    finally:
+        staged.unlink(missing_ok=True)
+
+
+def merge_results(entries: list[dict], revised: list[dict]) -> list[dict]:
+    """Apply one poll response to the known outputs and keep every completed one."""
+    replaced = {e.get('id') for e in revised}
+    retained = [e for e in entries if not e.get('pending') or e.get('id') not in replaced]
+    # A task may produce several artifacts. Its task ID alone is not an
+    # artifact identity: retain distinct URLs and replace only pending rows.
+    by_artifact = {(e.get('id'), e.get('url')): e for e in retained}
+    for e in revised:
+        by_artifact[(e.get('id'), e.get('url'))] = e
+    return list(by_artifact.values())
+
+
+def recorded_responses(directory: Path, rows: list[dict], claim: str) -> tuple[Any, list[Any]]:
+    """Return the recorded answer and every recorded poll response, in recorded order."""
+    answer, polls, seen = None, [], set()
+    for row in rows:
+        if row['event'] != 'dispatch-trace' or row['data']['claim'] != claim:
+            continue
+        stage = row['data']['stage']
+        if stage in seen or not (stage == 'answer.json' or stage.startswith('poll-')):
+            continue
+        seen.add(stage)
+        value = c.decode(c.object_read(directory, row['data']['files'][0]['sha256']))
+        if stage == 'answer.json':
+            answer = value
+        else:
+            polls.append(value)
+    return answer, polls
+
+
 def obtain(root: Path, run: str, claim: str, transport: Any, key: str, *, poll: bool,
            poll_seconds: float, poll_limit: int) -> dict:
     directory,manifest,rows=verify_trace(root,run,claim)
@@ -208,52 +329,46 @@ def obtain(root: Path, run: str, claim: str, transport: Any, key: str, *, poll: 
                 raise ValueError('acquired output was modified')
         for f in row['data']['files']:w.capture_dispatch_result(root,run,f['path'])
         return row
-    trace=[r for r in rows if r['event']=='dispatch-trace' and r['data']['claim']==claim]
-    responses=[r for r in trace if r['data']['stage'].startswith(('answer','poll-'))]
-    if not responses:
+    answer,polls=recorded_responses(directory,rows,claim)
+    if answer is None:
         raise ValueError('no recorded response; reconcile the uncertain request with the provider, do not resend')
-    f=responses[-1]['data']['files'][0];answer=c.decode(c.object_read(directory,f['sha256']))
-    merged=responses[-1]['data']['stage'].startswith('answer-merged-')
-    entries=answer['entries'] if merged else transport.results(answer)
-    if not merged and transport.rejections(answer):raise ValueError('provider refused the recorded request')
+    if transport.rejections(answer):raise ValueError('provider refused the recorded request')
+    entries=transport.results(answer)
+    if not entries:
+        raise ValueError('the recorded answer names no task or output, so the outcome is unknown; '
+                         'reconcile the recorded request with the provider and do not resend it')
+    # Rebuild from every recorded response, so an interrupted merge loses no completed output.
+    for response in polls:
+        if transport.rejections(response):raise ValueError('provider refused the existing task while polling')
+        entries=merge_results(entries,transport.results(response))
     if len(entries)>manifest['outputs']:raise ValueError('provider returned more outputs than the reserved bound')
-    poll_index=sum(r['data']['stage'].startswith('poll-') for r in trace)
+    poll_index=len(polls);journal=directory/'dispatch'/claim
     for _ in range(poll_limit if poll else 0):
         pending=list(dict.fromkeys(e['id'] for e in entries if e.get('pending') and e.get('id')))
         if not pending:break
+        if not callable(getattr(transport,'poll',None)):
+            raise ValueError('the transport cannot poll the pending tasks; retrieve them from the provider by hand')
         time.sleep(poll_seconds)
-        answer=transport.poll(pending,manifest['service'],key)
-        poll_index+=1;append_trace(root,run,claim,f'poll-{poll_index:06d}.json',answer)
-        if transport.rejections(answer):raise ValueError('provider refused the existing task while polling')
-        # Keep completed entries from earlier responses when polling only pending IDs.
-        revised=transport.results(answer)
-        replaced={e.get('id') for e in revised}
-        retained=[e for e in entries if not e.get('pending') or e.get('id') not in replaced]
-        # A task may produce several artifacts. Its task ID alone is not an
-        # artifact identity: retain distinct URLs and replace only pending rows.
-        by_artifact={(e.get('id'),e.get('url')):e for e in retained}
-        for e in revised:by_artifact[(e.get('id'),e.get('url'))]=e
-        entries=list(by_artifact.values())
+        response=transport.poll(pending,manifest['service'],key)
+        poll_index+=1
+        # A poll file that an interrupted run wrote without its record keeps its name.
+        while (journal/f'poll-{poll_index:06d}.json').exists():poll_index+=1
+        append_trace(root,run,claim,f'poll-{poll_index:06d}.json',response)
+        if transport.rejections(response):raise ValueError('provider refused the existing task while polling')
+        entries=merge_results(entries,transport.results(response))
         if len(entries)>manifest['outputs']:
             raise ValueError('provider returned more outputs than the reserved bound')
-        append_trace(root,run,claim,f'answer-merged-{poll_index:06d}.json',{'entries':entries,'merge_of_recorded_responses':True})
     if len(entries)!=manifest['outputs'] or any(e.get('pending') or not e.get('url') for e in entries):
         raise ValueError('not every reserved output is available; recover the recorded tasks without resending')
+    # URLs are provider data, not arbitrary new code or credentials.
+    urls=[service_profile.require_network_url(e['url'],'provider result URL') for e in entries]
+    seconds,_=service_profile.http_timeout(manifest['service'])
     target,base,suffix=safe_output(root,manifest['spec']);files=[]
-    for index,entry in enumerate(entries):
-        # URLs are provider data, not arbitrary new code or credentials.
-        url=entry['url']
-        if not isinstance(url,str) or not url.startswith(('https://','http://')):
-            raise ValueError('unsupported result URL')
-        with urllib.request.urlopen(url,timeout=environment_seconds("PRODUCTION_HTTP_TIMEOUT_SECONDS")) as response:
-            raw=response.read()
-        if not raw:raise ValueError('empty provider output')
-        rel=f'{target}/{base}-{index+1:03d}{suffix}';path=c.local(root,rel,exists=False)
-        if path.exists():
-            if c.read(path)!=raw:raise ValueError('refusing to overwrite an existing output')
-        else:c.atomic(path,raw)
+    for index,(entry,url) in enumerate(zip(entries,urls)):
+        rel=f'{target}/{base}-{index+1:03d}{suffix}'
+        sha256,size=download(url,c.local(root,rel,exists=False),seconds)
         append_trace(root,run,claim,f'download-{index+1:03d}.json',
-                     {'path':rel,'sha256':c.digest(raw),'size':len(raw),'result':entry})
+                     {'path':rel,'sha256':sha256,'size':size,'result':entry})
         files.append(rel)
     with c.lock(root):
         directory,p,_,rows=w.load_run(root,run)
@@ -270,6 +385,7 @@ def execute(root: Path, run: str, spec_path: Path, spec: dict, service_path: Pat
             decision: dict, rendered: dict | None = None, **options: Any) -> dict:
     poll = bool(options.pop('poll', False)); poll_seconds = options.pop('poll_seconds', 20); poll_limit = options.pop('poll_limit', 60)
     import request_contract as rc
+    preflight(service, transport)
     _, _, consumer, _ = w.assert_current(root, run)
     built, fresh_report, _ = render(root, spec, service, offering, transport, profiles, consumer=consumer)
     if rendered is not None:
@@ -279,6 +395,19 @@ def execute(root: Path, run: str, spec_path: Path, spec: dict, service_path: Pat
         rendered = built['rendered']
     claim, manifest = begin(root, run, spec_path, spec, service_path, service, offering, fresh_report,
         profiles=profiles, transport=transport, rendered=rendered, decision=decision, **options)
+    try:
+        result = _submit(root, run, claim, manifest, rendered, service, transport, key,
+                         poll=poll, poll_seconds=poll_seconds, poll_limit=poll_limit)
+    except BaseException:
+        refresh_gallery(root, quiet=True)
+        raise
+    refresh_gallery(root)
+    return result
+
+
+def _submit(root: Path, run: str, claim: dict, manifest: dict, rendered: dict, service: dict, transport: Any,
+            key: str, *, poll: bool, poll_seconds: float, poll_limit: int) -> dict:
+    import request_contract as rc
     claim_id = claim['sha256']; directory = w.run_dir(root, run)
     append_trace(root, run, claim_id, 'manifest.json', manifest)
     append_trace(root, run, claim_id, 'request-contract.json', rendered)
@@ -298,8 +427,11 @@ def execute(root: Path, run: str, spec_path: Path, spec: dict, service_path: Pat
     w.lifecycle.begin_step(root, run, claim['data']['reservation'], claim=claim_id, step='send', operation='send')
     answer = transport.send(request, service, key)
     append_trace(root, run, claim_id, 'answer.json', answer)
+    outcome = transport.observation_outcome(answer)
+    if outcome not in transport_contract.OUTCOMES:
+        outcome = transport_contract.UNKNOWN
     append_trace(root, run, claim_id, 'transport-outcome.json',
-        {'outcome': transport.observation_outcome(answer), 'response_sha256': c.digest(c.encoded(answer))})
+        {'outcome': outcome, 'response_sha256': c.digest(c.encoded(answer))})
     return obtain(root, run, claim_id, transport, key, poll=poll, poll_seconds=poll_seconds, poll_limit=poll_limit)
 
 
@@ -307,9 +439,15 @@ def recover(root: Path, run: str, *, poll: bool=False,poll_seconds: float=20,pol
     import dispatch
     _,_,_,rows=w.load_run(root,run);claim=w.find(rows,'dispatch-claim')
     manifest=claim['data']['manifest'];service=manifest['service']
-    transport=dispatch.load_transport(manifest['spec']['service'])
-    return obtain(root,run,claim['sha256'],transport,dispatch.api_key(service) if poll else '',
-                  poll=poll,poll_seconds=poll_seconds,poll_limit=poll_limit)
+    transport=transport_contract.load(service)
+    try:
+        result=obtain(root,run,claim['sha256'],transport,dispatch.api_key(service) if poll else '',
+                      poll=poll,poll_seconds=poll_seconds,poll_limit=poll_limit)
+    except BaseException:
+        refresh_gallery(root,quiet=True)
+        raise
+    refresh_gallery(root)
+    return result
 
 
 def main() -> int:
@@ -321,7 +459,10 @@ def main() -> int:
         if args.poll_seconds<0 or args.poll_limit<0:raise ValueError('poll limits must be nonnegative')
         result=recover(args.root.absolute(),args.run,poll=args.poll,poll_seconds=args.poll_seconds,poll_limit=args.poll_limit)
         print(json.dumps(result,ensure_ascii=False,indent=2));return 0
-    except (ValueError,OSError,KeyError) as exc:
+    except (ValueError,OSError,KeyError,TypeError,UnicodeError) as exc:
         print(json.dumps({'ok':False,'error':str(exc),'resubmitted':False},ensure_ascii=False));return 1
 
-if __name__=='__main__':raise SystemExit(main())
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    raise SystemExit(main())

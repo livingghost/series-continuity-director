@@ -57,10 +57,10 @@ Reference checks bind accepted images, declared influence, and delivered bytes.
 It reports facts that the selected contracts cannot establish as unmeasured.
 The designated reviewer evaluates wording, depicted features, and artistic quality.
 
-It knows no provider. The submission names a target,
-`{suite_root}/protocols/target/profiles/`
-says which request keys that target exposes and which exclude each other, and the
-gate compares the two. A surface it has never seen is supported by adding a
+It knows no provider. The submission names a target, and its profile under
+`{suite_root}/protocols/target/profiles/` names the model's input modes and which
+exclude each other. A submission that names a service adds that service's offering:
+its request keys and request shape. The gate compares the two. A surface it has never seen is supported by adding a
 profile, not by editing the gate.
 
 The author grants execution and adoption authority for their stated scopes.
@@ -77,8 +77,10 @@ actor. Each additional run follows the same scope and budget checks.
 python {suite_root}/scripts/session_entry_points.py
 ```
 
-It prints the installed location, the table above, and, in a
-project workspace, the roles whose asset is not settled.
+It prints the version and location of the installed copy, and compares it with
+any other copy of the suite that holds the working directory. In a project
+workspace it also prints the open task, the roles whose asset is not settled,
+the next actions and the table above. Outside a project it prints one line.
 
 ## What the skill conforms to
 
@@ -94,7 +96,8 @@ every host reads and what every host refuses:
 - Scripts are executed rather than read into context.
 
 `{suite_root}/scripts/validate_skill.py` refuses a `name` or `description` over
-the cap, reports the body's line count without bounding it, and settles that every
+the cap, reports the body's line count without bounding it, warns when the body's
+estimated tokens (characters / 4) exceed 5000, and settles that every
 reference is reachable from `SKILL.md` and that every command is documented
 somewhere the suite routes to. The routing table is what keeps references one
 level deep.
@@ -121,14 +124,15 @@ Tags and hosted releases require a separate instruction.
 ## Working on this repository
 
 ```
-python {suite_root}/scripts/build_flat.py            regenerate the flat adapter
-python {suite_root}/scripts/build_example.py         regenerate the worked example
-python {suite_root}/scripts/build_host_packages.py   regenerate the host files
-python {suite_root}/scripts/validate_skill.py        the aggregate check
+python {suite_root}/scripts/build_derived.py    regenerate every derived file
+python {suite_root}/scripts/validate_skill.py   the aggregate check
 ```
 
-Run them in that order. The first three write files that the fourth checks, and
-two of them write release members.
+Run them in that order. The first rebuilds each derived file after the sources it
+comes from: the vocabulary, the narrative corpus and seal, the flat adapter, the
+worked example, the host files and the checked examples. The second checks them,
+and several of them are release members. `build_derived.py --check` reports what
+is out of date and writes nothing.
 
 The declared layout is in `{suite_root}/scripts/tree_layout.py`. It states which
 files the repository owns and which the suite owns, and `validate_skill.py`

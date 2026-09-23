@@ -51,7 +51,7 @@ def probe(path: Path) -> dict[str, Any]:
 def inspect(path: Path, raw: bytes | None = None) -> dict[str, Any]:
     raw = c.read(path) if raw is None else raw
     try:
-        from PIL import Image, UnidentifiedImageError
+        from PIL import Image
         with Image.open(io.BytesIO(raw)) as image:
             width, height = image.size
             frames = getattr(image, 'n_frames', 1)
@@ -64,6 +64,11 @@ def inspect(path: Path, raw: bytes | None = None) -> dict[str, Any]:
         # Multi-frame images are not silently certified as video with known timing.
     except (ImportError, OSError, ValueError, SyntaxError):
         pass
+    except Exception as exc:
+        # Pillow keeps its decompression-bomb limit; an image above it stays unmeasured.
+        if not isinstance(exc, Image.DecompressionBombError):
+            raise
+        return {'kind': 'unmeasured', 'reason': 'the image exceeds the decompression-bomb limit of the installed Pillow: ' + str(exc)}
     try:
         text = raw.decode('utf-8')
         if '\x00' not in text:

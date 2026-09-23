@@ -4,11 +4,15 @@ These are author-facing records of the work's scope, chosen experience, form, wo
 decision provenance, alternatives and change impact. They are not in-world facts, personas,
 shared narrative JSON, executable state, or generation approvals.
 
-Start with `project.md`, created from the full design template at initialization. Create another
-scoped note only when useful with `narrative_entity.py ... add design <id> --name "<name>"`.
-Creation uses the installed current full design template. Read its instructions; fill
-relevant sections, and mark examined inapplicability or deliberate deferral rather than making
-up a protagonist, theme, conflict or plot to satisfy the form.
+Start with `project.md`. Create it, and any later scoped note, from the installed full design
+template:
+
+```
+python <skill>/scripts/narrative_entity.py --project <project> add design project --name "<title>"
+```
+
+Read its instructions and fill the relevant sections. Mark examined inapplicability or deliberate
+deferral rather than making up a protagonist, theme, conflict or plot to satisfy the form.
 
 Every note uses the ordinary entity front matter: `kind: design`, a filename-matching `id`, an
 optional `name`, and `references: []` listing entity or declared character IDs it relies on.

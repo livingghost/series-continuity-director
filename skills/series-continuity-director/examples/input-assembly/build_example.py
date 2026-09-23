@@ -2,6 +2,7 @@
 """Record actual input-helper CLI results from a local synthetic text task."""
 from __future__ import annotations
 import argparse
+import difflib
 import json
 import subprocess
 import sys
@@ -16,7 +17,7 @@ import reading_fixtures
 
 def command(root, name, *args, expected=0):
     result = subprocess.run([sys.executable, str(ROOT / 'scripts/production_workflow.py'), name,
-        '--root', str(root), '--task', 'task.json', *args], capture_output=True, text=True, timeout=30)
+        '--root', str(root), '--task', 'task.json', *args], capture_output=True, text=True, encoding='utf-8', timeout=30)
     if result.returncode != expected:
         raise ValueError(result.stdout + result.stderr)
     return json.loads(result.stdout)
@@ -35,7 +36,7 @@ def build():
         task['sequence_plan'] = None
         task['direction'] = production_test_support.direction(task, 'Synthetic input assembly exercise.')
         (root / 'task.json').write_bytes(c.encoded(task))
-        (root / 'delivery.txt').write_text('Synthetic input assembly exercise.\n')
+        (root / 'delivery.txt').write_text('Synthetic input assembly exercise.\n', encoding='utf-8', newline='\n')
         original = (root / 'task.json').read_bytes()
         # Fixed quotations belong only to this synthetic exercise.
         # A real operator reads the source and supplies its applications.
@@ -68,6 +69,31 @@ def build():
                 'production_created': (root / 'production').exists()}
 
 
+def difference(expected, path):
+    """A unified diff of the committed file against the rebuilt bytes.
+
+    JSON compares field by field first, then as raw text. A carriage return
+    prints as \\r, so a line-ending difference shows.
+    """
+    if not path.is_file():
+        return f'{path} is missing.'
+    found = path.read_bytes()
+    for structured in (True, False):
+        def lines(raw):
+            text = raw.decode('utf-8', 'replace')
+            if structured:
+                try:
+                    text = json.dumps(json.loads(text), indent=2, sort_keys=True)
+                except ValueError:
+                    pass
+            return text.replace('\r', '\\r').split('\n')
+        shown = '\n'.join(difflib.unified_diff(lines(found), lines(expected), f'{path.name} (committed)',
+                                               f'{path.name} (rebuilt)', lineterm=''))
+        if shown:
+            return shown.encode('ascii', 'backslashreplace').decode('ascii')
+    return f'{path} differs in bytes that do not decode as UTF-8.'
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
@@ -76,6 +102,7 @@ def main():
     raw = c.encoded(build())
     if args.check:
         if not args.out.is_file() or args.out.read_bytes() != raw:
+            print(difference(raw, args.out), file=sys.stderr)
             raise SystemExit('Synthetic output differs. Rebuild this example.')
     else:
         args.out.write_bytes(raw)
@@ -84,4 +111,6 @@ def main():
 
 
 if __name__ == '__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

@@ -9,6 +9,7 @@ The importer preserves acquired bytes and verifies their declared target before 
 Supply `--root`, the exact service, model, operation, and the acquisition document.
 `--pointer` selects the schema inside the response using a JSON Pointer.
 A local envelope overlay has its own source and remains separate from the acquired schema.
+`--profiles DIR` writes the project's copy of the profile, its offering pointing at the published schema, and leaves the suite's profiles untouched.
 
 `observe_schema.py reference` preserves the source model's identity.
 The selected relationship document explains why the operator considered that source.

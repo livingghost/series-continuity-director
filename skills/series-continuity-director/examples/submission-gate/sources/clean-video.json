@@ -9,7 +9,7 @@
     {
       "role": "first_frame",
       "path": "fixtures/large.jpg",
-      "request_key": "inputs.frameImages"
+      "mode": "frame images"
     }
   ],
   "obligations": {

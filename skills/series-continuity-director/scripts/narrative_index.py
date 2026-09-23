@@ -40,7 +40,8 @@ from typing import Any, Sequence
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from narrative import validate_narrative  # noqa: E402
+from narrative import did_you_mean, validate_narrative  # noqa: E402
+from project_layout import read_document  # noqa: E402
 from scene_plot import validate_scene_plot  # noqa: E402
 
 # Where each kind of thing lives. The directory is what the file is, so a file
@@ -226,6 +227,13 @@ def placeholders(text: str) -> int:
     return len(placeholder_details(text))
 
 
+def blank_gap(where: str, details: list[dict[str, Any]]) -> str:
+    """The one wording for a file still carrying blanks, shared with the coverage report."""
+
+    shown = "; ".join(f"line {item['line']}: {item['label']}" for item in details[:3])
+    return f"{where}: {len(details)} blank(s) nobody has filled ({shown})"
+
+
 def json_placeholders(value: Any, trail: str = "") -> list[str]:
     """Where a JSON document still carries the words initialization wrote.
 
@@ -287,8 +295,7 @@ def scan(series: Path) -> dict[str, Any]:
             details = placeholder_details(text)
             if details:
                 unfilled[where] = details
-                shown = "; ".join(f"line {item['line']}: {item['label']}" for item in details[:3])
-                gaps.append(f"{where}: {len(details)} blank(s) nobody has filled ({shown})")
+                gaps.append(blank_gap(where, details))
             value, problems = parse_front_matter(text)
             for message in problems:
                 errors.append(f"{where}: {message}")
@@ -341,10 +348,11 @@ def scan(series: Path) -> dict[str, Any]:
     narrative_path = series / "narrative" / "narrative.json"
     characters: dict[str, Any] = {}
     if narrative_path.is_file():
-        try:
-            document = json.loads(narrative_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            errors.append(f"narrative/narrative.json: {exc}")
+        # The same message the coverage report and the project validator print
+        # for the same file, so a report merging theirs keeps one copy.
+        document, problem = read_document(narrative_path, "narrative/narrative.json")
+        if problem:
+            errors.append(problem)
             document = {}
         # The narrative's own blanks, which the entity walk above cannot reach:
         # it reads markdown, and these are string values in a JSON document.
@@ -358,13 +366,13 @@ def scan(series: Path) -> dict[str, Any]:
                 f"narrative/narrative.json: {len(json_blanks)} blank(s) nobody has filled: "
                 f"{shown}{rest}"
             )
-        report = validate_narrative(document) if isinstance(document, dict) else {"ok": False}
-        if not report.get("ok"):
+        report = validate_narrative(document)
+        if not problem and not report["ok"]:
             # Without this the report blames every character in the file for
             # having no persona, when the cause is that the file is invalid.
-            shown = "; ".join(report.get("errors") or []) or "it is not an object"
-            errors.append(f"narrative/narrative.json does not answer its contract: {shown}")
-        if report.get("ok"):
+            # One line per problem, worded as the other readers word it.
+            errors.extend(f"narrative/narrative.json: {message}" for message in report["errors"])
+        if report["ok"]:
             characters = {str(entry.get("id")): entry
                           for entry in document.get("characters") or []
                           if isinstance(entry, dict)}
@@ -420,10 +428,9 @@ def scan(series: Path) -> dict[str, Any]:
             # As above: the path on disk, so a plot in a subdirectory of
             # scenes/ is one the reader of this report can open.
             where = path.relative_to(series).as_posix()
-            try:
-                value = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError) as exc:
-                errors.append(f"{where}: {exc}")
+            value, problem = read_document(path, where)
+            if problem:
+                errors.append(problem)
                 continue
             if not isinstance(value, dict) or value.get("artifact_type") != "scene-plot":
                 continue
@@ -440,7 +447,7 @@ def scan(series: Path) -> dict[str, Any]:
         dangling[target] = sorted(set(sources))
         errors.append(
             f"{target!r} is named by {', '.join(sorted(set(sources)))} and no file under "
-            "narrative/ describes it"
+            f"narrative/ describes it{did_you_mean(target, [*entities, *characters])}"
         )
     orphans = sorted(
         identifier for identifier, entity in entities.items()
@@ -508,4 +515,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

@@ -39,13 +39,13 @@ for that phase has to be this file: where the two disagree the check refuses, ra
 session to read whichever it opened first.
 
 ```
-python <skill>/scripts/narrative_entity.py --series <series> add persona c01 --character C01
-python <skill>/scripts/narrative_index.py <series>
+python <skill>/scripts/narrative_entity.py --project <project> add persona c01 --character C01
+python <skill>/scripts/narrative_index.py <project>
 ```
 
-The first uses the installed current full persona form and writes the entity front matter.
-Series initialization uses the same full-form creator for any explicitly requested teaching seed.
-Project copies of the template are reading material; creation reads the installed source.
+The first writes the entity front matter and the installed full persona form. A new project holds
+no persona: create each one with this command once the author admits the character. The project's
+copy of the template is reading material; creation reads the installed source.
 
 ## The form
 

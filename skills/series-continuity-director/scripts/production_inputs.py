@@ -96,8 +96,6 @@ def inspect_inputs(root: Path, task_path: str, *, from_run: str | None = None) -
 
 def draft_choices(task: dict, *, from_run: str | None = None) -> dict:
     applications = {'snapshot_id': None, 'reading_key': None, 'applied': []}
-    if route_reading.RECORD_RESOURCE_FIELDS:
-        applications['resource_applied'] = []
     # Null in the draft is an unanswered question, not a one-off subject or an
     # automatic decision that a model contract is unnecessary.
     return {'reading': applications, 'visual': adapters.visual_template(task),
@@ -117,11 +115,10 @@ def _missing(choices: dict) -> list[dict]:
     else:
         if not reading.get('reading_key'):
             unresolved.append({'field': 'reading.reading_key', 'code': 'reading-required'})
-        for key in ('applied',) + (('resource_applied',) if route_reading.RECORD_RESOURCE_FIELDS else ()):
-            if key not in reading:
-                unresolved.append({'field': 'reading.' + key, 'code': 'application-selection-required'})
-            elif not isinstance(reading[key], list):
-                raise ValueError('reading.' + key + ' must be an array')
+        if 'applied' not in reading:
+            unresolved.append({'field': 'reading.applied', 'code': 'application-selection-required'})
+        elif not isinstance(reading['applied'], list):
+            raise ValueError('reading.applied must be an array')
     for field in ('visual', 'validation'):
         if choices[field] is None:
             unresolved.append({'field': field, 'code': 'applicability-choice-required'})
@@ -140,18 +137,12 @@ def _missing(choices: dict) -> list[dict]:
 
 
 def _reading(choices: dict, *, root: Path, task: dict) -> dict:
-    fields = {'snapshot_id', 'reading_key', 'applied'}
-    if route_reading.RECORD_RESOURCE_FIELDS:
-        fields.add('resource_applied')
-    c.exact(choices, fields, 'reading choices')
+    c.exact(choices, {'snapshot_id', 'reading_key', 'applied'}, 'reading choices')
     issued = route_reading.resolve_issuance(choices['reading_key'], project=root)
     snapshot = choices['snapshot_id']
     if snapshot is not None:
         route_reading.check_snapshot_issuance(snapshot, issued, project=root)
-    applications = {'applied': choices['applied']}
-    if route_reading.RECORD_RESOURCE_FIELDS:
-        applications['resource_applied'] = choices['resource_applied']
-    record = route_reading.build_record(issued, applications, project=root)
+    record = route_reading.build_record(issued, {'applied': choices['applied']}, project=root)
     route_reading.require_route_reading(record, project=root,
                                        routes={task['route']}, features=task['features'])
     return record
@@ -196,8 +187,6 @@ def draft_inputs(root: Path, task_path: str, out_dir: str, *, from_run: str | No
         route_reading.validate_record_content(previous)
         choices['reading']['reading_key'] = previous['reading_key']
         choices['reading']['applied'] = copy.deepcopy(previous['applied'])
-        if route_reading.RECORD_RESOURCE_FIELDS:
-            choices['reading']['resource_applied'] = copy.deepcopy(previous['resource_applied'])
     result = {'state': 'draft', 'choices': choices, 'unresolved': _missing(choices),
               'derived_from': {'task': task_ref, 'source_run': saved},
               'external_effect': False, 'budget_effect': 'none'}
@@ -250,10 +239,6 @@ def build_inputs(root: Path, task_path: str, choices_path: str, out_dir: str, *,
     visual, visual_context = adapters.build_visual(choices['visual'], task, reader, root)
     validation, validation_context = adapters.build_validation(choices['validation'], task, reader, root)
     adapters.cross_check(visual_context, validation_context)
-    if validation is not None:
-        dialect = validation_context.get('dialect', route_reading._NO_MODEL)
-        route_reading.require_route_reading(reading, project=root, routes={task['route']},
-                                           features=task['features'], dialect=dialect)
     content = {'route-reading.json': reading}
     if visual is not None:
         content['visual-continuity.json'] = visual

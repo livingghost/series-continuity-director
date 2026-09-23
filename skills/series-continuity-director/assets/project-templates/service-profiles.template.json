@@ -1,3 +1,18 @@
 {
-  "services": {}
+  "services": {
+    "service-id": {
+      "label": "",
+      "transport": "",
+      "endpoint": {
+        "base_url": ""
+      },
+      "auth": {
+        "env_var": ""
+      },
+      "http_timeout_seconds": null,
+      "operations": {},
+      "observed_at": "",
+      "source": ""
+    }
+  }
 }

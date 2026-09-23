@@ -16,4 +16,4 @@ Use `--workspace` with a new external path to retain the original task, consulta
 The output has `execution_ready: false`, `external_effect: false`, and `budget_effect: none`.
 The real candidate still needs normal preparation, scoped authority, generation or capture, and review.
 
-Read the skill's craft consultation reference for field definitions and handling of stale inputs or existing directories.
+Read the skill's tactic consultation reference for field definitions and handling of stale inputs or existing directories.

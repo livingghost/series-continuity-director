@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
-"""Create a new Series Continuity Director project workspace."""
+"""Create a new Series Continuity Director project workspace.
+
+The project starts with empty narrative tables and no invented cast, so the
+only thing `validate_project.py` reports about it is authoring nobody has done
+yet. The report ends with the commands that come next.
+"""
 from __future__ import annotations
 
 import argparse
 import json
+import report_output
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -18,6 +24,7 @@ from project_layout import (
     PROJECT_ID_RE,
     PROJECT_PRODUCT,
     STATE_SUBDIRECTORIES,
+    refuse_suite,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,6 +43,34 @@ def render_text(source: Path, title: str, series_id: str, updated_at: str) -> st
             .replace("{{UPDATED_AT}}", updated_at))
 
 
+def quoted(value: Path | str) -> str:
+    """A command argument a shell reads as one word."""
+
+    text = str(value)
+    return f'"{text}"' if any(mark.isspace() for mark in text) else text
+
+
+def next_steps(out: Path, title: str) -> list[dict[str, str]]:
+    """The commands a new project needs next, in the order the layers depend on each other.
+
+    The first prints the project's own next actions from then on, so these are
+    only where it starts.
+    """
+
+    scripts = ROOT / "scripts"
+    python = "python"
+    return [
+        {"run": f"{python} {quoted(scripts / 'session_entry_points.py')} --project {quoted(out)} --next",
+         "why": "lists what to settle next, in the order the layers depend on each other"},
+        {"run": f"{python} {quoted(scripts / 'narrative_entity.py')} --project {quoted(out)} "
+                f"add design project --name {quoted(title)}",
+         "why": "starts the design record from the full design form; fill it with the author"},
+        {"run": f"{python} {quoted(scripts / 'narrative.py')} approve "
+                f"{quoted(out / 'narrative' / 'narrative.json')} --by <name>",
+         "why": "records the author's approval once they have approved the narrative they declared"},
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Initialize a Series Continuity Director project")
     parser.add_argument("--out", required=True, help="New project directory")
@@ -47,7 +82,9 @@ def main() -> int:
              "shots, pages of panels, or passages of prose. Changing it later means editing narrative/narrative.json.",
     )
     parser.add_argument('--viewpoint', help='Explicit project viewpoint; omission leaves the choice open')
+    report_output.add_json_flag(parser)
     args = parser.parse_args()
+    report_output.use_json(args.json)
     if not args.title.strip() or any(ch in args.title for ch in '\r\n'):
         raise SystemExit('title must be nonempty single-line text')
     if args.viewpoint and not (ROOT/'protocols/viewpoint/profiles'/(args.viewpoint+'.json')).is_file():
@@ -56,6 +93,10 @@ def main() -> int:
     if not PROJECT_ID_RE.fullmatch(args.series_id):
         raise SystemExit("series-id must be 2 to 64 ASCII letters, digits, dots, underscores, or hyphens")
     out = Path(args.out).resolve()
+    try:
+        refuse_suite(out)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     if out.exists():
         raise SystemExit(f"output already exists: {out}")
     out.mkdir(parents=True)
@@ -106,9 +147,12 @@ def main() -> int:
     (out / "project-manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     # The run gallery exists from the start and follows every run from then on.
     run_gallery.write(out)
-    print(json.dumps({"ok": True, "project": str(out), "series_id": args.series_id}, ensure_ascii=False, indent=2))
+    report_output.emit({"ok": True, "project": str(out), "series_id": args.series_id,
+                      "medium": args.medium, "next": next_steps(out, args.title)})
     return 0
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

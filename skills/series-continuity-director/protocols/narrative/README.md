@@ -131,6 +131,9 @@ Every statement about the scene or a frame names the beat it follows from, as
 beat is not one of them, because a beat the scene does not show cannot put anything in
 a frame. The one exception is `free`, which is what the scene leaves open.
 
+A whole string value `<fill: ...>` is an undecided field. The reader refuses it as
+`placeholder not filled: <field>`, so a drafted plot cannot pass as a settled one.
+
 ## The closed lists
 
 Closed operational values and open authored text are distinguished below. Example vocabulary never becomes a compulsory dramatic or performance taxonomy.
@@ -247,9 +250,9 @@ itself. What it can do is compare its own against the hash published here, of th
 endings normalised:
 
 ```text
-scripts/narrative.py           7d9abc39ea10258b2f362a0e4bde802168c1994e3890a55786061a5a80485003
-scripts/scene_plot.py          60b54d9da0a94fb3afd0014978d81e86ac4ae5acef003cebc0422034113ce1bb
-scripts/narrative_corpus.json  2c89042e7e3ee0f39d9e46b0ec2dcf8b07c2c9e81914dd3c9102cc27ac331289
+scripts/narrative.py           adb5de722af6648d5871f0b516a3ba84431f6ac9ec738f05fdd8681062796d09
+scripts/scene_plot.py          da7b1645467ace22a835e40e2e19ae5ca6f1a3de0c2ea93ecd76edcd429f62dd
+scripts/narrative_corpus.json  9539d8351eb614127aedd74b00c9f34124d420e5873a8c7299da74cc9b4d030a
 ```
 
 An edit to a reader that does not travel with this document fails against it. That is the most a
@@ -268,6 +271,17 @@ python scripts/narrative.py <narrative>
 python scripts/narrative.py <narrative> --content-sha256
 python scripts/scene_plot.py <plot>
 python scripts/scene_plot.py <plot> --content-sha256
+```
+
+Writing one uses the same readers. `draft` writes a plot whose author decisions are
+`<fill: ...>` values, `approve` records an approval the author gave, with its hash, and
+`behind` lists the plots written against an earlier narrative:
+
+```bash
+python scripts/scene_plot.py draft --project <directory> --scene-id <id> --chapter <id>
+python scripts/narrative.py approve <narrative> --by <name>
+python scripts/scene_plot.py approve <plot> --by <name>
+python scripts/scene_plot.py behind --project <directory>
 ```
 
 A document written from one of these names it as its `source`: the artifact type, its

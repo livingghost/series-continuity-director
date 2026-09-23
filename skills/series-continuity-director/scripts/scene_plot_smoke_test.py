@@ -10,15 +10,20 @@ the fragment the message has to carry.
 """
 from __future__ import annotations
 
+import contextlib
 import copy
+import io
 import json
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
+import scene_plot as scene_plot_module  # noqa: E402
+from narrative import content_sha256 as narrative_sha256  # noqa: E402
 from scene_plot import content_sha256, validate_scene_plot  # noqa: E402
 
 # The narrative this plot was written against. The reader checks the shape of
@@ -546,6 +551,18 @@ for _field in ("arcs", "themes", "characters", "state_changes"):
     CASES.append({"name": f"observation still requires {_field} array", "value": _missing,
                   "error": f"{_field} must be an array"})
 
+# A value `draft` leaves for the author is refused by its path, once, and the
+# rule its field would otherwise break is not reported beside it.
+CASES.append({"name": "a proposition draft left for the author",
+              "value": changed(proposition="<fill: one sentence>"),
+              "error": "placeholder not filled: proposition"})
+CASES.append({"name": "a place draft left for the author",
+              "value": setting(interior_exterior="<fill: interior, exterior or both>"),
+              "error": "placeholder not filled: setting.interior_exterior"})
+CASES.append({"name": "consequences draft left for the author",
+              "value": changed(state_changes="<fill: what this scene leaves behind>"),
+              "error": "placeholder not filled: state_changes"})
+
 CASES.append({'name': 'authored structure with no prescribed tradition',
               'value': changed(structure={'profile': 'held-and-revisited', 'parts': {'held': 'b1', 'revisited': 'b2'}}),
               'error': None})
@@ -555,9 +572,134 @@ for _field in ('scene_function', 'delivery_role'):
                       'value': changed(**{_field: _invalid}), 'error': _field + ' must be a non-empty string'})
 
 
+def run(*argv: Any) -> tuple[int, dict[str, Any]]:
+    """One scene plot command, through its parser, with its JSON report read back."""
+
+    stream = io.StringIO()
+    with contextlib.redirect_stdout(stream):
+        code = scene_plot_module.main([str(item) for item in argv])
+    return code, json.loads(stream.getvalue())
+
+
+def series() -> dict[str, Any]:
+    """A prose narrative whose one chapter carries one arc, two people and one theme."""
+
+    from narrative_test_support import minimal_narrative  # noqa: PLC0415
+
+    value = minimal_narrative(2)
+    value["themes"] = [{"id": "t1", "statement": "What holding still costs."}]
+    value["arcs"] = [{"id": "a1", "name": "The held line", "type": "main", "status": "in-progress",
+                      "themes": ["t1"], "characters": ["C01", "C02"]}]
+    value["chapters"][0]["arcs"] = ["a1"]
+    return value
+
+
+def operations(failures: list[str], results: list[dict[str, Any]]) -> None:
+    """draft, approve and behind, run the way a session runs them."""
+
+    from narrative_test_support import observational_scene  # noqa: PLC0415
+
+    with tempfile.TemporaryDirectory(prefix="scene-plot-operations-") as temporary:
+        project = Path(temporary)
+        (project / "project-manifest.json").write_text(
+            json.dumps({"product": "series-continuity-director"}), encoding="utf-8")
+        (project / "narrative" / "scenes").mkdir(parents=True)
+        document = series()
+        narrative_path = project / "narrative" / "narrative.json"
+        narrative_path.write_text(json.dumps(document), encoding="utf-8")
+        plot_path = project / "narrative" / "scenes" / "sc01-plot.json"
+
+        code, report = run("draft", "--project", project, "--scene-id", "sc01", "--chapter", "ch1")
+        results.append({"case": "draft refuses a chapter typo", "report": report})
+        if code == 0 or "did you mean 'ch01'?" not in "; ".join(report.get("errors", [])):
+            failures.append(f"draft: a chapter typo was not refused with its close match: {report}")
+
+        code, report = run("draft", "--project", project, "--scene-id", "sc01", "--chapter", "ch01")
+        results.append({"case": "draft writes a skeleton", "report": report})
+        expected = {"written": "narrative/scenes/sc01-plot.json", "order": 1, "realization": "passages",
+                    "candidates": {"arcs": ["a1"], "characters": ["C01", "C02"], "themes": ["t1"]}}
+        if code != 0 or any(report.get(key) != value for key, value in expected.items()):
+            failures.append(f"draft: expected {expected}, got {report}")
+        drafted = json.loads(plot_path.read_text(encoding="utf-8"))
+        if drafted.get("narrative_sha256") != narrative_sha256(document):
+            failures.append("draft: the skeleton is not bound to the current narrative")
+        checked = validate_scene_plot(drafted)
+        results.append({"case": "a skeleton reports only its placeholders", "errors": checked["errors"]})
+        stray = [message for message in checked["errors"]
+                 if not message.startswith("placeholder not filled: ")]
+        if not checked["errors"] or stray:
+            failures.append(f"draft: the skeleton reports more than its placeholders: {stray}")
+
+        code, report = run("draft", "--project", project, "--scene-id", "sc01", "--chapter", "ch01")
+        if code == 0 or "is already used by narrative/scenes/sc01-plot.json" not in "; ".join(report["errors"]):
+            failures.append(f"draft: a second plot with one scene id was written: {report}")
+
+        before = plot_path.read_bytes()
+        code, report = run("approve", plot_path, "--by", "The author")
+        results.append({"case": "approve refuses a skeleton", "report": report})
+        if code == 0 or plot_path.read_bytes() != before \
+                or "placeholder not filled: proposition" not in report.get("errors", []):
+            failures.append(f"approve: a plot with placeholders was approved: {report}")
+
+        # Every id typo in one pass, each beside the declared id it resembles.
+        written = observational_scene(document)
+        written.update(chapter="ch1", characters=["c01"], focalization={"kind": "external"})
+        plot_path.write_text(json.dumps(written), encoding="utf-8")
+        code, report = run("approve", plot_path, "--by", "The author")
+        joined = "; ".join(report.get("errors", []))
+        results.append({"case": "approve reports every typo at once", "report": report})
+        for fragment in ("names chapter 'ch1', which the narrative does not carry; did you mean 'ch01'?",
+                         "names character 'c01', which the narrative does not carry; did you mean 'C01'?"):
+            if fragment not in joined:
+                failures.append(f"approve: expected {fragment!r}, got {joined}")
+
+        written.update(chapter="ch01", characters=["C01"], narrative_sha256="0" * 64)
+        plot_path.write_text(json.dumps(written), encoding="utf-8")
+        code, report = run("approve", plot_path, "--by", "The author", "--at", "2026-09-23T09:00:00Z")
+        approved = json.loads(plot_path.read_text(encoding="utf-8"))
+        results.append({"case": "approve records the author's approval", "report": report})
+        if code != 0 or not validate_scene_plot(approved)["approved"] \
+                or approved.get("narrative_sha256") != narrative_sha256(document) \
+                or report.get("rebound_from") != "0" * 64:
+            failures.append(f"approve: the approval does not hold or is not bound: {report}")
+
+        # A narrative change leaves the plot behind; approving it again rebinds it.
+        document["chapters"][0]["title"] = "Observation, again"
+        narrative_path.write_text(json.dumps(document), encoding="utf-8")
+        code, report = run("behind", "--project", project)
+        results.append({"case": "behind lists a plot behind the narrative", "report": report})
+        listed = report.get("behind") or [{}]
+        if code != 0 or listed[0].get("plot") != "narrative/scenes/sc01-plot.json" \
+                or listed[0].get("recorded") != approved["narrative_sha256"] \
+                or listed[0].get("current") != narrative_sha256(document):
+            failures.append(f"behind: expected the plot with both hashes, got {report}")
+        if json.loads(plot_path.read_text(encoding="utf-8")) != approved:
+            failures.append("behind changed a plot")
+        run("approve", plot_path, "--by", "The author")
+        code, report = run("behind", "--project", project)
+        if report.get("behind"):
+            failures.append(f"behind: a plot approved again is still listed: {report}")
+
+        code, report = run(project)
+        results.append({"case": "a directory where a plot goes", "report": report})
+        if code == 0 or "expects one scene plot file" not in "; ".join(report.get("errors", [])):
+            failures.append(f"a directory argument was not explained: {report}")
+
+    code, report = run("approve", ROOT / "examples" / "plot.json", "--by", "The author")
+    results.append({"case": "approve refuses the installed suite", "report": report})
+    if code == 0 or "inside the installed suite" not in "; ".join(report.get("errors", [])):
+        failures.append(f"approve wrote inside the installed suite: {report}")
+
+
 def main() -> int:
     failures: list[str] = []
     results: list[dict[str, Any]] = []
+    operations(failures, results)
+
+    # A beat typo is reported beside the beat it resembles.
+    report = validate_scene_plot(changed(placement=[{"statement": "he stands", "from": ["b01"]}]))
+    if not any("'b01'; did you mean 'b1'?" in message for message in report["errors"]):
+        failures.append(f"a beat typo named no close match: {report['errors']}")
 
     for case in CASES:
         report = validate_scene_plot(case["value"])
@@ -653,4 +795,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

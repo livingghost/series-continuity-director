@@ -1,10 +1,12 @@
 # Production execution and bounded authority
 
 The production task owns purpose, applied evidence, selected realization,
-verification criteria and delivery. Preparation snapshots those inputs and the
-actual runtime/reading closure. Handoff transfers an exact consumer, capture
-registers actual bytes, review observes a specific candidate, selection names
-that candidate and review, and completion binds the selected state. All steps
+verification criteria and delivery. Preparation snapshots those inputs and
+everything the run depends on: the suite files it executes and the documents its
+reading covers. Handoff transfers the exact consumer input, the complete input
+the writer or generator receives. Capture registers actual bytes, review
+observes a specific candidate, selection names that candidate and review, and
+completion binds the selected state. All steps
 use the **same production receipt chain**, not a separate evaluation ledger.
 See `production-direction.md` for decisions and evidence; the executable forms
 are in `schemas/authoring/production-*.schema.json`.
@@ -13,7 +15,7 @@ are in `schemas/authoring/production-*.schema.json`.
 
 ### Input assembly
 
-Use [Craft consultation](tactic-consultation.md) while deciding what to write or revise. The lookup, application source, and authored review questions stay connected to the current task. Input inspection provides the concrete entry action.
+Use [Tactic consultation](tactic-consultation.md) while deciding what to write or revise. The lookup, application source, and authored review questions stay connected to the current task. Input inspection provides the concrete entry action.
 
 
 `inspect-inputs` shows declared sources, recorded candidates, and required choices.
@@ -51,6 +53,24 @@ python scripts/production_workflow.py draft-selection --root PROJECT --run RUN -
 python scripts/production_workflow.py select --root PROJECT --run RUN --file selection.json
 python scripts/production_workflow.py complete --root PROJECT --run RUN
 ```
+
+`PROJECT` must be an existing project; a mistyped root returns one JSON error and creates nothing.
+An expected failure prints one JSON object with `ok: false` and `error`, and exits 1.
+Runs live in `production/` under their UUIDv7 names, beside the task, review and selection templates there.
+Every other entry in that folder is ignored, including `desktop.ini`, `Thumbs.db` and `.DS_Store`.
+
+Recorded paths are project-relative POSIX paths, and each names one file on every platform.
+The commands refuse a path component that Windows reads as another name:
+
+- a trailing dot or space, as in `hero.png.`;
+- a colon, as in `hero.png:ads`, or another character Windows reserves;
+- a device name such as `NUL` or `com1.png`.
+
+A project may sit below a symbolic link, such as the macOS `/tmp`.
+A symbolic link at the project root or inside the project is refused.
+Some volumes refuse hard links, such as FAT32, exFAT and some network shares.
+There a new record is created only under a free name and then written, rather than linked in complete.
+An interruption can leave that record incomplete, and its hash check then reports it.
 
 Drafts leave substantive review, authority and selection fields for the responsible actor.
 `status` and `resume` first verify frozen inputs and the receipt chain.
@@ -133,20 +153,49 @@ For `registry-adoption`, selection includes `adoption` with `owner_path`,
 `asset_id` and `role`. A separate adopt grant is required, and the owned asset
 registry must actually accept the selected file and SHA-256 for that role.
 Delivery-only selection never changes registry ownership.
+The record names the candidate's exact path under `file` or `files and views`.
+It gives that file's SHA-256 under `SHA-256`, or on the file's own line under `SHA-256 per file`.
+A synthetic record in the template's shape, with its 64-character hash shortened here:
+
+```text
+### C01-IDENTITY - approved identity set
+- role: C01/identity
+- status: accepted
+- files and views:
+  - `media/c01-identity.png` (front view)
+- SHA-256 per file:
+  - `media/c01-identity.png`: 5f2c...e81a
+```
 
 ## 5. Bounded model submission and interruption
 
 Include the submission JSON, primary text, service-profile file and all input media as task sources (the primary text also occupies `delivery.path`). Choose a `dispatcher` handoff. The exact primary text in the built request must equal that prepared rendition; request options cannot silently replace it. A service record is data, not permission. The installed target profiles are pinned with the Skill; selected external profiles must be pinned project sources as well.
 
 ```
-python scripts/dispatch.py project/submission.json --root project --service-profiles project/services.json --send --production-run RUN --authorization RECEIPT --actor ACTOR --outputs 1 --cost-bound 0 --currency none
+python scripts/dispatch.py project/media/episodes/E01/prompts/SC01-SH01.submission.json --root project --service-profiles project/service-profiles.json --send --production-run RUN --authorization RECEIPT --actor ACTOR --outputs 1 --cost-bound 0 --currency none
 python scripts/production_dispatch.py --root project --run RUN
 python scripts/production_dispatch.py --root project --run RUN --poll
 ```
 
-Set a real agreed cost bound and currency for paid operations; zero/none is not a claim that an external service is free. The permission checker enforces the declared reservation, not a provider's eventual invoice. The selected transport must describe the built request's text and output count. The bundled transport requires explicit `parameters.numberResults`, matching `--outputs`; another transport implements its own request semantics.
+Set a real agreed cost bound and currency for paid operations; zero/none is not a claim that an external service is free. The permission checker enforces the declared reservation, not a provider's eventual invoice. The service record names its transport with `"transport": "<name>"`, which selects `scripts/transport_<name>.py`. Every transport implements `scripts/transport_contract.py`. Its `compile_request` declares the fields that carry the built request's text and output count, and the declared count must match `--outputs`.
+
+Before the claim, the dispatcher refuses a send that would fail after it:
+
+- a service record that names no valid transport, or a transport that lacks a function the contract requires;
+- an `endpoint.base_url` that is not https (plain http is accepted only for `127.0.0.1`, `::1` or `localhost`);
+- a missing network deadline. Set `http_timeout_seconds` in the service record or `PRODUCTION_HTTP_TIMEOUT_SECONDS`; the environment variable takes precedence.
+
+The deadline bounds each network wait of a send, poll or download.
 
 The grant is reserved and a claim committed before any upload. Each upload identifier, exact request, response, poll response, and downloaded file is durably recorded. Files are uploaded from immutable prepared copies. A claim cannot be sent again. Recovery only polls existing task IDs or retrieves and records known outputs. An exception before a response leaves an uncertain claim that must be reconciled with the provider, not automatically resubmitted. No credential is stored in the journal.
+
+The credential travels only to the configured endpoint, and a redirect is recorded instead of followed. A transport records these answers with the status and complete body that arrived, as an unknown outcome (`indeterminate`):
+
+- a redirect or a server error;
+- a transport failure or an expired deadline;
+- a success whose body is not a JSON object.
+
+Recovery reconciles an unknown outcome with the provider and never resends it. A 4xx answer is a refusal. Recovery rebuilds the outputs from the answer and every recorded poll response in order, so an interruption after any recorded response keeps the outputs completed before it. A result URL uses https, or plain http on a loopback host, and each redirect it follows keeps to that rule. Each output streams to disk, and its SHA-256 and size are recorded.
 
 Acquired files become candidates in the same run.
 A changed input requires fresh preparation for later review or completion while preserving acquired evidence.

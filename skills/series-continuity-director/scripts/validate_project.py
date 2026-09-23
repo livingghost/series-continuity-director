@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import report_output
 import re
 import sys
 from pathlib import Path
@@ -23,11 +24,13 @@ from project_layout import (  # noqa: E402
     NARRATIVE_PROSE_DIRECTORIES,
     NARRATIVE_SUBDIRECTORIES,
     PROJECT_ID_RE,
+    PROJECT_MANIFEST,
     PROJECT_MANIFEST_REQUIRED_FIELDS,
     PROJECT_PRODUCT,
     REQUIRED_PROJECT_FILES,
     STATE_SUBDIRECTORIES,
     WORK_DIRECTORY,
+    read_document,
 )
 import run_gallery  # noqa: E402
 import work_ledger  # noqa: E402
@@ -70,112 +73,39 @@ def read_json(path: Path) -> dict[str, Any]:
     return value
 
 
-def self_test() -> int:
-    """Check what this command says, which no exit code shows.
+def emit(project: Path, errors: list[str], warnings: list[str], stats: dict[str, Any]) -> int:
+    """Print the report with each problem once, in the order it was first found.
 
-    Two commands read the same narrative, and each once carried its own reader
-    for the blanks in it. Nothing failed: both reports stayed valid and both
-    said the same thing twice, the second copy arriving under a label that
-    means something else. No exit code shows that, so it is measured here
-    against a project `init_project.py` has just written, where the blanks are
-    the ones the blank form ships with and are therefore known.
+    The coverage report and the index read files this command also reads, and
+    they word a shared problem the same way, so a repeat is dropped here.
     """
 
-    import subprocess  # noqa: PLC0415
-    import tempfile  # noqa: PLC0415
-
-    from narrative_index import json_placeholders  # noqa: PLC0415
-
-    scripts = ROOT / "scripts"
-
-    def run(command: list[str]) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(command, text=True, capture_output=True, check=False)
-
-    failures: list[str] = []
-    with tempfile.TemporaryDirectory(prefix="scd-report-check-") as temp:
-        project = Path(temp) / "report-check-series"
-        created = run([
-            sys.executable, str(scripts / "init_project.py"), "--out", str(project),
-            "--series-id", "REPORT-CHECK", "--title", "Report Check",
-        ])
-        if created.returncode != 0:
-            print(f"init_project.py failed, so nothing below was measured:\n"
-                  f"{created.stderr or created.stdout}")
-            return 1
-
-        document = json.loads((project / "narrative" / "narrative.json").read_text(encoding="utf-8"))
-        blanks = json_placeholders(document)
-        if not blanks:
-            # Without this the three blank cases below pass by finding nothing twice.
-            print("the narrative init_project.py writes carries no blanks, "
-                  "so this proves nothing about reporting them")
-            return 1
-        probe = blanks[0]
-
-        validated = run([sys.executable, str(scripts / "validate_project.py"), str(project)])
-        try:
-            report = json.loads(validated.stdout)
-        except json.JSONDecodeError as exc:
-            print(f"validate_project.py printed no report: {exc}\n{validated.stderr}")
-            return 1
-        quoting = [message for message in report["warnings"] if probe in message]
-        if len(quoting) != 1:
-            failures.append(
-                f"validate_project.py warns about {probe!r} {len(quoting)} times, expected once: "
-                + "; ".join(quoting)
-            )
-
-        listed = run([sys.executable, str(scripts / "session_entry_points.py"),
-                      "--project", str(project), "--next"])
-        actions = [line for line in listed.stdout.splitlines() if line.strip()]
-        quoting = [action for action in actions if probe in action]
-        if len(quoting) != 1:
-            failures.append(
-                f"session_entry_points.py --next reports {probe!r} {len(quoting)} times, "
-                "expected once: " + "; ".join(quoting)
-            )
-
-        # The label means nothing in the series names this entity. A file still
-        # carrying the blank form is named; it is unfilled, which is a different
-        # thing to do about it.
-        naming = "Name it or remove it:"
-        misfiled = [
-            action for action in actions
-            if action.startswith(naming)
-            and ("blank(s) nobody has filled" in action or probe in action)
-        ]
-        if misfiled:
-            failures.append(
-                f"session_entry_points.py --next files a blank under {naming!r}: "
-                + "; ".join(misfiled)
-            )
-
-    for failure in failures:
-        print(failure)
-    print(f"self test: {3 - len(failures)} of 3 cases hold")
-    return 1 if failures else 0
+    errors = list(dict.fromkeys(errors))
+    warnings = list(dict.fromkeys(warnings))
+    report = {"ok": not errors, "project": str(project), "errors": errors, "warnings": warnings,
+              "stats": stats, "generated_media_quality": "not evaluated"}
+    report_output.emit(report)
+    return 0 if not errors else 1
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate a Series Continuity Director project")
-    parser.add_argument("project", nargs="?")
-    parser.add_argument(
-        "--self-test", action="store_true",
-        help="Check this command's own report against a freshly initialized project, "
-             "and print nothing about any other one.",
-    )
+    parser.add_argument("project")
+    report_output.add_json_flag(parser)
     args = parser.parse_args()
-    if args.self_test:
-        return self_test()
-    if args.project is None:
-        parser.error("a project directory is required")
+    report_output.use_json(args.json)
     project = Path(args.project).resolve()
     errors: list[str] = []
     warnings: list[str] = []
     stats: dict[str, Any] = {"state_artifacts": 0, "producer_artifacts": 0, "viewpoint_artifacts": 0, "events": 0, "text_files": 0}
 
+    # A mistyped path is one problem, not one per file the layout expects.
     if not project.is_dir():
-        errors.append(f"project directory does not exist: {project}")
+        return emit(project, [f"no project at {project}: the directory does not exist"], [], stats)
+    if not (project / PROJECT_MANIFEST).is_file():
+        return emit(project, [
+            f"{project} is not a project: it has no {PROJECT_MANIFEST}. "
+            f"{ROOT / 'scripts' / 'init_project.py'} creates one"], [], stats)
 
     for rel in REQUIRED_PROJECT_FILES:
         if not (project / rel).is_file():
@@ -235,7 +165,7 @@ def main() -> int:
         try:
             manifest = read_json(manifest_path)
         except Exception as exc:
-            errors.append(f"project-manifest.json: {exc}")
+            errors.append(f"{PROJECT_MANIFEST}: {exc}")
         missing = sorted(PROJECT_MANIFEST_REQUIRED_FIELDS - set(manifest))
         extra = sorted(set(manifest) - PROJECT_MANIFEST_REQUIRED_FIELDS)
         if missing:
@@ -262,6 +192,9 @@ def main() -> int:
         if manifest.get("canonical_files") != CANONICAL_FILES:
             errors.append("project manifest canonical_files differs from the canonical project layout")
 
+    # Every path this prints is POSIX and relative to the project, the form the
+    # coverage report and the index print, so one problem reads the same in all.
+    undecodable: set[Path] = set()
     for path in sorted(project.rglob("*")):
         if not path.is_file() or path.suffix.lower() not in TEXT_SUFFIXES:
             continue
@@ -269,14 +202,15 @@ def main() -> int:
         try:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
-            errors.append(f"{relative}: carries a text suffix but is not UTF-8")
+            errors.append(f"{relative.as_posix()}: carries a text suffix but is not UTF-8")
+            undecodable.add(path)
             continue
         stats["text_files"] += 1
         if not is_managed(relative):
             continue
         for token, label in FORBIDDEN_PUNCTUATION.items():
             if token in text:
-                errors.append(f"{relative}: contains {label}")
+                errors.append(f"{relative.as_posix()}: contains {label}")
 
     events_path = project / "state/events.jsonl"
     if events_path.is_file():
@@ -296,17 +230,19 @@ def main() -> int:
                 errors.append(f"state/events.jsonl:{line_number}: {exc}")
 
     for path in sorted(project.rglob("*.json")):
-        if path.name == "project-manifest.json":
+        if path.name == PROJECT_MANIFEST or path in undecodable:
             continue
-        try:
-            value = read_json(path)
-        except Exception as exc:
-            errors.append(f"{path.relative_to(project)}: {exc}")
+        relative = path.relative_to(project).as_posix()
+        value, problem = read_document(path, relative)
+        if problem:
+            errors.append(problem)
+            continue
+        if not isinstance(value, dict):
+            errors.append(f"{relative}: expected JSON object")
             continue
         artifact_type = value.get("artifact_type")
         if not artifact_type:
-            relative = path.relative_to(project)
-            if relative.parts and relative.parts[0] in ARTIFACT_JSON_ROOTS:
+            if relative.split("/")[0] in ARTIFACT_JSON_ROOTS:
                 errors.append(
                     f"{relative}: JSON under a managed artifact directory requires artifact_type"
                 )
@@ -314,7 +250,6 @@ def main() -> int:
         if artifact_type == "narrative":
             from narrative import validate_narrative
 
-            relative = path.relative_to(project)
             report = validate_narrative(value)
             stats["narratives"] = stats.get("narratives", 0) + 1
             for notice in report.get("notices") or []:
@@ -342,7 +277,7 @@ def main() -> int:
             stats["scene_plots"] = stats.get("scene_plots", 0) + 1
             if report["ok"] and not report["approved"] and report["approval_errors"]:
                 errors.append(
-                    f"{path.relative_to(project)}: the scene plot's approval does not hold: "
+                    f"{relative}: the scene plot's approval does not hold: "
                     + "; ".join(report["approval_errors"])
                 )
         elif (ROOT / "protocols/shared-state/schemas" / f"{artifact_type}.schema.json").is_file():
@@ -352,8 +287,7 @@ def main() -> int:
             report = validate_viewpoint_artifact(value)
             stats["viewpoint_artifacts"] += 1
         else:
-            relative = path.relative_to(project)
-            if relative.parts and relative.parts[0] in ARTIFACT_JSON_ROOTS:
+            if relative.split("/")[0] in ARTIFACT_JSON_ROOTS:
                 errors.append(f"{relative}: unknown artifact_type {artifact_type!r}")
             else:
                 # Whatever seals a visual-contract-package writes its own
@@ -362,10 +296,10 @@ def main() -> int:
                 stats["producer_artifacts"] += 1
             continue
         if not report.get("ok"):
-            errors.extend(f"{path.relative_to(project)}: {message}" for message in report.get("errors", []))
+            errors.extend(f"{relative}: {message}" for message in report.get("errors", []))
         artifact_series_id = value.get("series_id")
         if artifact_series_id is not None and artifact_series_id != manifest.get("series_id"):
-            errors.append(f"{path.relative_to(project)}: series_id does not match project manifest")
+            errors.append(f"{relative}: series_id does not match project manifest")
 
     # Confirm that the human-readable state files identify the same series.
     series_id = str(manifest.get("series_id") or "")
@@ -411,10 +345,10 @@ def main() -> int:
         errors.extend(registry_errors)
         warnings.extend(registry_warnings)
 
-    report = {"ok": not errors, "project": str(project), "errors": errors, "warnings": warnings, "stats": stats, "generated_media_quality": "not evaluated"}
-    print(json.dumps(report, ensure_ascii=False, indent=2))
-    return 0 if not errors else 1
+    return emit(project, errors, warnings, stats)
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

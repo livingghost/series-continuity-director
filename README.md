@@ -37,11 +37,17 @@ brief, plus the project's approved narrative, Persona and world
 
 ## Installation
 
-Use Python 3.11 or later. Project authoring, state and the public-contract readers use only the standard library. Media inspection needs Pillow; playable roughs and audio or video probing need `ffmpeg` and `ffprobe` on the executable search path.
+What you need:
+
+- Python 3.11 or later. Project authoring, state and the public-contract readers use only the standard library.
+- For media work only: Pillow for media inspection, and `ffmpeg` and `ffprobe` on the executable search path for playable roughs and audio or video probing.
+- For sending a request only: an account with the generation service you choose. The suite works with any service; planning, writing, the gate and the core examples need none.
 
 The extracted archive is a plugin repository. A plugin-capable host receives the repository with its host metadata. A host that loads individual skills receives the complete [skill directory](skills/series-continuity-director/), whose entry point is [SKILL.md](skills/series-continuity-director/SKILL.md), with its scripts, assets and schemas. The [flat text adapter](skills/series-continuity-director/adapters/series-continuity-director-flat.md) gives a text-only host the instructions in one file; that host still needs Python, media tools and storage of its own to run anything.
 
-All commands below run from the repository root, the folder containing this README, with the interpreter the host will use.
+All commands below run from the repository root, the folder containing this README, with the interpreter the host will use. The documents inside the skill, such as [scripts/README.md](skills/series-continuity-director/scripts/README.md) and each example's README, write their commands from the skill directory, `skills/series-continuity-director/`.
+
+Every command writes UTF-8, whatever the console's code page. The project commands print readable text in a terminal and JSON when their output goes to a pipe or a file, which is how an agent reads them; `--json` prints JSON anywhere. In a PowerShell pipeline, set `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` first so PowerShell reads it as UTF-8.
 
 ### Dependency checks
 
@@ -76,15 +82,46 @@ python skills/series-continuity-director/scripts/session_entry_points.py --proje
 The new directory holds the readable series, character, asset and production records beside the narrative, state and media directories:
 
 ```text
+project-manifest.json  service-profiles.template.json
 series-state.md  character-profiles.md  asset-registry.md  production-state.md
-narrative/   narrative.json, design/, personas/ (c01.md, persona-template.md), world/, glossary/, scenes/
+narrative/   narrative.json, design/ (design-template.md), personas/ (persona-template.md), world/, glossary/, scenes/
 state/       events.jsonl
 production/  production-task.json, production-review.json, production-selection.json
 runs/        gallery.html, gallery.json
 media/  shots/  work/
 ```
 
-Coverage starts honest: `narrative_coverage` reports zero chapters and one gap, "the narrative is not approved", until the author declares and approves the narrative. A first request to the installed skill can be:
+`init_project` ends by printing the next commands to run. Coverage starts honest: `narrative_coverage` reports zero chapters and one gap, "the narrative is not approved", until the author declares and approves the narrative.
+
+### From narrative to an approved scene
+
+Approval is the author's decision. Once the author has approved a document, a command records that approval with its content hash, so nobody copies a hash by hand:
+
+```sh
+python skills/series-continuity-director/scripts/narrative.py approve PROJECT/narrative/narrative.json --by "AUTHOR"
+python skills/series-continuity-director/scripts/scene_plot.py draft --project PROJECT --scene-id sc01 --chapter ch1
+python skills/series-continuity-director/scripts/scene_plot.py approve PROJECT/narrative/scenes/sc01-plot.json --by "AUTHOR"
+python skills/series-continuity-director/scripts/scene_plot.py behind --project PROJECT
+```
+
+- `approve` validates the document first and refuses with every reason at once, suggesting the closest declared id for a mistyped one.
+- `draft` writes a scene plot from what the narrative declares for the chapter. Every author decision is a `<fill: ...>` value, which validation refuses until someone fills it.
+- `behind` lists the scene plots written against an earlier narrative, so a change above them never passes unnoticed.
+
+The approval of a fresh project's still-empty narrative, trimmed:
+
+```json
+{
+  "ok": true,
+  "by": "The author",
+  "at": "2026-09-23T01:02:45Z",
+  "content_sha256": "fd33db7e2c5e7ca42a67b120c91b38ff940e8bd9042a453c94bde95b37d95802",
+  "chapters": 0,
+  "plots_behind": []
+}
+```
+
+A first request to the installed skill can be:
 
 > Use this project and its source definitions to prepare the next scene. Preserve the stated world, character and knowledge constraints. Explain unresolved choices, save the material needed to write it, and do not send anything to an external service.
 
@@ -365,17 +402,25 @@ The example's approvals are labeled synthetic fixtures; real work uses your own.
 
 ### Approve an external generation
 
-A dispatch needs the selected service's configuration, its credentials and current target evidence. The bundled transport is Runware; other tools are reached through an explicit external handoff that keeps the same input and result records. The submission gate checks the declared settings, media and requirements and reports both errors and what it cannot measure; "admitted" means no checked refusal was found. A dry run:
+The suite works with any generation service. A service record in the project's `service-profiles.json` states how that service is called: its endpoint, authentication, operations, a network deadline, and its transport. The transport is the module that speaks the service's request format, `scripts/transport_<name>.py`, written against [the transport contract](skills/series-continuity-director/scripts/transport_contract.py). The suite ships one implementation, for Runware. Another service needs its own record and transport module and nothing else. A service without a transport is reached through an explicit external handoff that keeps the same input and result records.
+
+A target profile describes the model itself, and each service that offers the model adds an offering with its own request keys and request shape. Write the submission with `submission_draft.py`:
 
 ```sh
-python skills/series-continuity-director/scripts/dispatch.py PROJECT/submission.json --root PROJECT --service-profiles PROJECT/service-profiles.json
+python skills/series-continuity-director/scripts/submission_draft.py new --project PROJECT --out media/episodes/E01/prompts/SC01-SH01.submission.json --kind shot --target TARGET --service SERVICE --scene-plot narrative/scenes/sc01-plot.json --unit SC01-SH01 --text-file TEXT
+```
+
+Every decision the draft cannot make is a placeholder, and the gate refuses it until someone fills it. The gate checks the declared settings, media and requirements and reports both errors and what it cannot measure; "admitted" means no checked refusal was found. A submission that names no service is checked against the model alone, and the gate reports the service's rules as unmeasured. A dry run shows the exact request and sends nothing:
+
+```sh
+python skills/series-continuity-director/scripts/dispatch.py PROJECT/media/episodes/E01/prompts/SC01-SH01.submission.json --root PROJECT --service-profiles PROJECT/service-profiles.json
 ```
 
 For a live send, prepare the production run, record approval for its exact submission, and pass the receipt (the recorded approval), the actor, the output count and the cost bound:
 
 <!-- readme-send: generation -->
 ```sh
-python skills/series-continuity-director/scripts/dispatch.py PROJECT/submission.json --root PROJECT --service-profiles PROJECT/service-profiles.json --production-run RUN_ID --authorization RECEIPT_SHA --actor ACTOR --outputs 1 --cost-bound COST_BOUND --currency CURRENCY --send
+python skills/series-continuity-director/scripts/dispatch.py PROJECT/media/episodes/E01/prompts/SC01-SH01.submission.json --root PROJECT --service-profiles PROJECT/service-profiles.json --production-run RUN_ID --authorization RECEIPT_SHA --actor ACTOR --outputs 1 --cost-bound COST_BOUND --currency CURRENCY --send
 ```
 <!-- end-readme-send -->
 
@@ -466,6 +511,8 @@ State files are project data. Project work leaves the installed suite untouched,
 
 **Refused generation.** Check the prepared run, the submission and the approval. `--send` needs the receipt, actor, output count and cost bound with it. Resolve a recorded unknown result before another request.
 
+**Garbled text on Windows.** The commands write UTF-8. A PowerShell pipeline reads it with the console code page unless `[Console]::OutputEncoding` is UTF-8.
+
 **Missing media tools.** Planning works under the core scope. Media inspection, rendering and the aggregate validation need their declared tools, and the check names which are missing.
 
 ## Validation
@@ -479,13 +526,11 @@ python skills/series-continuity-director/scripts/readme_smoke_test.py
 For a source checkout or the repository-shaped release, regenerate the derived files and run the aggregate check, which needs the media environment:
 
 ```sh
-python skills/series-continuity-director/scripts/build_flat.py
-python skills/series-continuity-director/scripts/build_example.py
-python skills/series-continuity-director/scripts/build_host_packages.py
+python skills/series-continuity-director/scripts/build_derived.py
 python skills/series-continuity-director/scripts/validate_skill.py
 ```
 
-These cover structure, contracts, source and result hashes, state, authority, generated files and the executable workflows. The [Mixed-Viewpoint Workshop](skills/series-continuity-director/examples/mixed-viewpoint-workshop/README.md) is the worked continuity example. Its third-person scene moves through an establishing master, a tracking medium, an over-the-shoulder reveal, an embodied first-person insert, a reaction close-up and a landing master. The example carries event-sourced state, a proposed atomic prop transfer, camera specifications, transitions, a continuity ledger, projections, shot requests, a director package, a submission plan and an explicit `not run` result log.
+These cover structure, contracts, source and result hashes, state, authority, generated files and the executable workflows. `validate_skill.py` runs every smoke test, so a full run takes a long time. `--list` names its checks, `--only NAME` runs the named ones, and `--jobs N` sets how many run at once. It streams one line per finished check to standard error and prints the JSON report at the end. The [Mixed-Viewpoint Workshop](skills/series-continuity-director/examples/mixed-viewpoint-workshop/README.md) is the worked continuity example. Its third-person scene moves through an establishing master, a tracking medium, an over-the-shoulder reveal, an embodied first-person insert, a reaction close-up and a landing master. The example carries event-sourced state, a proposed atomic prop transfer, camera specifications, transitions, a continuity ledger, projections, shot requests, a director package, a submission plan and an explicit `not run` result log.
 
 ## Scope and limitations
 

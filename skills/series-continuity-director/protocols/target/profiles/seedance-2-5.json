@@ -2,7 +2,11 @@
   "artifact_type": "target-profile",
   "target_id": "seedance-2-5",
   "label": "Seedance 2.5 multimodal video with large-scale reference control",
-  "model_identifier": "bytedance:seedance@2.5",
+  "model": {
+    "maker": "ByteDance",
+    "name": "Seedance",
+    "version": "2.5"
+  },
   "media_kind": [
     "video-with-audio"
   ],
@@ -12,10 +16,6 @@
       {
         "kind": "vendor-documentation",
         "reference": "Seedance 2.5 prompt guidance"
-      },
-      {
-        "kind": "surface-control",
-        "reference": "Runware model schema for bytedance:seedance@2.5"
       }
     ]
   },
@@ -117,8 +117,7 @@
       "1080p: 1920x1080, 1664x1248, 1440x1440, 1248x1664, 1080x1920, 2206x946"
     ],
     "notes": [
-      "Frame images and source video both forbid explicit width and height.",
-      "Every pair above, including the 1080p tier, is in the host's parameter schema for this model."
+      "Frame images and source video both forbid explicit width and height."
     ]
   },
   "input_modes": [
@@ -129,65 +128,50 @@
     },
     {
       "mode": "frame images",
-      "request_keys": [
-        "inputs.frameImages"
-      ],
       "limits": "at most two, addressed as first and last",
+      "max_inputs": 2,
       "media_supplies": "the endpoints of the motion",
       "text_must_establish": "the path between them without creating a competing landing",
       "excludes": [
-        "inputs.referenceImages",
-        "inputs.referenceVideos",
-        "inputs.video",
-        "width",
-        "height"
+        "reference images",
+        "reference videos",
+        "source video edit or extend"
       ]
     },
     {
       "mode": "reference images",
-      "request_keys": [
-        "inputs.referenceImages"
-      ],
       "limits": "up to thirty by the surface; guidance recommends at most eight subjects, stretching to twelve, before features dilute",
+      "max_inputs": 30,
       "media_supplies": "identity, wardrobe, palette, or a defined side of one object, according to the assigned role",
       "text_must_establish": "each reference's job by citation, and what it must not control",
       "excludes": [
-        "inputs.frameImages"
+        "frame images"
       ]
     },
     {
       "mode": "reference videos",
-      "request_keys": [
-        "inputs.referenceVideos"
-      ],
       "limits": "up to ten, each 2 to 30 seconds; guidance recommends at most five subjects",
+      "max_inputs": 10,
       "media_supplies": "motion, timing, camera, or an accepted anchor shot treated as ground truth for continuity",
       "text_must_establish": "what carries over and what changes",
       "excludes": [
-        "inputs.frameImages"
+        "frame images"
       ]
     },
     {
       "mode": "source video edit or extend",
-      "request_keys": [
-        "inputs.video",
-        "settings.operation"
-      ],
       "limits": "one clip, 2 to 30 seconds; edit requires the auto duration",
+      "max_inputs": 1,
       "media_supplies": "the existing clip to modify or continue",
       "text_must_establish": "which change is wanted, or how the continuation proceeds from the ending",
       "excludes": [
-        "inputs.frameImages",
-        "width",
-        "height"
+        "frame images"
       ]
     },
     {
       "mode": "reference audios",
-      "request_keys": [
-        "inputs.referenceAudios"
-      ],
       "limits": "up to ten, each 2 to 30 seconds",
+      "max_inputs": 10,
       "media_supplies": "voice or performance timing",
       "text_must_establish": "who speaks and how the audio relates to the visible action"
     }
@@ -221,6 +205,14 @@
         ],
         "reference audios": [
           "inputs.referenceAudios"
+        ]
+      },
+      "request_shape": {
+        "model_key": "model",
+        "text_key": "positivePrompt",
+        "media_reference": "uuid",
+        "single_value_keys": [
+          "inputs.video"
         ]
       },
       "constraints": {
@@ -271,11 +263,18 @@
           "min": 1,
           "max": 4
         },
-        "inputs_envelope": "media keys sit inside an inputs object (inputs.referenceImages, inputs.frameImages, inputs.referenceVideos, inputs.referenceAudios, inputs.video)"
+        "inputs_envelope": "media keys sit inside an inputs object (inputs.referenceImages, inputs.frameImages, inputs.referenceVideos, inputs.referenceAudios, inputs.video)",
+        "geometry_evidence": "Every pair above, including the 1080p tier, is in the service's parameter schema for this model."
       },
       "observed_at": "2026-09-13",
-      "schema_snapshot": "protocols/target/observed-schemas/seedance-2-5.runware.json"
+      "schema_snapshot": "protocols/target/observed-schemas/seedance-2-5.runware.json",
+      "sources": [
+        {
+          "kind": "surface-control",
+          "reference": "Runware model schema for bytedance:seedance@2.5"
+        }
+      ]
     }
   ],
-  "profile_sha256": "316350e8a746cbebf97f4747ecd200e5a826c664f800878ed4b89b4a6057244d"
+  "profile_sha256": "1795c2c342ba93651a90981ae3163fe2a3c576a263b39d50528e55729e30a0fc"
 }

@@ -29,19 +29,15 @@ def inventory(root: Path, task: dict) -> dict:
             registries.append({'owner_path': name, 'records': records})
     import production_workflow as workflow
     selections = []
-    production = c.local(root, 'production', exists=False)
-    if production.is_dir():
-        for directory in sorted(production.iterdir()):
-            if not directory.is_dir() or directory.name.startswith('.pending-'):
+    for run in workflow.run_ids(root):
+        _, _, _, rows = workflow.load_run(root, run)
+        for row in rows:
+            if row['event'] != 'selection':
                 continue
-            _, _, _, rows = workflow.load_run(root, directory.name)
-            for row in rows:
-                if row['event'] != 'selection':
-                    continue
-                selection = row['data']['selection']
-                if selection['scope'] == 'registry-adoption' and selection.get('influence') == 'identity':
-                    selections.append({'run': directory.name, 'selection': row['sha256'], 'candidate': selection['candidate'],
-                                       'registry': selection['adoption']})
+            selection = row['data']['selection']
+            if selection['scope'] == 'registry-adoption' and selection.get('influence') == 'identity':
+                selections.append({'run': run, 'selection': row['sha256'], 'candidate': selection['candidate'],
+                                   'registry': selection['adoption']})
     return {'declared_sources': [{key: source.get(key) for key in ('id', 'role', 'path')}
                                   for source in task.get('sources', [])],
             'registries': registries, 'identity_selections': selections,
@@ -124,8 +120,8 @@ def build_validation(choices: dict, task: dict, reader, root: Path) -> tuple[dic
     service = services[target['service']]
     if target['operation'] not in service.get('operations', {}):
         raise ValueError('the selected service does not declare this operation')
-    from dispatch import load_transport
-    transport = load_transport(target['service'])
+    import transport_contract
+    transport = transport_contract.load(service)
     policy_ref = reader.select(choices['execution_policy']) if choices['execution_policy'] is not None else None
     policy, local = load_policy({'execution_policy': policy_ref}, reader, target)
     reference = policy.get('reference_instruction_transport')

@@ -48,9 +48,25 @@ Translate intention into visible behavior from approved character vocabulary. Us
 
 ### Carry a property in an action
 
-A property does not have to be stated to be drawn. An action that can only be performed when the property holds makes the model draw the property in order to draw the action, and the shot gains a beat instead of a label. Reaching a high shelf on the toes carries a height difference; ducking under a lintel carries stature; a jar lifted with both arms carries weight; a sleeve pushed back twice carries a coat that is too big; a cup held in both hands carries cold, or small hands; a chair pulled closer before sitting carries a table that is too far. The same holds for distance, size, material, temperature, age, mood, and relation: ask what a person in the scene would visibly do because the property is true, and write that.
+A property does not have to be stated to be drawn. An action that can only be performed when the property holds makes the model draw the property in order to draw the action, and the shot gains a beat instead of a label. For example:
 
-Prefer the carried form when a direct statement has failed to hold, when the direct word is one the surface reads loosely (a little, slightly, quite), when the property is relational and the surface tends to level the two parties, or when a plain statement would sit in the text as a fact with nothing on screen to prove it. Choose the action from the scene's own staging so it reads as behaviour, then write the action alone; adding the statement beside it gives the surface two carriers that can disagree. Keep a direct statement for a property that has no natural action in the shot, and for identity locks, which must stay explicit.
+- reaching a high shelf on the toes carries a height difference;
+- ducking under a lintel carries stature;
+- a jar lifted with both arms carries weight;
+- a sleeve pushed back twice carries a coat that is too big;
+- a cup held in both hands carries cold, or small hands;
+- a chair pulled closer before sitting carries a table that is too far.
+
+The same holds for distance, size, material, temperature, age, mood, and relation: ask what a person in the scene would visibly do because the property is true, and write that.
+
+Prefer the carried form when:
+
+- a direct statement has failed to hold;
+- the direct word is one the surface reads loosely (a little, slightly, quite);
+- the property is relational and the surface tends to level the two parties;
+- a plain statement would sit in the text as a fact with nothing on screen to prove it.
+
+Choose the action from the scene's own staging so it reads as behaviour, then write the action alone. Adding the statement beside it gives the surface two carriers that can disagree. Keep a direct statement for a property that has no natural action in the shot, and for identity locks, which must stay explicit.
 
 ## 5. Contact
 
@@ -72,8 +88,8 @@ Use sound, weather, and light as causes or responses. Name source, direction, la
 - every word names something the frame should show. An image model reads a figure of speech as content: a camera term that names an animal draws the animal, and an instruction about where the head sits in the frame moves the head.
 A prompt describes the picture the camera takes, not the scene a narrator knows. Blocking, a script, and a novel say where a character stands and faces in the world: his back to the door, facing the window, turned away from the other. A prompt says what the lens sees from where it stands: in profile at a table on the right of the frame, the back of a head in the left foreground, a face turned three-quarters toward the camera. The same world fact becomes different words for every camera position, and a blocking phrase carried into a prompt unchanged is drawn as a picture relation, with the back toward the viewer whatever the room says, because the model has no room, only the frame. Translate every orientation before it enters model-facing text: take the character's facing in the world and the camera's position, work out what the lens sees, and write that. Where the geometry already settles it, write the action and the fixture and nothing about facing at all.
 
-- text carried over from an earlier draft is reviewed as new text; the phrase that was fine before the plate existed is the one most likely to contradict it now. The gate reports facing words (back turned, from behind, facing away) as unmeasured so they are read against the plate before sending;
-- every word agrees with the geometry the inspected media fixes. Once a plate or a reference places the camera and the fixtures, a character's facing follows from where the action is: someone working at a bench along the right wall is seen from the side by a camera in the doorway, and the text does not also say which way he faces. A facing, view, or placement word that cannot be true at the same time as the fixed geometry is not ignored; the model satisfies both by rebuilding the room, moving the fixture, or inventing a second one. Name the action and the fixture it happens at, and let the camera decide the rest.
+- text carried over from an earlier draft is reviewed as new text; the phrase that was fine before the plate existed is the one most likely to contradict it now. The reviewer reads its facing words (back turned, from behind, facing away) against the plate before sending;
+- every word agrees with the geometry the inspected media fixes. Once a plate or a reference places the camera and the fixtures, a character's facing follows from where the action is. Someone working at a bench along the right wall is seen from the side by a camera in the doorway, and the text does not also say which way he faces. A facing, view, or placement word that cannot be true at the same time as the fixed geometry is not ignored; the model satisfies both by rebuilding the room, moving the fixture, or inventing a second one. Name the action and the fixture it happens at, and let the camera decide the rest.
 
 ## 8. Build from inspected opening evidence
 
@@ -257,9 +273,9 @@ Choose a repair at the responsible layer. Isolate a change when useful for causa
 
 ## 18. Rules a machine can settle
 
-The list above is the writer's review, and most of it needs a reader. These sixteen
-are different: each one can be decided from the submitted text and the target
-profile alone, before anything is generated. They carry IDs because a check in
+The list above is the writer's review, and most of it needs a reader. These eighteen
+are different: each one can be decided from the submission, the project files it
+names and the target profile, before anything is generated. They carry IDs because a check in
 code has to say which rule it implements, and because a rule with no ID cannot be
 argued with, revised, or retired.
 
@@ -271,23 +287,42 @@ argued with, revised, or retired.
 | `SUB-04` | The text carries no operator vocabulary: file names, internal IDs, seeds, hashes, or state words. | The surface reads the whole submission as a description of a picture. A file name renders as characters in the frame. |
 | `SUB-05` | Every permanent feature the frame will show is named. | A tail that the plate never showed and the text never named, absent from the returned frame. |
 | `SUB-06` | No noun repeats inside one sentence under the same modifier. | `the table where a cup sits on the edge of the table`. A contrast between two of a thing is not this: `the far end` beside `the near end` stands. |
-| `SUB-07` | The declared inputs respect the exclusivity the target profile records. | A first frame submitted beside reference images on a surface where the two modes exclude each other. An input names the request key it occupies; where it does not and the profile offers more than one mode that could hold it, the check reports the ambiguity instead of charging a conflict the submission may not have. |
+| `SUB-07` | The declared inputs respect the input modes the target profile records: their exclusions and their counts. | A first frame submitted beside reference images on a model where the two modes exclude each other is refused as `INPUT_MODE_CONFLICT`, and more inputs than a mode takes as `INPUT_MODE_LIMIT`. An input names its `mode`; with a service named it may name that offering's request key instead, and a key that belongs to another mode is refused. Where an input names neither and more than one mode could hold it, the check reports the ambiguity instead of charging a conflict the submission may not have. |
 | `SUB-08` | An identity reference carries enough pixels on the feature that has to survive. | A full length figure spends nearly all of its pixels on the body, so the face inside it can be a fraction of the frame even in a large file. The floor is declared and not assumed: the target profile records what its surface documents, a submission states what this run needs, and no floor is invented if neither supplies one. Every refusal names the declared number and its source; absence of a requirement remains unmeasured. |
-| `SUB-09` | A parameter the submission states respects the limit the model's offering records for the service it will use. | A clip asked for at a length below the band the service accepts for that model; the refusal would otherwise arrive in the submission response and the task, polled afterwards, would report processing forever. A video submission that states no duration is reported as not settled. |
-| `SUB-10` | The request the submission describes satisfies the service's own parameter schema for the offering, as observed and stored. | A width and height pair the service does not accept, a first frame sent beside reference images where the schema forbids the pair, a duration outside the band, a preset given beside explicit geometry; each is refused with the schema rule that fails. With no stored schema the rule reports itself as not settled. |
+| `SUB-09` | A parameter the submission states respects the limit the offering records for the service the submission names. | A clip asked for at a length below the band the service accepts for that model; the refusal would otherwise arrive in the submission response and the task, polled afterwards, would report processing forever. A video submission that states no duration is reported as not settled. |
+| `SUB-10` | The request the submission describes satisfies the service's own parameter schema for the offering, as observed and stored. | A width and height pair the service does not accept, a first frame sent beside reference images where the schema forbids the pair, a duration outside the band, a preset given beside explicit geometry; each is refused with the schema rule that fails. The request is formed by the request shape the offering declares. With no service named, or no stored schema, the rule reports itself as not settled. |
 | `SUB-11` | The weighting notation in the text is one a parser has been asked to read, in the dialect that parser reads. | A surface reads attention weights only when the request names a parsing mode, and each mode has its own spelling. Written without that parameter, the notation is drawn as characters and, on the surfaces where the same parameter also governs long-prompt handling, the text past the encoder window is discarded; written in the other mode's dialect, the weights are read as words. The offering states which parameter names the mode, what each value reads, and what an absent value means, and the rule reports itself as not settled when the offering states none. A weight written on a term the vocabulary does not know is reported as well: the weight raises the term's tokens without binding them, so an unknown term under weight spreads its attribute instead of placing it. |
 | `SUB-12` | The request does not argue with itself, judged against the vocabulary rather than against taste. | A term written in the primary field and in the negative field at once is refused: it asks for a thing and against it in one request, and no setting decides which half wins. Two terms from a category the vocabulary marks as single valued, and a pair the vocabulary records as opposing, are reported instead of refused, because a second figure, a mirror, or a deliberate ambiguity can make either correct. The rule reads a tag-form text; on prose it reports itself as not settled. |
 | `SUB-13` | A part these models draw badly is not asked for large in frame unless the beat needs it there. | Countable small parts (fingers, toes, teeth), thin repeated geometry (chains, mesh, spokes), lettering and reflections fail in a way that scale decides: the same hand is unremarkable in a wide shot and a defect in a close insert, because the error gets the pixels. The vocabulary marks which terms name such a thing and which terms pull the subject close; the rule reports the pair and leaves the judgement, since only the beat says whether the part has to be in the frame at all. It reads prose as well as tags, because the framing is usually decided in the prose. |
 | `SUB-14` | A part the text puts out of view is not described by the same text. | A character's properties hold whether or not the frame shows them; the text of one shot states what that shot shows. Closed eyes and an eye colour in one text are two statements the surface has to choose between, and it chooses by opening the eyes. The vocabulary marks which terms hide a part and which speak about one, so the pair is found without a list of pairs, and the same rule catches a face detail written under a view from behind. Refused for a single figure; reported when the text names more than one, since the description may belong to the other one. |
-| `SUB-15` | A submission says whether it is a shot, and a shot belongs to a scene whose plot was approved before any wording. | A scene proposition and a blocking table say what happens and where people stand; neither records which beat put a given thing in a given frame, and neither is agreed before the text exists. Without that stop the first thing anyone sees is a finished submission, and every correction after it is made one shot at a time. `kind` is `shot` or `asset` and an undeclared kind is refused, since a reference, a sheet panel, a plate and a probe belong to no scene. A shot names the plot as `scene_plot`, itself as `shot_id`, and optionally its `scene_id`; a plot that is absent, outside the project, unreadable, invalid, unapproved, edited after its approval, or silent about this shot is refused. The plot also names who is in the scene, and a submission naming somebody the scene does not contain is a shot of a different scene or a plot that forgot who was there; either way the two documents disagree and neither is the answer. An asset belongs to no scene, so the plot rules do not apply to it, and that is also the way around them: nothing in a text says whether it is a shot. A submission that declares itself an asset and still names a scene plot, a scene or a shot is refused, and one that does not is admitted with the skipped rules reported as unmeasured rather than passed in silence. |
+| `SUB-15` | A submission says what it is, and one that depicts part of a scene depicts a unit its approved scene plot declares. | A scene proposition and a blocking table say what happens and where people stand; neither records which beat put a given thing in a given frame, and neither is agreed before the text exists. Without that stop the first thing anyone sees is a finished submission, and every correction after it is made one unit at a time. `kind` is `shot`, `page` or `passage` for a submission that depicts part of a scene, and `asset` for a reference, a sheet panel, a plate or a probe; any other kind is refused as `SUBMISSION_KIND_UNDECLARED`. A scene-linked submission names its `scene_plot`, its `scene_id` and its unit: `shot_id` for a shot, `page_id` and optionally a `panel` of that page for a page, and `passage_id` for the passage an image illustrates. A plot that is absent, outside the project, unreadable, invalid, unapproved, edited after its approval, or behind its narrative is refused. A unit the plot does not declare, a kind its realization does not have, and a panel beyond the page's declared count are refused as `UNIT_NOT_IN_SCENE_PLOT`, and the refusal lists what the plot declares. A character the submission depicts, in `characters` or in its visual subjects, whom the scene does not contain is refused. A field naming the unit of another kind is refused as `FIELD_OF_ANOTHER_KIND`. An asset belongs to no scene, so the plot rules do not apply to it; an asset naming a scene plot, a scene or a unit is refused the same way, and one that does not is admitted with the skipped rules reported as unmeasured. |
 | `SUB-16` | The text a model receives does not break what its characters are declared never to do. | Lock surfaces and permanent features are about what the frame shows; a persona also declares what a person would never say or do, and a gate that reads only the visual obligations admits a line in which a guarded character accounts for himself. The submission names its `narrative` and the `characters` present. A `surface` prohibition names a phrase and is refused when the text carries it; a `judgement` prohibition names a behaviour, which no string search settles, and is reported with the text rather than passed in silence. A narrative outside the project, unreadable or invalid, or a character the narrative does not carry, is refused. |
+| `SUB-17` | The submission carries a current reading of the media route. | A text written without the procedure it depends on. The record names the documents as they stand now and the key issued when they were read, and quotes each document the route requires. A missing, stale or unquoted reading is refused as `ROUTE_READING_INVALID`. |
+| `SUB-18` | The submission's visual continuity block binds what it depicts to current bytes. | A subject chosen from memory, or a reference that is not the adopted one. The block names each depicted subject and its continuity, the document that decides them, any identity reference with its adoption, and for a shot the camera and request of that shot. A missing block, a block changed after it was built, and a file whose bytes changed are refused as `VISUAL_CONTINUITY_INVALID`. |
+
+The kind decides which rules apply:
+
+| Rule | `shot` | `page` | `passage` | `asset` |
+|---|---|---|---|---|
+| Plot, scene and unit (`SUB-15`) | Applied | Applied, with an optional panel | Applied | Refused if named |
+| Characters in the scene (`SUB-15`) | Applied | Applied | Applied | Not applied |
+| Camera and shot request in the block (`SUB-18`) | Required, for this scene and shot, with the camera's visible subjects | Refused if named | Refused if named | Refused if named |
+| Subjects, basis and identity references (`SUB-18`) | Applied | Applied | Applied | Applied |
+| Reading, prohibitions, locks, inputs, parameters, reference resolution (`SUB-17`, `SUB-16`, `SUB-01`, `SUB-02`, `SUB-07` to `SUB-10`) | Applied | Applied | Applied | Applied |
+
+`scripts/submission_draft.py new` writes a submission from explicit arguments.
+It checks the kind, the unit and the target, and fills the scene from the plot.
+Every decision it leaves open is a placeholder, which the gate refuses as
+`PLACEHOLDER_UNFILLED` until it is filled. `scripts/README.md` lists each field
+and the commands that attach the reading and build the visual block.
 
 Three properties bind the implementation as much as the list does.
 
-**It knows no provider.** The submission names a target, the profile says which
-request keys that target exposes and which of them exclude each other, and the
-check compares the two. A surface never seen before is supported by adding a
-profile, not by editing the check.
+**It knows no provider.** The submission names a target, and the profile names
+the model's input modes and which of them exclude each other. A submission that
+names a service also meets that offering, whose declared request shape says how
+the service forms a request. A service never seen before is supported by adding
+an offering to a profile, not by editing the check.
 
 **It reports what it could not measure.** A rule that cannot be decided says so
 rather than passing quietly. A check silent about the half it skipped reads
@@ -298,10 +333,13 @@ still image header, in PNG, JPEG, GIF, BMP, WebP or TIFF. A video reference, or 
 still in a format outside that list, is reported as not settled rather than
 assumed to be large enough.
 
-`scripts/submission_gate.py` implements these sixteen and cites the ID in every
-finding, except where a submission fails before any of them applies by carrying no text at
-all. Nothing else in this file is machine-checkable today, and a rule that
-moves into that class earns an ID here first.
+`scripts/submission_gate.py` refuses under `SUB-01`, `SUB-02`, `SUB-07` to
+`SUB-10` and `SUB-15` to `SUB-18`, and cites the ID in every finding. It carries
+the features `SUB-05` names into its review requirements. The designated reviewer
+settles the other rules. Two refusals carry no ID, because they come before any
+rule applies: `TEXT_MISSING` for a submission with no text, and
+`PLACEHOLDER_UNFILLED` for a draft field nobody filled. A rule that moves into
+the machine-checked class earns an ID here first.
 
 ## 19. What a shot's text is about, and what the sheet is for
 
@@ -340,14 +378,15 @@ Each one names the rule above that it implements.
 | `SUB-05` | `PERMANENT_FEATURE_UNNAMED` | A permanent feature the frame will show is not named. |
 | `SUB-06` | `REPEATED_WORD_IN_SENTENCE` | One sentence repeats a noun, which reads as two of the thing. |
 | `SUB-07` | `INPUT_MODE_CONFLICT` | The target profile forbids this combination of inputs. |
+| `SUB-07` | `INPUT_MODE_LIMIT` | More inputs occupy one input mode than the target profile allows. |
 | `SUB-08` | `IDENTITY_REFERENCE_TOO_SMALL` | An identity reference is too small to hold a likeness. |
 | `SUB-09` | `DURATION_NOT_INTEGER` | The offering records whole seconds and the submission states something else. |
 | `SUB-09` | `DURATION_OUT_OF_BAND` | The stated duration is outside the band the offering records. |
 | `SUB-10` | `SCHEMA_REFUSAL` | The service's own parameter schema refuses the request this submission describes. |
 | `SUB-12` | `SELF_CONTRADICTION` | One term is asked for and asked against in the same request. |
 | `SUB-14` | `HIDDEN_PART_DESCRIBED` | The text puts a part out of view and describes it in the same breath. |
-| `SUB-15` | `ASSET_CARRIES_SHOT_FIELDS` | It declares itself an asset and still names a scene plot, a scene or a shot. |
 | `SUB-15` | `CHARACTER_NOT_IN_SCENE` | The submission names somebody the scene does not contain. |
+| `SUB-15` | `FIELD_OF_ANOTHER_KIND` | The submission names the unit field of another kind, or an asset names a scene plot, a scene or a unit. |
 | `SUB-15` | `SCENE_ID_MISMATCH` | The submission and the plot name different scenes. |
 | `SUB-15` | `SCENE_PLOT_BEHIND_NARRATIVE` | The plot was approved against a narrative that has since changed. |
 | `SUB-15` | `SCENE_PLOT_EDITED_AFTER_APPROVAL` | The plot changed after it was approved. |
@@ -355,12 +394,17 @@ Each one names the rule above that it implements.
 | `SUB-15` | `SCENE_PLOT_MISSING` | A shot names no scene plot. |
 | `SUB-15` | `SCENE_PLOT_OUTSIDE_ROOT` | The scene plot path leaves the project. |
 | `SUB-15` | `SCENE_PLOT_UNAPPROVED` | The scene plot carries no approval that holds. |
-| `SUB-15` | `SHOT_NOT_IN_SCENE_PLOT` | The shot is not one the scene plans, or the scene is not realized as shots. |
-| `SUB-15` | `SUBMISSION_KIND_UNDECLARED` | The submission says neither 'shot' nor 'asset'. |
+| `SUB-15` | `SUBMISSION_KIND_UNDECLARED` | The submission names none of the kinds `shot`, `page`, `passage` or `asset`. |
+| `SUB-15` | `UNIT_NOT_IN_SCENE_PLOT` | The shot, page, panel or passage is not one the approved scene plot declares, or the plot is realized as another kind. |
 | `SUB-16` | `CHARACTER_NOT_IN_NARRATIVE` | The submission names somebody the series does not carry. |
 | `SUB-16` | `NARRATIVE_INVALID` | The narrative does not answer its contract. |
 | `SUB-16` | `NARRATIVE_OUTSIDE_ROOT` | The narrative path leaves the project. |
 | `SUB-16` | `PROHIBITED_SURFACE` | The text carries a phrase a character is declared never to say. |
+| `SUB-17` | `ROUTE_READING_INVALID` | The reading of the media route is missing, or does not match the current documents or its issued key. |
+| `SUB-18` | `VISUAL_CONTINUITY_INVALID` | The visual continuity block is missing, or does not match its hash or the bytes it binds. |
+
+A field still holding a draft placeholder is refused as `PLACEHOLDER_UNFILLED`, which names no
+rule either: the submission is unfinished, and no rule is yet applied to the field.
 
 A submission carrying no model-facing text at all is refused as `TEXT_MISSING`, which names
 no rule: it fails before any of them can be applied, and a rule field that carried an empty

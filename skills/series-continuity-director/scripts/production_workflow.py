@@ -27,14 +27,41 @@ ROOT = Path(__file__).resolve().parents[1]
 TASK_FIELDS = {'route_reading','task_id','route','features','sources','delivery','criteria','sequence_plan','direction'}
 
 
-def run_dir(root: Path, run: str, *, exists: bool = True) -> Path:
+def run_id(value: Any) -> str:
+    """Return a canonical UUIDv7 run identifier, or refuse it."""
     try:
-        identifier = uuid.UUID(run)
-    except (ValueError,AttributeError) as exc:
+        identifier = uuid.UUID(value)
+    except (ValueError,AttributeError,TypeError) as exc:
         raise ValueError('run must be a UUIDv7') from exc
-    if identifier.version != 7 or str(identifier) != run:
+    if identifier.version != 7 or str(identifier) != value:
         raise ValueError('run must be a canonical UUIDv7')
-    return c.local(root,'production/'+run,exists=exists)
+    return value
+
+
+def run_dir(root: Path, run: str, *, exists: bool = True) -> Path:
+    return c.local(root,'production/'+run_id(run),exists=exists)
+
+
+def run_ids(root: Path) -> list[str]:
+    """List the prepared runs under PROJECT/production, oldest first.
+
+    The folder also holds the project's authoring templates and whatever a file
+    manager leaves there, such as desktop.ini, Thumbs.db or .DS_Store. Only a
+    directory named by a canonical UUIDv7 is a run. A UUIDv7 name sorts by its
+    creation time.
+    """
+    folder=c.local(root,'production',exists=False)
+    if not folder.is_dir():
+        return []
+    names=[]
+    for child in folder.iterdir():
+        try:
+            run_id(child.name)
+        except ValueError:
+            continue
+        if child.is_dir():
+            names.append(child.name)
+    return sorted(names)
 
 
 def schema_check(value: Any, name: str) -> None:
@@ -123,45 +150,49 @@ def snapshot(root: Path, task_path: str) -> tuple[dict[str,Any],dict[str,Any],li
 
 
 def _prepare(root: Path, task: str, *, parent: dict | None = None, identity: str | None = None) -> dict[str, Any]:
+    """Stage a run and name it in work/current.json.
+
+    The project lock covers the read, the staging and the write of the open
+    task, so a ledger writer that takes the same lock cannot lose an update.
+    """
     import work_ledger
-    prepared,consumer,_,blobs=snapshot(root,task)
-    current=work_ledger.require_open(root)
-    if current['task_id']!=prepared['task']['task_id']:
-        raise ValueError('task is not the open work-ledger task')
-    production=c.local(root,'production',exists=False); production.mkdir(exist_ok=True)
-    run=identity or generate_uuid7(); target=run_dir(root,run,exists=False)
-    prepared['run_id']=run
-    prepared['parent']=parent
-    prepared.pop('input_sha256')
-    prepared['input_sha256']=c.content_id(prepared)
-    if target.exists():
-        _,existing,_,_=load_run(root,run)
-        if existing!=prepared:
-            raise ValueError('revision child conflicts with its prepared inputs')
-        if current.get('production_run')!=run:
-            current['production_run']=run
-            work_ledger.write_current(root,current)
-            work_ledger.append(root,{'at':work_ledger.now(),'task_id':current['task_id'],'event':'note','text':f'restored production run {run}'})
+    with c.lock(root):
+        prepared,consumer,_,blobs=snapshot(root,task)
+        current=work_ledger.require_open(root)
+        if current['task_id']!=prepared['task']['task_id']:
+            raise ValueError('task is not the open work-ledger task')
+        production=c.local(root,'production',exists=False); production.mkdir(exist_ok=True)
+        run=identity or generate_uuid7(); target=run_dir(root,run,exists=False)
+        prepared['run_id']=run
+        prepared['parent']=parent
+        prepared.pop('input_sha256')
+        prepared['input_sha256']=c.content_id(prepared)
+        if target.exists():
+            _,existing,_,_=load_run(root,run)
+            if existing!=prepared:
+                raise ValueError('revision child conflicts with its prepared inputs')
+            if current.get('production_run')!=run:
+                current['production_run']=run
+                work_ledger.write_current(root,current)
+                work_ledger.append(root,{'at':work_ledger.now(),'task_id':current['task_id'],'event':'note','text':f'restored production run {run}'})
+            return {'run':run,'input_sha256':prepared['input_sha256'],'consumer':str(target/'consumer.json')}
+        staging=Path(tempfile.mkdtemp(prefix='.pending-',dir=production))
+        try:
+            for raw in blobs.values(): c.object_store(staging,raw)
+            c.atomic(staging/'prepared.json',c.encoded(prepared))
+            c.atomic(staging/'consumer.json',c.encoded(consumer))
+            (staging/'records').mkdir()
+            c.publish_directory(staging, target); c.fsync_dir(production)
+        finally:
+            if staging.exists(): shutil.rmtree(staging)
+        current['production_run']=run
+        work_ledger.write_current(root,current)
+        work_ledger.append(root,{'at':work_ledger.now(),'task_id':current['task_id'],'event':'note','text':f'prepared production run {run}'})
         return {'run':run,'input_sha256':prepared['input_sha256'],'consumer':str(target/'consumer.json')}
-    staging=Path(tempfile.mkdtemp(prefix='.pending-',dir=production))
-    try:
-        for raw in blobs.values(): c.object_store(staging,raw)
-        c.atomic(staging/'prepared.json',c.encoded(prepared))
-        c.atomic(staging/'consumer.json',c.encoded(consumer))
-        (staging/'records').mkdir()
-        c.publish_directory(staging, target); c.fsync_dir(production)
-    finally:
-        if staging.exists(): shutil.rmtree(staging)
-    current['production_run']=run
-    work_ledger.write_current(root,current)
-    work_ledger.append(root,{'at':work_ledger.now(),'task_id':current['task_id'],'event':'note','text':f'prepared production run {run}'})
-    return {'run':run,'input_sha256':prepared['input_sha256'],'consumer':str(target/'consumer.json')}
 
 
 def prepare(root: Path, task: str) -> dict[str, Any]:
-    root=root.absolute()
-    with c.lock(root):
-        return _prepare(root,task)
+    return _prepare(root.absolute(),task)
 
 
 def load_run(root: Path, run: str) -> tuple[Path,dict[str,Any],dict[str,Any],list[dict[str,Any]]]:
@@ -418,7 +449,7 @@ def confirm_asset_adoption(root: Path, selector: dict[str,Any], target: dict[str
     fields=matches[0]['fields']
     if fields.get('status')!='accepted' or fields.get('role')!=selector['role']:
         raise ValueError('registry does not adopt the selected asset for this role')
-    if fields.get('file')!=target['path'] or fields.get('sha-256')!=target['sha256']:
+    if not asset_registry.binds(matches[0],target['path'],target['sha256']):
         raise ValueError('registry adoption must bind the exact candidate path and bytes')
     return [path,c.local(root,target['path'])]
 
@@ -546,16 +577,12 @@ def revoke(root: Path, run: str, authorization: str, reason: str) -> dict[str,An
 
 def permission_history(root: Path, prepared: dict[str, Any]) -> list[dict[str, Any]]:
     """Read every immutable receipt in this task, including superseded runs."""
-    folder=c.local(root,'production',exists=False)
     result=[]
-    if folder.exists():
-        for child in sorted(folder.iterdir()):
-            if child.name.startswith('.pending-'):
-                continue
-            _,other,_,records=load_run(root,child.name)
-            if other['task']['task_id']==prepared['task']['task_id']:
-                hard=[x['id'] for x in other['task']['criteria'] if x['strength']=='hard']
-                result.extend({**row,'hard_criteria':hard} if row['event']=='review' else row for row in records)
+    for run in run_ids(root):
+        _,other,_,records=load_run(root,run)
+        if other['task']['task_id']==prepared['task']['task_id']:
+            hard=[x['id'] for x in other['task']['criteria'] if x['strength']=='hard']
+            result.extend({**row,'hard_criteria':hard} if row['event']=='review' else row for row in records)
     return result
 
 
@@ -641,15 +668,6 @@ def impact(root: Path, run: str) -> dict[str,Any]:
                 'invalidated':['consumer','authorization','package','review','selection','completion'] if changes else []}
 
 
-
-
-
-
-
-
-
-
-
 def main() -> int:
     parser=argparse.ArgumentParser(description=__doc__)
     sub=parser.add_subparsers(dest='command',required=True)
@@ -679,6 +697,8 @@ def main() -> int:
         if name=='release-reservation':p.add_argument('--request',required=True)
     a=parser.parse_args(); root=a.root.absolute()
     try:
+        # Every command works in an existing project, and none of them creates one.
+        if not root.is_dir(): raise ValueError(f'project root is not an existing directory: {root}')
         if a.command in tactic_consultation.COMMANDS: result=tactic_consultation.command(a,parser)
         elif a.command == 'draft-variation': result=production_variation.command(a,parser)
         elif a.command in production_inputs.COMMANDS: result=production_inputs.command(a,parser)
@@ -713,6 +733,9 @@ def main() -> int:
         elif a.command=='complete': result=complete(root,a.run)
         else: result=status(root,a.run)
         print(json.dumps(result,ensure_ascii=False,indent=2)); return 0 if result.get('ok',True) else 1
-    except (ValueError,OSError,UnicodeError,KeyError,TypeError) as exc:
-        print(json.dumps({'ok':False,'error':str(exc)})); return 1
-if __name__=='__main__': raise SystemExit(main())
+    except c.EXPECTED_ERRORS as exc:
+        print(json.dumps(c.failure(exc))); return 1
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    raise SystemExit(main())

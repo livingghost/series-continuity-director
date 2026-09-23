@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${PLUGIN_ROOT}/skills/series-continuity-director/scripts/session_entry_points.py\" || python \"${PLUGIN_ROOT}/skills/series-continuity-director/scripts/session_entry_points.py\"",
+            "command": "python3 \"${PLUGIN_ROOT}/skills/series-continuity-director/scripts/session_entry_points.py\" --hook || python \"${PLUGIN_ROOT}/skills/series-continuity-director/scripts/session_entry_points.py\" --hook",
             "timeout": 20
           }
         ]

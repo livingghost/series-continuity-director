@@ -12,7 +12,9 @@ written for it rather than by a count that still adds up.
 """
 from __future__ import annotations
 
+import contextlib
 import copy
+import io
 import json
 import sys
 import tempfile
@@ -22,6 +24,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
+import narrative as narrative_module  # noqa: E402
 from narrative import (  # noqa: E402
     content_sha256,
     content_sha256 as narrative_sha256,
@@ -842,7 +845,7 @@ COVERAGE_CASES = [
         "narrative": approve(coverage_base()),
         "plots": [stale(plot("s1", "ch1", teaches=["C01", "audience"])),
                   plot("s2", "ch2", role="chapter_closing")],
-        "errors": ["approve it against what it now says"],
+        "errors": ["scene_plot.py approve records that"],
         "gaps": [],
     },
     {
@@ -850,7 +853,8 @@ COVERAGE_CASES = [
         "narrative": approve(coverage_base()),
         "plots": [plot("s1", "ch1", teaches=["C01", "audience"]),
                   plot("s1b", "ch1"), plot("s2", "ch2", role="chapter_closing")],
-        "errors": ["chapter ch1 has two scenes claiming the same place in it: [1, 1]"],
+        "errors": ["chapter ch1 has 2 scenes claiming place 1 in it: "
+                   "narrative/scenes/plot-0.json (s1), narrative/scenes/plot-1.json (s1b)"],
         "gaps": [],
     },
     {
@@ -897,6 +901,31 @@ COVERAGE_CASES = [
         "gaps": [],
     },
     {
+        # Three typos in one plot are three errors in one run, each beside the
+        # declared id it most resembles.
+        "name": "a scene with three id typos",
+        "narrative": approve(coverage_base()),
+        "plots": [{**plot("s1", "ch01", teaches=["C01", "audience"]), "arcs": ["a01"],
+                   "characters": ["C01", "c02"]},
+                  plot("s2", "ch2", role="chapter_closing")],
+        "errors": ["names chapter 'ch01', which the narrative does not carry; did you mean 'ch1'?",
+                   "names arc 'a01', which the narrative does not carry; did you mean 'a1'?",
+                   "names character 'c02', which the narrative does not carry; did you mean 'C02'?"],
+        "gaps": ["chapter ch1 (in-progress) is declared and no scene covers it"],
+    },
+    {
+        # A plot that breaks its own contract still has its ids checked.
+        "name": "an invalid scene with an unknown character",
+        "narrative": approve(coverage_base()),
+        "plots": [{**plot("s1", "ch1", teaches=["C01", "audience"], cast=["C01", "C09"]),
+                   "proposition": ""},
+                  plot("s2", "ch2", role="chapter_closing")],
+        "errors": ["narrative/scenes/plot-0.json: proposition must be a non-empty string",
+                   "narrative/scenes/plot-0.json: names character 'C09', which the narrative "
+                   "does not carry"],
+        "gaps": ["chapter ch1 (in-progress) is declared and no scene covers it"],
+    },
+    {
         "name": "an unapproved narrative",
         "narrative": coverage_base(),
         "plots": [plot("s1", "ch1", teaches=["C01", "audience"]),
@@ -906,6 +935,62 @@ COVERAGE_CASES = [
     },
 ]
 
+
+
+def run_command(*argv: Any) -> tuple[int, dict[str, Any]]:
+    """One narrative command, through its parser, with its JSON report read back."""
+
+    stream = io.StringIO()
+    with contextlib.redirect_stdout(stream):
+        code = narrative_module.main([str(item) for item in argv])
+    return code, json.loads(stream.getvalue())
+
+
+def approval_checks(failures: list[str], results: list[dict[str, Any]]) -> None:
+    """`narrative.py approve` records what the author approved, and refuses what it cannot."""
+
+    with tempfile.TemporaryDirectory(prefix="narrative-approve-") as temporary:
+        project = Path(temporary)
+        path = build(project, base(), [])
+        code, report = run_command("approve", path, "--by", "The author", "--at", "2026-09-23T09:00:00Z")
+        written = json.loads(path.read_text(encoding="utf-8"))
+        results.append({"case": "approve records the author's approval", "report": report})
+        if code != 0 or not validate_narrative(written)["approved"]:
+            failures.append(f"approve did not record an approval that holds: {report}")
+        if written.get("approved", {}).get("content_sha256") != narrative_sha256(written):
+            failures.append("approve recorded a hash other than the narrative's content hash")
+
+        # A plot written against the version before it is listed as behind.
+        (project / "narrative/scenes/plot.json").write_text(
+            json.dumps(stale(plot("s1", "ch1"))), encoding="utf-8")
+        code, report = run_command("approve", path, "--by", "The author")
+        results.append({"case": "approve lists the plots behind", "report": report})
+        if [item.get("plot") for item in report.get("plots_behind", [])] != ["narrative/scenes/plot.json"]:
+            failures.append(f"approve did not list the plot behind the narrative: {report}")
+
+        invalid = {**base(), "chapters": [], "medium": "film"}
+        path.write_text(json.dumps(invalid), encoding="utf-8")
+        before = path.read_bytes()
+        code, report = run_command("approve", path, "--by", "", "--at", "yesterday")
+        results.append({"case": "approve refuses every reason at once", "report": report})
+        joined = "; ".join(report.get("errors", []))
+        for fragment in ("--by must name who approved it", "--at must be an RFC3339 UTC time",
+                         "medium must be one of"):
+            if fragment not in joined:
+                failures.append(f"approve refused without {fragment!r}: {joined}")
+        if code == 0 or path.read_bytes() != before:
+            failures.append("approve wrote a narrative it refused")
+
+        code, report = run_command(project)
+        results.append({"case": "a directory where the narrative goes", "report": report})
+        if "expects the narrative file; did you mean" not in "; ".join(report.get("errors", [])) \
+                or "narrative/narrative.json" not in "; ".join(report.get("errors", [])):
+            failures.append(f"a directory argument was not explained: {report}")
+
+    code, report = run_command("approve", ROOT / "examples" / "narrative.json", "--by", "The author")
+    results.append({"case": "approve refuses the installed suite", "report": report})
+    if code == 0 or "inside the installed suite" not in "; ".join(report.get("errors", [])):
+        failures.append(f"approve wrote inside the installed suite: {report}")
 
 
 def main() -> int:
@@ -1010,6 +1095,15 @@ def main() -> int:
     if document is not None:
         failures.append(f"a chapter before every phase named {document!r} rather than nothing")
 
+    # An unknown id is reported beside the declared id closest to it.
+    report = validate_narrative(change(chapters=[{**base()["chapters"][0], "arcs": ["a01"]},
+                                                 base()["chapters"][1]]))
+    results.append({"case": "an arc typo names the arc it resembles", "errors": report["errors"]})
+    if not any("'a01'; did you mean 'a1'?" in message for message in report["errors"]):
+        failures.append(f"an arc typo named no close match: {report['errors']}")
+
+    approval_checks(failures, results)
+
     with tempfile.TemporaryDirectory() as temporary:
         for index, case in enumerate(COVERAGE_CASES):
             directory = Path(temporary) / f"case-{index}"
@@ -1044,4 +1138,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

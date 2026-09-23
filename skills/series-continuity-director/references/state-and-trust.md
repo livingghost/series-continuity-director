@@ -98,7 +98,14 @@ Writing at acceptance instead of arrival loses the rejected takes, and it loses 
 
 A project is the unit of authority: one `series-state.md`, one `character-profiles.md`, one registry, one narrative. Two kinds of new work arrive, and they are filed differently.
 
-Open another project when the authority files could not be shared: the canon forks (another timeline, an alternate setting, a what-if), the cast is redesigned so that the registered sheets are stale by definition, the visual anchor changes so that earlier assets are not references any more, or the work is a probe of a surface that must not enter the series registry at all. Probes get a scratch project from the start.
+Open another project when the authority files could not be shared:
+
+- the canon forks: another timeline, an alternate setting, a what-if;
+- the cast is redesigned, so the registered sheets are stale by definition;
+- the visual anchor changes, so earlier assets are not references any more;
+- the work is a probe of a surface that must not enter the series registry at all.
+
+Probes get a scratch project from the start.
 
 Open a production line inside the project when the canon and the cast are shared and only the depiction changes: a new episode, or the same scene shot again in another register, format, or surface. A line owns its own media namespace (`media/episodes/<line>/` with the five stages), its own shot ids, a registry id prefix of its own, its own cut list, and its own row in the episode ledger. It shares the sheets, the plates, and the accepted endpoints of other lines as references, and it never writes into their trees. `scripts/init_line.py` creates the namespace.
 

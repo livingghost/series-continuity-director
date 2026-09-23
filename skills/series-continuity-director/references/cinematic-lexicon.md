@@ -57,7 +57,13 @@ A height word that describes a person (the eye level of a tall person working th
 | handheld, steadicam, gimbal | the texture of the camera's own motion, from raw to smooth | documentary to glide |
 | slow motion | time slowed for a named action | say which action and for how long |
 
-Rules that hold across surfaces: one move per shot; every move carries a speed word (slow, deliberate, rapid) or a duration in seconds, because a surface has no default speed; a pan and a dolly draw different pictures, so the word must be the right one; describe what each stage of a move reveals rather than stacking verbs; a move is motivated by an action or a look that is visible in the frame.
+Rules that hold across surfaces:
+
+- one move per shot;
+- every move carries a speed word (slow, deliberate, rapid) or a duration in seconds, because a surface has no default speed;
+- a pan and a dolly draw different pictures, so the word must be the right one;
+- describe what each stage of a move reveals rather than stacking verbs;
+- a move is motivated by an action or a look that is visible in the frame.
 
 ## 4. Shot grammar
 

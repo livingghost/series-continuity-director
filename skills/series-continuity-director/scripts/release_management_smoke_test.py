@@ -60,17 +60,10 @@ def main() -> int:
         expect(bool(validate_changelog(text + f"\n## {heading}\nDuplicate.\n", "2026.09.19.1", style=style)), f"{style}: duplicate current entry rejected")
     expect(bool(validate_changelog("# Log\n## [2026.09.19.1] - 2026-09-18\nChanges.\n", "2026.09.19.1", style="dated")), "explicit date must match CalVer date")
     # Check actual distributed product files via the CLI, not only parser units.
-    cli = subprocess.run([sys.executable, str(Path(__file__).with_name("release_contract.py")), "--root", str(root), "--tag", "v" + version], capture_output=True, text=True)
+    cli = subprocess.run([sys.executable, str(Path(__file__).with_name("release_contract.py")), "--root", str(root), "--tag", "v" + version], capture_output=True, text=True, encoding='utf-8')
     expect(cli.returncode == 0, f"installed release CLI: {cli.stdout} {cli.stderr}")
-    # CI controls are not required inside a runtime-only release archive.
-    for name in ("ci.yml", "release.yml"):
-        path = root / ".github/workflows" / name
-        if path.exists():
-            text = path.read_text(encoding="utf-8")
-            expect("release_contract.py" in text, f"{name}: product contract must execute")
-            expect("release_management_smoke_test.py" in text, f"{name}: CalVer regressions must execute")
-            if name == "release.yml":
-                expect('--tag "$GITHUB_REF_NAME"' in text, "publication must bind the tag to the product")
+    # validate_skill.py reads the workflows in a checkout: both run the release
+    # build, whose staged validation runs this file, and publication binds the tag.
     # Mutate only a small isolated fixture: no edits to the installed product.
     with tempfile.TemporaryDirectory(prefix="product-release-check-") as td:
         fixture=Path(td)
@@ -99,4 +92,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

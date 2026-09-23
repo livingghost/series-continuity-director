@@ -20,9 +20,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import report_output
 import re
+import sys
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Sequence
+
+from narrative import did_you_mean
 
 ARTIFACT_TYPE = "scene-plot"
 APPROVED_AT = re.compile(
@@ -73,6 +77,9 @@ INTERIOR_EXTERIOR = ("interior", "exterior", "both")
 SETTING_KEYS = {"interior_exterior", "location", "where", "time_of_day", "season",
                 "weather", "scene_context"}
 APPROVED_KEYS = {"by", "at", "content_sha256", "note"}
+# What `draft` writes where only the author can decide. A whole string value in
+# this form is a decision nobody has made, and the reader refuses it by name.
+PLACEHOLDER = re.compile(r"\A<fill:[^\n]*>\Z")
 
 
 def content_sha256(value: dict[str, Any]) -> str:
@@ -85,6 +92,23 @@ def content_sha256(value: dict[str, Any]) -> str:
     body = {key: item for key, item in value.items() if key != "approved"}
     canonical = json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def placeholders(value: Any, trail: str = "") -> list[str]:
+    """Where a plot still carries a value `draft` left for the author, as field paths."""
+
+    found: list[str] = []
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if not trail and key == "approved":
+                continue
+            found.extend(placeholders(item, f"{trail}.{key}" if trail else str(key)))
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            found.extend(placeholders(item, f"{trail}[{index}]"))
+    elif isinstance(value, str) and PLACEHOLDER.match(value.strip()):
+        found.append(trail)
+    return found
 
 
 def _listed(value: Any) -> list[Any]:
@@ -184,7 +208,8 @@ def _source(source: Any, beats: dict[str, str], label: str, errors: list[str], r
         errors.append(f"{label} contains a non-string beat id")
         return
     if source not in beats:
-        errors.append(f"{label} names a beat that does not exist: {source!r}")
+        errors.append(f"{label} names a beat that does not exist: {source!r}"
+                      f"{did_you_mean(source, beats)}")
         return
     if beats[source] == "context":
         errors.append(
@@ -413,7 +438,8 @@ def _structure(value: Any, beats: dict[str, str], errors: list[str]) -> dict[str
             errors.append(f"structure.parts.{name} must name a beat of this scene")
             continue
         if beat_id not in beats:
-            errors.append(f"structure.parts.{name} names a beat that does not exist: {beat_id!r}")
+            errors.append(f"structure.parts.{name} names a beat that does not exist: {beat_id!r}"
+                          f"{did_you_mean(beat_id, beats)}")
             continue
         filled[name] = beat_id
     found["parts"] = filled
@@ -544,7 +570,7 @@ def _exchanges(value: Any, beats: dict[str, str], cast: list[str], errors: list[
                 if not isinstance(who, str) or who not in cast:
                     errors.append(
                         f"{label}.between[{position}] names {who!r}, who the scene does not say "
-                        "is in it"
+                        f"is in it{did_you_mean(who, cast)}"
                     )
         _sources(
             exchange.get("from"),
@@ -575,7 +601,7 @@ def validate_scene_plot(value: Any) -> dict[str, Any]:
         "chapter": "", "order": 0, "arcs": [], "characters": [], "themes": [],
         "focalization": {}, "setting": {}, "narrative_sha256": "",
         "state_changes": 0, "relationship_delta": 0,
-        "approved": False, "approval_errors": [],
+        "approved": False, "approval_errors": [], "placeholders": [],
     }
     approval_errors: list[str] = report["approval_errors"]
 
@@ -583,6 +609,7 @@ def validate_scene_plot(value: Any) -> dict[str, Any]:
         errors.append("scene plot root must be an object")
         return report
 
+    holes = placeholders(value)
     unknown = sorted(set(value) - ROOT_KEYS)
     if "target" in unknown or "model" in unknown:
         errors.append(
@@ -658,6 +685,7 @@ def validate_scene_plot(value: Any) -> dict[str, Any]:
     if through and through not in report["characters"]:
         errors.append(
             f"focalization.through names {through!r}, who the scene does not say is in it"
+            f"{did_you_mean(through, report['characters'])}"
         )
 
     _text(value.get("scene_function"), "scene_function", errors)
@@ -713,7 +741,7 @@ def validate_scene_plot(value: Any) -> dict[str, Any]:
                         if not isinstance(who, str) or who not in report["characters"]:
                             errors.append(
                                 f"{label}.between[{position}] names {who!r}, who the scene does "
-                                "not say is in it"
+                                f"not say is in it{did_you_mean(who, report['characters'])}"
                             )
                 _text(move.get("change"), f"{label}.change", errors)
                 _sources(move.get("from"), beats, f"{label}.from", errors, referenced,
@@ -774,6 +802,18 @@ def validate_scene_plot(value: Any) -> dict[str, Any]:
                     "match the plot's current content"
                 )
 
+    # A value `draft` left is reported by its path, once. The rule its field
+    # would otherwise break says the same thing again in other words.
+    if holes:
+        kept = [message for message in errors
+                if not any(message == hole or message.startswith((f"{hole} ", f"{hole}.", f"{hole}["))
+                           for hole in holes)]
+        errors.clear()
+        for hole in holes:
+            errors.append(f"placeholder not filled: {hole}")
+        errors.extend(kept)
+    report["placeholders"] = holes
+
     report["ok"] = not errors
     report["approved"] = isinstance(approved, dict) and not approval_errors
     return report
@@ -789,24 +829,389 @@ def load_scene_plot(path: Path) -> dict[str, Any]:
     return report
 
 
+# A scene id also names the plot's file, so it takes the same shape as a place id.
+SCENE_ID = LOCATION_ID
+
+
+def fill(text: str) -> str:
+    """One value `draft` leaves for the author, saying what belongs there."""
+
+    return f"<fill: {text}>"
+
+
+def read_plot(path: Path) -> tuple[Any, str | None]:
+    """The plot at a path, or the one message saying why it cannot be read."""
+
+    from project_layout import read_document  # noqa: PLC0415
+
+    if path.is_dir():
+        scenes = path / "narrative" / "scenes"
+        where = scenes if scenes.is_dir() else path
+        found = sorted(item.as_posix() for item in where.glob("*.json"))
+        hint = (f"; the plots there are {', '.join(found)}" if found else
+                f"; a project keeps them as {(scenes / '<scene-id>-plot.json').as_posix()}")
+        return None, (f"{path.as_posix()} is a directory, and this command expects one scene "
+                      f"plot file{hint}")
+    return read_document(path, path.as_posix())
+
+
+def narrative_above(plot: Path) -> Path | None:
+    """The narrative a plot in a project answers to: the nearest narrative/narrative.json above it."""
+
+    for directory in plot.resolve().parents:
+        candidate = directory / "narrative" / "narrative.json"
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def behind(project: Path) -> dict[str, Any]:
+    """Every scene plot written against a narrative other than the current one.
+
+    It lists and changes nothing. Each listed plot needs the author's approval
+    against the narrative as it now is, and `approve` records that approval.
+    """
+
+    from narrative import content_sha256 as narrative_sha256  # noqa: PLC0415
+    from project_layout import read_document, shown  # noqa: PLC0415
+
+    project = project.resolve()
+    value, problem = read_document(project / "narrative" / "narrative.json", "narrative/narrative.json")
+    if problem:
+        raise ValueError(problem)
+    if not isinstance(value, dict):
+        raise ValueError("narrative/narrative.json: narrative root must be an object")
+    current = narrative_sha256(value)
+    listed: list[dict[str, Any]] = []
+    unreadable: list[str] = []
+    count = 0
+    scenes = project / "narrative" / "scenes"
+    for path in sorted(scenes.rglob("*.json")) if scenes.is_dir() else []:
+        label = shown(path, project)
+        plot, problem = read_document(path, label)
+        if problem:
+            unreadable.append(problem)
+            continue
+        if not isinstance(plot, dict) or plot.get("artifact_type") != ARTIFACT_TYPE:
+            continue
+        count += 1
+        recorded = plot.get("narrative_sha256")
+        if recorded == current:
+            continue
+        listed.append({"plot": label, "scene_id": plot.get("scene_id"), "recorded": recorded,
+                       "current": current, "approved": validate_scene_plot(plot)["approved"]})
+    result: dict[str, Any] = {"ok": True, "narrative": "narrative/narrative.json",
+                              "narrative_sha256": current, "plots": count, "behind": listed,
+                              "unreadable": unreadable}
+    if listed:
+        result["next"] = (
+            "Show the author what changed in the narrative. For each plot the author approves "
+            "against it, record that approval with: python "
+            f"{Path(__file__).resolve().as_posix()} approve <plot> --by <name>"
+        )
+    return result
+
+
+def approve(path: Path, by: str, at: str | None = None, note: str | None = None,
+            narrative_path: Path | None = None) -> dict[str, Any]:
+    """Record an approval the author gave, bound to the plot and the current narrative.
+
+    The plot is rebound to the narrative's current hash before it is checked, so
+    approving a plot left behind by a narrative change is one command. Raises
+    `Refused` with every reason at once: the plot's own contract, and every id
+    it names that the narrative does not declare.
+    """
+
+    from narrative import Refused, signature, validate_narrative  # noqa: PLC0415
+    from narrative import content_sha256 as narrative_sha256  # noqa: PLC0415
+    from narrative_coverage import narrative_context, plot_contradictions  # noqa: PLC0415
+    from project_layout import read_document, refuse_suite, write_json  # noqa: PLC0415
+
+    refuse_suite(path)
+    value, problem = read_plot(path)
+    if problem:
+        raise Refused([problem])
+    if not isinstance(value, dict):
+        raise Refused(["scene plot root must be an object"])
+    source = narrative_path if narrative_path is not None else narrative_above(path)
+    if source is None:
+        raise Refused([f"no narrative/narrative.json above {path.as_posix()}; pass --narrative "
+                       "with the narrative this plot is written against"])
+    document, problem = read_document(source, source.as_posix())
+    if problem:
+        raise Refused([problem])
+    narrative_report = validate_narrative(document)
+    if not narrative_report["ok"]:
+        raise Refused([f"{source.as_posix()}: {message}" for message in narrative_report["errors"]])
+    block, problems = signature(by, at, note)
+    previous = value.get("narrative_sha256")
+    current = narrative_sha256(document)
+    value.pop("approved", None)
+    value["narrative_sha256"] = current
+    report = validate_scene_plot(value)
+    problems.extend(report["errors"])
+    location = source.resolve()
+    project = location.parent.parent if location.parent.name == "narrative" else None
+    problems.extend(plot_contradictions(value, report,
+                                        narrative_context(document, narrative_report, project)))
+    if problems:
+        raise Refused(problems)
+    digest = content_sha256(value)
+    value["approved"] = {"by": block["by"], "at": block["at"], "content_sha256": digest,
+                         **({"note": block["note"]} if "note" in block else {})}
+    write_json(path, value)
+    result: dict[str, Any] = {
+        "ok": True,
+        "approved": path.as_posix(),
+        "scene_id": report["scene_id"],
+        "chapter": report["chapter"],
+        "order": report["order"],
+        "by": block["by"],
+        "at": block["at"],
+        "content_sha256": digest,
+        "narrative_sha256": current,
+    }
+    if previous != current:
+        result["rebound_from"] = previous
+    if not narrative_report["approved"]:
+        result["notice"] = ("the narrative carries no approval that holds; once the author "
+                            "approves it, narrative.py approve records that")
+    return result
+
+
+def draft(project: Path, scene_id: str, chapter: str, order: int | None = None,
+          realization: str | None = None) -> dict[str, Any]:
+    """Write a plot skeleton from what the narrative declares, for the author to fill.
+
+    The chapter, its arcs, the characters and themes those arcs carry, the
+    narrative hash and the realization the medium implies are filled in. Every
+    decision that is the author's is a `<fill: ...>` value, which the reader
+    refuses by path until somebody replaces it.
+    """
+
+    from narrative import Refused, validate_narrative  # noqa: PLC0415
+    from narrative import MEDIA, content_sha256 as narrative_sha256  # noqa: PLC0415
+    from project_layout import read_document, require_project, shown, write_json  # noqa: PLC0415
+
+    project = require_project(project)
+    problems: list[str] = []
+    if not isinstance(scene_id, str) or not SCENE_ID.fullmatch(scene_id):
+        problems.append("--scene-id must be an id, letters, digits and . _ - starting with a "
+                        f"letter or digit, got {scene_id!r}")
+    value, problem = read_document(project / "narrative" / "narrative.json", "narrative/narrative.json")
+    if problem:
+        raise Refused([*problems, problem])
+    narrative_report = validate_narrative(value)
+    if not narrative_report["ok"]:
+        raise Refused([*problems, *(f"narrative/narrative.json: {message}"
+                                    for message in narrative_report["errors"])])
+    chapters = {str(entry.get("id")): entry for entry in _listed(value.get("chapters"))
+                if isinstance(entry, dict)}
+    if chapter not in chapters:
+        problems.append(f"the narrative has no chapter {chapter!r}; it declares "
+                        f"{sorted(chapters) or 'none yet'}{did_you_mean(chapter, chapters)}")
+    kind = MEDIA.get(str(value.get("medium")), "")
+    if realization is not None:
+        if realization not in REALIZATIONS:
+            problems.append(f"--realization must be one of {list(REALIZATIONS)}, got {realization!r}")
+        elif kind and realization != kind:
+            problems.append(f"the series is {value.get('medium')!r}, which breaks into {kind!r}, "
+                            f"not {realization!r}")
+        else:
+            kind = realization
+    elif not kind:
+        problems.append(f"the series is {value.get('medium')!r}; pass --realization with one of "
+                        f"{list(REALIZATIONS)}")
+
+    scenes = project / "narrative" / "scenes"
+    target = scenes / f"{scene_id}-plot.json"
+    taken: dict[int, str] = {}
+    for path in sorted(scenes.rglob("*.json")) if scenes.is_dir() else []:
+        plot, problem = read_document(path, shown(path, project))
+        if problem or not isinstance(plot, dict) or plot.get("artifact_type") != ARTIFACT_TYPE:
+            continue
+        if plot.get("scene_id") == scene_id:
+            problems.append(f"scene_id {scene_id!r} is already used by {shown(path, project)}")
+        place = plot.get("order")
+        if plot.get("chapter") == chapter and isinstance(place, int) and not isinstance(place, bool):
+            taken[place] = shown(path, project)
+    if target.exists() and not any(shown(target, project) in item for item in problems):
+        problems.append(f"{shown(target, project)} already exists")
+    if order is None:
+        order = max(taken, default=0) + 1
+    elif order < 1:
+        problems.append(f"--order must be this scene's place in its chapter, from 1, got {order}")
+    elif order in taken:
+        problems.append(f"place {order} in chapter {chapter} is already held by {taken[order]}")
+    if problems:
+        raise Refused(problems)
+
+    numbers = narrative_report["chapter_numbers"]
+    spans = narrative_report["character_spans"]
+    at = numbers.get(chapter, 0)
+
+    def present(character_id: str) -> bool:
+        first, last = (spans.get(character_id) or [None, None])[:2]
+        return not ((first in numbers and at < numbers[first])
+                    or (last in numbers and at > numbers[last]))
+
+    arcs = [arc for arc in _listed(chapters[chapter].get("arcs")) if isinstance(arc, str)]
+    declared = {str(entry.get("id")): entry for entry in _listed(value.get("arcs"))
+                if isinstance(entry, dict)}
+    carried = [who for arc in arcs for who in _listed(declared.get(arc, {}).get("characters"))]
+    characters = [who for who in dict.fromkeys(carried) if isinstance(who, str) and present(who)]
+    themes = [theme for theme in dict.fromkeys(
+        theme for arc in arcs for theme in _listed(declared.get(arc, {}).get("themes")))
+        if isinstance(theme, str)]
+    others = [str(entry.get("id")) for entry in _listed(value.get("characters"))
+              if isinstance(entry, dict) and str(entry.get("id")) not in characters
+              and present(str(entry.get("id")))]
+
+    beat = "b1"
+    units = {
+        "shots": {"id": f"{scene_id}-m01", "focal_beat": beat,
+                  "shows": [{"statement": fill("what is in this frame"), "from": [beat]}],
+                  "composition": [{"statement": fill("how the frame is arranged"), "from": [beat]}]},
+        "pages": {"id": f"{scene_id}-p01", "focal_beat": beat,
+                  "panels": fill("how many panels this page holds, from 1"),
+                  "shows": [{"statement": fill("what this page shows"), "from": [beat]}]},
+        "passages": {"id": f"{scene_id}-s01", "focal_beat": beat,
+                     "mode": fill("scene or summary"),
+                     "covers": [{"statement": fill("what this passage narrates"), "from": [beat]}]},
+    }
+    plot = {
+        "artifact_type": ARTIFACT_TYPE,
+        "scene_id": scene_id,
+        "narrative_sha256": narrative_sha256(value),
+        "chapter": chapter,
+        "order": order,
+        "arcs": arcs,
+        "characters": characters,
+        "themes": themes,
+        "focalization": {"kind": fill("zero, internal or external; internal also names who it is through")},
+        "setting": {
+            "interior_exterior": fill("interior, exterior or both"),
+            "location": fill("the id of a place under narrative/world/locations"),
+            "where": fill("which part of that place this scene uses"),
+            "time_of_day": fill("the hour, or how the light reads"),
+        },
+        "scene_function": fill("the job this scene does, for example entry, build, turn-trigger, "
+                               "payoff or settle"),
+        "delivery_role": fill("what the scene does for the audience, for example chapter_opening"),
+        "proposition": fill("one sentence: from what situation, what happens, leaving what"),
+        "beats": [{"id": beat, "beat": fill("what happens"), "visibility": "visible"}],
+        "exchanges": fill("who speaks, about what, and what saying it accomplishes; [] when "
+                          "nobody speaks"),
+        "placement": [{"statement": fill("who or what is where"), "from": [beat]}],
+        "must_preserve": [{"statement": fill("what the scene cannot change"), "from": [beat]}],
+        "free": [{"statement": fill("what the scene leaves open")}],
+        "state_changes": fill("what this scene leaves behind for later scenes; [] when nothing "
+                              "lasting changes"),
+        "relationship_delta": fill("which channel moved between whom; [] when none moved"),
+        "realization": {"kind": kind, "units": [units[kind]]},
+    }
+    scenes.mkdir(parents=True, exist_ok=True)
+    write_json(target, plot)
+    return {
+        "ok": True,
+        "written": shown(target, project),
+        "scene_id": scene_id,
+        "chapter": chapter,
+        "order": order,
+        "realization": kind,
+        "narrative_sha256": plot["narrative_sha256"],
+        "candidates": {"arcs": arcs, "characters": characters, "themes": themes},
+        "also_in_series": others,
+        "placeholders": placeholders(plot),
+        "next": ("Replace every <fill: ...> value with the author's decision, and remove any "
+                 "candidate the scene does not carry. scene_plot.py <plot> lists what is still "
+                 "open. Once the author approves the plot, scene_plot.py approve <plot> --by "
+                 "<name> records it."),
+    }
+
+
+OPERATIONS = ("approve", "draft", "behind")
+USAGE = ("%(prog)s PLOT [--content-sha256]\n"
+         "       %(prog)s approve PLOT --by NAME [--at TIME] [--note TEXT] [--narrative FILE]\n"
+         "       %(prog)s draft --project DIR --scene-id ID --chapter ID [--order N] [--realization KIND]\n"
+         "       %(prog)s behind --project DIR")
+
+
+def _operation(operation: str, argv: Sequence[str]) -> int:
+    from narrative import Refused  # noqa: PLC0415
+
+    parser = argparse.ArgumentParser(prog=f"scene_plot.py {operation}")
+    if operation == "approve":
+        parser.description = ("Record an approval the author gave for this plot, bound to the current "
+                               "narrative. Run it only after the author has approved this content.")
+        parser.add_argument("plot", type=Path)
+        parser.add_argument("--by", required=True, help="Who approved it")
+        parser.add_argument("--at", help="When they approved it, RFC3339 UTC; defaults to now")
+        parser.add_argument("--note", help="Optional note kept in the approval")
+        parser.add_argument("--narrative", type=Path, default=None,
+                            help="The narrative to bind to; defaults to narrative/narrative.json above the plot")
+    elif operation == "draft":
+        parser.description = "Write a scene plot skeleton from what the narrative declares."
+        parser.add_argument("--project", type=Path, required=True)
+        parser.add_argument("--scene-id", required=True)
+        parser.add_argument("--chapter", required=True)
+        parser.add_argument("--order", type=int, default=None,
+                            help="The scene's place in its chapter; defaults to the next free place")
+        parser.add_argument("--realization", default=None, choices=sorted(REALIZATIONS),
+                            help="Required for a mixed series; otherwise the medium decides")
+    else:
+        parser.description = ("List the scene plots written against a narrative other than the "
+                              "current one. It changes nothing.")
+        parser.add_argument("--project", type=Path, required=True)
+    report_output.add_json_flag(parser)
+    args = parser.parse_args(argv)
+    report_output.use_json(args.json)
+    try:
+        if operation == "approve":
+            result = approve(args.plot, args.by, args.at, args.note, args.narrative)
+        elif operation == "draft":
+            result = draft(args.project, args.scene_id, args.chapter, args.order, args.realization)
+        else:
+            result = behind(args.project)
+    except Refused as exc:
+        report_output.emit({"ok": False, "errors": exc.problems})
+        return 1
+    except (OSError, ValueError) as exc:
+        report_output.emit({"ok": False, "errors": [str(exc)]})
+        return 1
+    report_output.emit(result)
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Validate one scene plot.")
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments[:1] and arguments[0] in OPERATIONS:
+        return _operation(arguments[0], arguments[1:])
+    parser = argparse.ArgumentParser(
+        description="Validate one scene plot, draft one, record its approval, or list the plots "
+                    "behind the narrative.", usage=USAGE)
     parser.add_argument("plot", type=Path)
     parser.add_argument("--content-sha256", action="store_true",
                         help="Print the hash an approval has to carry, and nothing else")
-    args = parser.parse_args(argv)
-    try:
-        value = json.loads(args.plot.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        print(json.dumps({"ok": False, "errors": [str(exc)]}, ensure_ascii=False, indent=2))
+    report_output.add_json_flag(parser)
+    args = parser.parse_args(arguments)
+    report_output.use_json(args.json)
+    value, problem = read_plot(args.plot)
+    if problem:
+        report_output.emit({"ok": False, "errors": [problem]})
         return 1
     if args.content_sha256:
+        if not isinstance(value, dict):
+            report_output.emit({"ok": False, "errors": ["scene plot root must be an object"]})
+            return 1
         print(content_sha256(value))
         return 0
     report = validate_scene_plot(value)
-    print(json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False))
+    report_output.emit(report)
     return 0 if report["ok"] else 1
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

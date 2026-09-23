@@ -1,7 +1,6 @@
 """Verify the declared raster derivation of a self-contained SVG source."""
 from __future__ import annotations
 import io
-import xml.etree.ElementTree as ET
 from importlib.metadata import version
 import execution_contract as c
 
@@ -17,6 +16,9 @@ def verify_raster(source: bytes, transport: bytes, derivation: dict) -> None:
     dimensions = derivation['output_dimensions']
     import cairosvg
     rendered = cairosvg.svg2png(bytestring=source, output_width=dimensions['width'], output_height=dimensions['height'])
-    with Image.open(io.BytesIO(rendered)) as expected, Image.open(io.BytesIO(transport)) as actual:
-        if expected.size != actual.size or expected.convert('RGBA').tobytes() != actual.convert('RGBA').tobytes():
-            raise ValueError('raster pixels do not match the selected SVG derivation')
+    try:
+        with Image.open(io.BytesIO(rendered)) as expected, Image.open(io.BytesIO(transport)) as actual:
+            if expected.size != actual.size or expected.convert('RGBA').tobytes() != actual.convert('RGBA').tobytes():
+                raise ValueError('raster pixels do not match the selected SVG derivation')
+    except Image.DecompressionBombError as exc:
+        raise ValueError('a reference raster exceeds the decompression-bomb limit of the installed Pillow: ' + str(exc)) from exc

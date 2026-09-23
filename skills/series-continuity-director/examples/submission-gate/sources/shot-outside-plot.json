@@ -30,5 +30,5 @@
     "C01"
   ],
   "expected_status": "refused",
-  "expected_code": "SHOT_NOT_IN_SCENE_PLOT"
+  "expected_code": "UNIT_NOT_IN_SCENE_PLOT"
 }

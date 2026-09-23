@@ -28,21 +28,31 @@ def observed(data, text='The synthetic file was inspected.', method='text-inspec
     return data
 
 
+SYNTHETIC_TRANSPORT = 'synthetic'
+
+
 def model_inputs(root, spec, service):
-    """Capture an explicit synthetic interface for real offline dispatcher tests."""
+    """Capture an explicit synthetic interface for real offline dispatcher tests.
+
+    The execution hashes bind the transport the service record names, or the
+    suite's synthetic test transport when the record names none.
+    """
     import input_contracts
     from input_evidence import InputEvidence
     import reading_fixtures
     import request_contract as rc
     import request_validation as rv
     import target_protocol
-    import transport_runware
+    import transport_contract
+    transport = transport_contract.load({'transport': service.get('transport', SYNTHETIC_TRANSPORT)})
+    # The offering states the request shape of the transport that serves it.
     offering = {'service': spec['service'], 'model_identifier': spec['model'],
-                'request_keys': {}, 'constraints': {}, 'observed_at': '2000-01-01'}
+                'request_keys': {}, 'request_shape': dict(transport.REQUEST_SHAPE),
+                'constraints': {}, 'observed_at': '2000-01-01'}
     profile = target_protocol.finalize_profile({
         'artifact_type': 'target-profile', 'target_id': spec['target'],
         'label': 'Synthetic offline text return through an image request envelope',
-        'model_identifier': spec['model'], 'media_kind': ['text'],
+        'model': {'maker': 'synthetic', 'name': spec['model']}, 'media_kind': ['text'],
         'evidence': {'checked_on': '2000-01-01', 'sources': [
             {'kind': 'user-supplied', 'reference': 'Synthetic test interface. No live provider claim.'}]},
         'prompt_contract': {'layers': ['declared text']}, 'offerings': [offering]})
@@ -67,7 +77,7 @@ def model_inputs(root, spec, service):
     save('interface-contract.json', {'artifact_type': 'model-schema-contract', 'target': target,
         'schema': schema, 'schema_sha256': c.content_id(schema), 'response_pointer': '/schema', 'local_overlay': None})
     reader = InputEvidence(root)
-    execution = rc.execution_hashes(service, offering, Path(transport_runware.__file__), model=profile, policy={})
+    execution = rc.execution_hashes(service, offering, Path(transport.__file__), model=profile, policy={})
     record = rv.build_record({'mode': 'target-schema', 'contract': 'interface-contract.json',
         'evidence': 'interface-acquisition.json', 'execution_policy': None}, reader,
         expected_target=target, execution=execution)

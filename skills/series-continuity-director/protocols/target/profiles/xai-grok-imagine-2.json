@@ -2,7 +2,11 @@
   "artifact_type": "target-profile",
   "target_id": "xai-grok-imagine-2",
   "label": "Grok Imagine 2.0 image generation and reference-driven editing",
-  "model_identifier": "xai:grok-imagine@image-2.0",
+  "model": {
+    "maker": "xAI",
+    "name": "Grok Imagine",
+    "version": "2.0"
+  },
   "media_kind": [
     "image"
   ],
@@ -10,12 +14,8 @@
     "checked_on": "2026-09-05",
     "sources": [
       {
-        "kind": "surface-control",
-        "reference": "Runware model schema for xai:grok-imagine@image-2.0"
-      },
-      {
         "kind": "preserved-run",
-        "reference": "preserved runs on this host"
+        "reference": "preserved runs through the recorded offering"
       }
     ]
   },
@@ -54,10 +54,8 @@
   "input_modes": [
     {
       "mode": "reference-images",
-      "request_keys": [
-        "referenceImages"
-      ],
       "limits": "at most three references in one request",
+      "max_inputs": 3,
       "media_supplies": "character likeness, wardrobe, drawing style, and the appearance of a room already established",
       "text_must_establish": "camera position, shot scale, screen direction, pose, action, light direction, and every permanent feature that must appear in this frame"
     }
@@ -68,15 +66,20 @@
     "A shot given a reference that carries a character will show that character. A frame that must not show him is written without a reference that carries him.",
     "A wardrobe zone the frame will show and the text does not name is filled by a surface default, so a character with bare legs acquires trousers."
   ],
-  "profile_sha256": "71b807dc0bdfa8c54fd500b089d132d55eb345d74b6d9846e0f81c1ab37dd0d0",
   "offerings": [
     {
       "service": "runware",
       "model_identifier": "xai:grok-imagine@image-2.0",
       "request_keys": {
         "reference-images": [
-          "referenceImages"
+          "inputs.referenceImages"
         ]
+      },
+      "request_shape": {
+        "model_key": "model",
+        "text_key": "positivePrompt",
+        "media_reference": "uuid",
+        "single_value_keys": []
       },
       "constraints": {
         "reference_images": {
@@ -86,7 +89,14 @@
         "seed": "unsupported: the service refuses the seed parameter for this model (Unsupported use of 'seed' parameter), so a composition cannot be reproduced or varied one word at a time"
       },
       "observed_at": "2026-09-13",
-      "schema_snapshot": "protocols/target/observed-schemas/xai-grok-imagine-2.runware.json"
+      "schema_snapshot": "protocols/target/observed-schemas/xai-grok-imagine-2.runware.json",
+      "sources": [
+        {
+          "kind": "surface-control",
+          "reference": "Runware model schema for xai:grok-imagine@image-2.0"
+        }
+      ]
     }
-  ]
+  ],
+  "profile_sha256": "067e1023ac138b10d07781f51303ee9fa91ccb689a9848234d5fd5b4d876d17a"
 }

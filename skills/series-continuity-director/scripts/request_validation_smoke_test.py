@@ -164,4 +164,7 @@ class DelegationTests(unittest.TestCase):
         first=rc.receipt_projection(self.rendered);self.request['task_id']='new-task';self.rendered=fixture.RequestContractTests.seal(self)
         self.assertEqual(first,rc.receipt_projection(self.rendered))
 
-if __name__=='__main__':unittest.main()
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    unittest.main()

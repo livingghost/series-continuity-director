@@ -7,3 +7,12 @@ updates:
     labels:
       - dependencies
       - github-actions
+
+  # The declared media test dependencies, skills/series-continuity-director/requirements-media.txt.
+  - package-ecosystem: pip
+    directory: "/skills/series-continuity-director"
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - python

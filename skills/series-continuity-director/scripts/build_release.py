@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Build and verify a deterministic Series Continuity Director release ZIP."""
+"""Build and verify a deterministic Series Continuity Director release ZIP.
+
+The build copies the Git-tracked release members into a stage and runs
+validate_skill.py on the stage once. It then zips the stage, extracts the
+archive, and compares every extracted file with the stage byte for byte.
+"""
 from __future__ import annotations
 
 import argparse
@@ -14,7 +19,7 @@ import tempfile
 import tomllib
 import zipfile
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from tree_layout import require_repository_root  # noqa: E402
@@ -30,16 +35,6 @@ EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".tmp", ".bak"}
 def load_manifest(root: Path = ROOT) -> dict[str, Any]:
     with (root / "package-manifest.toml").open("rb") as handle:
         return tomllib.load(handle)
-
-
-def run(command: Sequence[str], cwd: Path, *, expect_json: bool = False) -> Any:
-    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
-    proc = subprocess.run(list(command), cwd=cwd, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
-    if proc.returncode != 0:
-        raise RuntimeError(f"command failed ({proc.returncode}): {' '.join(command)}\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}")
-    if expect_json:
-        return json.loads(proc.stdout)
-    return proc.stdout
 
 
 def write_json(path: Path, value: Any) -> None:
@@ -136,24 +131,50 @@ def copy_release_tree(
     }
 
 
-def preflight(root: Path, reports_dir: Path, prefix: str, suite: str) -> dict[str, Any]:
-    commands = {
-        "release_identity": [sys.executable, f"{suite}/scripts/release_contract.py"],
-        "release_management": [sys.executable, f"{suite}/scripts/release_management_smoke_test.py"],
-        "skill": [sys.executable, f"{suite}/scripts/validate_skill.py"],
-    }
-    reports = {}
-    for name, command in commands.items():
-        output = run(command, root)
-        try:
-            report = json.loads(output)
-        except json.JSONDecodeError:
-            report = {"ok": True, "stdout": output.strip()}
-        reports[name] = report
-        write_json(reports_dir / f"{prefix}-{name.replace('_', '-')}.json", report)
-        if report.get("ok") is False:
-            raise RuntimeError(f"{prefix} {name} validation failed")
-    return reports
+def validate_stage(stage: Path, reports_dir: Path, suite: str) -> dict[str, Any]:
+    """Run every repository check once, on exactly the files the archive will hold.
+
+    The aggregate runs the release contract, its regressions, every validator
+    and every smoke test. Its progress streams to this process's standard error
+    as each check finishes, and its JSON report goes to the reports directory.
+    """
+
+    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
+    proc = subprocess.run(
+        [sys.executable, f"{suite}/scripts/validate_skill.py"], cwd=stage, env=env,
+        stdout=subprocess.PIPE, stderr=None, encoding="utf-8", errors="replace", check=False,
+    )
+    try:
+        report = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        report = {"ok": False, "errors": ["validate_skill.py printed no JSON report"], "stdout": proc.stdout}
+    path = reports_dir / "staged-skill.json"
+    write_json(path, report)
+    if proc.returncode != 0 or report.get("ok") is not True:
+        raise RuntimeError(f"the staged tree failed validation; the report is {path}")
+    return report
+
+
+def tree_files(root: Path) -> dict[str, Path]:
+    return {path.relative_to(root).as_posix(): path for path in root.rglob("*") if path.is_file()}
+
+
+def compare_trees(staged: Path, extracted: Path) -> list[str]:
+    """Every difference between the validated stage and what the archive gives back.
+
+    Equal names and equal bytes mean the extracted tree is the tree that passed
+    validation, so the checks are not run a second time on it.
+    """
+
+    expected, found = tree_files(staged), tree_files(extracted)
+    problems = [f"absent from the extracted archive: {name}" for name in sorted(expected.keys() - found.keys())]
+    problems += [f"not in the staged tree: {name}" for name in sorted(found.keys() - expected.keys())]
+    problems += [
+        f"bytes differ from the staged tree: {name}"
+        for name in sorted(expected.keys() & found.keys())
+        if expected[name].read_bytes() != found[name].read_bytes()
+    ]
+    return problems
 
 
 def write_deterministic_zip(source_root: Path, output: Path) -> None:
@@ -195,7 +216,7 @@ def write_deterministic_zip(source_root: Path, output: Path) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", default=str(ROOT))
     parser.add_argument("--out", required=True)
     parser.add_argument("--reports-dir", required=True)
@@ -214,17 +235,15 @@ def main(argv: list[str] | None = None) -> int:
     name = manifest["package"]["name"]
     version = manifest["package"]["version"]
     prefix = name
-
-    # Stale tracked adapters must fail rather than being silently regenerated
-    # immediately before packaging.
     suite = manifest["hosts"]["suite_root"]
-    run([sys.executable, f"{suite}/scripts/build_flat.py", "--check"], source)
 
     with tempfile.TemporaryDirectory(prefix="scd-release-") as temp:
         temp_root = Path(temp)
         stage = temp_root / prefix
         membership = copy_release_tree(source, stage, manifest)
-        preflight(stage, reports_dir, "staged", suite)
+        # A stale generated file fails here rather than being regenerated
+        # before packaging: the aggregate runs every generator's --check.
+        validate_stage(stage, reports_dir, suite)
         write_deterministic_zip(stage, output)
 
         with zipfile.ZipFile(output) as archive:
@@ -242,7 +261,13 @@ def main(argv: list[str] | None = None) -> int:
             archive.extractall(extract_root)
 
         extracted = extract_root / name
-        preflight(extracted, reports_dir, "extracted", suite)
+        differences = compare_trees(stage, extracted)
+        write_json(reports_dir / "extracted-comparison.json", {
+            "ok": not differences, "compared_with": "the validated staged tree",
+            "files": len(tree_files(extracted)), "differences": differences,
+        })
+        if differences:
+            raise RuntimeError("the extracted archive differs from the validated stage: " + "; ".join(differences[:10]))
 
         if args.keep_stage:
             keep = Path(args.keep_stage).resolve()
@@ -294,4 +319,6 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

@@ -23,7 +23,7 @@ def run(root: Path) -> dict:
     plan=timed_test_support.inputs(root)
     task=work_ledger.begin(root,'Synthetic audiovisual integrity check',['produce','observe'])
     instruction='Move the declared form across the fixed field; sound only within the declared interval.'
-    (root/'delivery.txt').write_text(instruction+'\n')
+    (root/'delivery.txt').write_text(instruction+'\n',encoding='utf-8',newline='\n')
     spec={'task_id':task['task_id'],'route':'timed-sequence','features':[],
           'sources':[],'delivery':{'path':'delivery.txt','transport':'authored-rendition','translation_notes':'Use exactly the declared synthetic plan.'},
           'criteria':[{'id':'picture','strength':'hard','text':'The two-second output has 48 frames and visible motion.','evidence':'video'},
@@ -71,5 +71,7 @@ def run(root: Path) -> dict:
     (root/'result.json').write_bytes(c.encoded(result));return result
 
 if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
     print(json.dumps(run(a.out.absolute()),indent=2))

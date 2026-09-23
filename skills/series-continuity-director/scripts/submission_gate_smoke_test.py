@@ -19,10 +19,17 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from submission_gate import (  # noqa: E402
+    FIELDS,
+    KINDS,
+    MISSING_CODES,
+    REQUIRED_BY_KIND,
+    REQUIRED_EVERY_KIND,
+    UNNUMBERED,
     review_requirements,
     finding,
     gate,
     image_size,
+    required_fields,
 )
 
 CASES = ROOT / "examples" / "submission-gate"
@@ -130,20 +137,23 @@ IMAGE_CASES = [
     ("tiff big endian", "tif", tiff(640, 480, "big")),
 ]
 
+EXCLUSIVITY_SERVICE = "fixture-service"
 EXCLUSIVITY_PROFILE = {
     "target_id": "exclusivity-fixture",
     "input_modes": [
-        {
-            "mode": "reference images",
-            "request_keys": ["inputs.referenceImages"],
-            "excludes": ["inputs.referenceVideos"],
-        },
-        {
-            "mode": "reference videos",
-            "request_keys": ["inputs.referenceVideos"],
-            "excludes": ["inputs.referenceImages"],
-        },
+        {"mode": "reference images", "max_inputs": 2, "excludes": ["reference videos"]},
+        {"mode": "reference videos", "max_inputs": 2, "excludes": ["reference images"]},
     ],
+    "offerings": [{
+        "service": EXCLUSIVITY_SERVICE,
+        "model_identifier": "fixture:model",
+        "request_keys": {"reference images": ["inputs.referenceImages"],
+                         "reference videos": ["inputs.referenceVideos"]},
+        "request_shape": {"model_key": "model", "text_key": "text", "media_reference": "uuid",
+                          "single_value_keys": []},
+        "constraints": {},
+        "observed_at": "2000-01-01",
+    }],
 }
 
 EXCLUSIVITY_TEXT = (
@@ -161,31 +171,37 @@ VIDEO_KEY = {
     "path": "fixtures/large.jpg",
     "request_key": "inputs.referenceVideos",
 }
+IMAGE_MODE = {"role": "reference", "path": "fixtures/large.jpg", "mode": "reference images"}
+VIDEO_MODE = {"role": "reference", "path": "fixtures/large.jpg", "mode": "reference videos"}
 
-# A role the profile gives to more than one channel is reported and not charged,
-# and what makes the report worth reading is that it says which channels those
-# are: the reader's next move is to name one of them as `request_key`, and a line
-# that only says the role is ambiguous does not tell them what to write. So the
-# expectation is the keys, which this file handed the gate in the profile above,
-# and not the sentence the gate puts them in.
-# case name, inputs, expected status, names one unmeasured line must carry, expected conflicts
+# A role the profile gives to more than one mode is reported and not charged,
+# and what makes the report worth reading is that it says which modes those
+# are: the reader's next move is to name one of them as `mode`, and a line that
+# only says the role is ambiguous does not tell them what to write. So the
+# expectation is the names, which this file handed the gate in the profile
+# above, and not the sentence the gate puts them in.
+# case name, service, inputs, expected status, names one unmeasured line must
+# carry, expected conflicts
 EXCLUSIVITY_CASES = [
     (
-        "one reference, no request key",
+        "one reference, no mode",
+        EXCLUSIVITY_SERVICE,
         [{"role": "reference", "path": "fixtures/large.jpg"}],
         "admitted",
-        ("inputs.referenceImages", "inputs.referenceVideos"),
+        ("reference images", "reference videos", "inputs.referenceImages", "inputs.referenceVideos"),
         0,
     ),
     (
         "one reference naming its key",
+        EXCLUSIVITY_SERVICE,
         [IMAGE_KEY],
         "admitted",
         (),
         0,
     ),
     (
-        "both channels named",
+        "both channels named by request key",
+        EXCLUSIVITY_SERVICE,
         [IMAGE_KEY, VIDEO_KEY],
         "refused",
         (),
@@ -194,7 +210,25 @@ EXCLUSIVITY_CASES = [
         1,
     ),
     (
-        "a request key the profile does not record",
+        "both modes named without a service",
+        None,
+        [IMAGE_MODE, VIDEO_MODE],
+        "refused",
+        (),
+        # Exclusivity is the model's, so no service is needed to settle it.
+        1,
+    ),
+    (
+        "a request key without a service is not read",
+        None,
+        [IMAGE_KEY, VIDEO_KEY],
+        "admitted",
+        ("names no service",),
+        0,
+    ),
+    (
+        "a request key the offering does not record",
+        EXCLUSIVITY_SERVICE,
         [{
             "role": "reference",
             "path": "fixtures/large.jpg",
@@ -236,8 +270,10 @@ def check_fixtures(results: list[dict], errors: list[str]) -> None:
         # unchanged on the day it stops working.
         elif expected_code is not None:
             found = {item["code"] for item in report["errors"]}
-            # Every refusal cites the rule it implements.
-            unruled = sorted({item["code"] for item in report["errors"] if not item.get("rule")})
+            # Every refusal cites the rule it implements, except the ones that
+            # fail before any rule applies.
+            unruled = sorted({item["code"] for item in report["errors"]
+                              if not item.get("rule") and item["code"] not in UNNUMBERED})
             if unruled:
                 errors.append(f"{path.stem}: refusals cite no rule: {unruled}")
             if expected_code not in found:
@@ -283,8 +319,9 @@ def check_exclusivity(results: list[dict], errors: list[str]) -> None:
             json.dumps(EXCLUSIVITY_PROFILE, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8", newline="",
         )
-        for name, inputs, expected, wanted, conflicts in EXCLUSIVITY_CASES:
-            report = run_gate(f"exclusivity: {name}", {**base, "inputs": inputs}, profiles, CASES)
+        for name, service, inputs, expected, wanted, conflicts in EXCLUSIVITY_CASES:
+            submission = {**base, "inputs": inputs, **({"service": service} if service else {})}
+            report = run_gate(f"exclusivity: {name}", submission, profiles, CASES)
             found = [item for item in report["errors"] if item["code"] == "INPUT_MODE_CONFLICT"]
             results.append({
                 "case": f"exclusivity: {name}",
@@ -308,9 +345,82 @@ def check_exclusivity(results: list[dict], errors: list[str]) -> None:
             ):
                 errors.append(
                     f"exclusivity {name!r}: expected one line of unmeasured to name "
-                    f"{list(wanted)}, so a reader is told which key to write; unmeasured was "
+                    f"{list(wanted)}, so a reader is told which mode to write; unmeasured was "
                     f"{report['unmeasured']}"
                 )
+
+
+# A second service that forms its requests differently: the text under
+# `prompt`, the model under `engine`, media as URLs in a top-level list. Its
+# stored schema accepts only that shape and refuses any other key.
+SECOND_SERVICE_SCHEMA = {
+    "type": "object",
+    "required": ["engine", "prompt"],
+    "additionalProperties": False,
+    "properties": {
+        "engine": {"const": "second:model-1"},
+        "prompt": {"type": "string", "minLength": 1},
+        "images": {"type": "array", "maxItems": 2, "items": {"type": "string", "pattern": "^https://"}},
+        "guidance": {"type": "number"},
+    },
+}
+
+
+def check_second_service(results: list[dict], errors: list[str]) -> None:
+    """Nothing in the gate belongs to one service: a second shape passes by its own declaration.
+
+    The same model is offered by two services with different request shapes.
+    A submission naming the second is formed by that offering's declaration and
+    admitted by its schema; the same submission formed the first service's way
+    would carry keys that schema refuses. A submission naming no service is
+    checked against the model alone.
+    """
+
+    base = generated_case("clean-s03")
+    base["target"] = "two-services-fixture"
+    base["inputs"] = [{"role": "reference", "path": "fixtures/large.jpg", "mode": "reference images"}]
+    base["parameters"] = {"guidance": 3}
+    with tempfile.TemporaryDirectory(prefix="scd-gate-second-") as directory:
+        profiles = Path(directory)
+        (CASES / "fixtures" / "second-service-schema.json").write_text(
+            json.dumps({"observed_at": "2000-01-01", "schema": SECOND_SERVICE_SCHEMA}), encoding="utf-8")
+        shapes = {
+            "first-service": ({"model_key": "model", "text_key": "positivePrompt", "media_reference": "uuid",
+                               "single_value_keys": []}, "first:model-1", ["inputs.referenceImages"]),
+            "second-service": ({"model_key": "engine", "text_key": "prompt", "media_reference": "url",
+                                "single_value_keys": []}, "second:model-1", ["images"]),
+        }
+        profile = {
+            "target_id": "two-services-fixture",
+            "media_kind": ["image"],
+            "input_modes": [{"mode": "reference images", "max_inputs": 2}],
+            "offerings": [
+                {"service": service, "model_identifier": model, "request_keys": {"reference images": keys},
+                 "request_shape": shape_, "constraints": {}, "observed_at": "2000-01-01",
+                 "schema_snapshot": "fixtures/second-service-schema.json"}
+                for service, (shape_, model, keys) in shapes.items()
+            ],
+        }
+        (profiles / "two-services-fixture.json").write_text(json.dumps(profile), encoding="utf-8")
+        # service, expected status, expected codes, a fragment one unmeasured line must carry
+        cases = [
+            ("second-service", "admitted", [], None),
+            ("first-service", "refused", ["SCHEMA_REFUSAL"], None),
+            (None, "admitted", [], "the submission names no service"),
+        ]
+        for service, expected, codes, fragment in cases:
+            specimen = {**base, **({"service": service} if service else {})}
+            report = run_gate(f"second service: {service}", specimen, [profiles], CASES, assemble=False)
+            found = sorted({item["code"] for item in report["errors"]})
+            results.append({"case": f"second service: {service}", "expected": expected,
+                            "actual": report["status"], "codes": found})
+            if report["status"] != expected or found != codes:
+                errors.append(f"second service {service!r}: expected {expected} with {codes}, got "
+                              f"{report['status']}: {[item['message'] for item in report['errors']]}")
+            if fragment and not any(fragment in line for line in report["unmeasured"]):
+                errors.append(f"second service {service!r}: no unmeasured line carries {fragment!r}")
+            if service is None and report["service"] is not None:
+                errors.append("second service: an offering was chosen for a submission that names no service")
 
 
 def check_resolution_floor(results: list[dict], errors: list[str]) -> None:
@@ -530,9 +640,10 @@ def check_prohibition_boundary(results: list[dict], errors: list[str]) -> None:
             )
 
 
-# Malformed fields receive one diagnostic and remain unread. Missing kind also
-# prevents resolving the independent visual contract. Literal locks retain
-# their own refusal when the fixture supplies an actual phrase.
+# Malformed fields receive one diagnostic and remain unread. A missing kind is
+# the one refusal it draws: the visual contract that depends on the kind is
+# reported as unmeasured rather than refused a second time. Literal locks
+# retain their own refusal when the fixture supplies an actual phrase.
 # name, submission, expected status, unread field, exact expected refusal codes
 UNTRUSTED_CASES = [
     (
@@ -540,7 +651,7 @@ UNTRUSTED_CASES = [
         {"obligations": "none"},
         "refused",
         "obligations",
-        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
+        ["SUBMISSION_KIND_UNDECLARED"],
     ),
     (
         "a lock list given as one string",
@@ -548,14 +659,14 @@ UNTRUSTED_CASES = [
         "refused",
         "lock surfaces",
         # Not eighteen LOCK_SURFACE_ABSENT refusals, one per character.
-        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
+        ["SUBMISSION_KIND_UNDECLARED"],
     ),
     (
         "a lock list given as a block of named fields",
         {"obligations": {"locks": {"chest": "black boxer briefs"}}},
         "refused",
         "lock surfaces",
-        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
+        ["SUBMISSION_KIND_UNDECLARED"],
     ),
     (
         "a lock list holding something that is not a phrase",
@@ -564,42 +675,42 @@ UNTRUSTED_CASES = [
         "lock surfaces",
         # The phrase in the list is still checked, and the entry that is not a
         # phrase is dropped instead of being searched for as one.
-        ["LOCK_SURFACE_ABSENT", "SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
+        ["LOCK_SURFACE_ABSENT", "SUBMISSION_KIND_UNDECLARED"],
     ),
     (
         "permanent features given as a number",
         {"obligations": {"permanent_features": 42}},
         "refused",
         "permanent features",
-        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
+        ["SUBMISSION_KIND_UNDECLARED"],
     ),
     (
         "permanent features given as true",
         {"obligations": {"permanent_features": True}},
         "refused",
         "permanent features",
-        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
+        ["SUBMISSION_KIND_UNDECLARED"],
     ),
     (
         "parameters given as a list",
         {"parameters": ["duration", 6]},
         "refused",
         "parameters",
-        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
+        ["SUBMISSION_KIND_UNDECLARED"],
     ),
     (
         "text form given as a number",
         {"text_form": 1},
         "refused",
         "text form",
-        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
+        ["SUBMISSION_KIND_UNDECLARED"],
     ),
     (
         "negative text given as a list",
         {"negative_text": ["a mug"]},
         "refused",
         "negative text",
-        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
+        ["SUBMISSION_KIND_UNDECLARED"],
     ),
     (
         "an input whose role is a list",
@@ -607,7 +718,7 @@ UNTRUSTED_CASES = [
          "inputs": [{"role": ["reference"], "path": "fixtures/large.jpg"}]},
         "refused",
         "input 0",
-        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
+        ["SUBMISSION_KIND_UNDECLARED"],
     ),
     (
         "an input whose request key is a number",
@@ -615,7 +726,7 @@ UNTRUSTED_CASES = [
          "inputs": [{"role": "reference", "request_key": 7}]},
         "refused",
         "input 0",
-        ["SUBMISSION_KIND_UNDECLARED", "VISUAL_CONTINUITY_INVALID"],
+        ["SUBMISSION_KIND_UNDECLARED"],
     ),
 ]
 
@@ -810,21 +921,41 @@ def check_report_language(results: list[dict], errors: list[str]) -> None:
 
 
 def check_public_visual_contract(results: list[dict], errors: list[str]) -> None:
+    """Each broken piece of evidence is refused for its own reason, named in the message.
+
+    A code alone proves little here: every case below draws the same one, and a
+    case refused for the wrong reason, such as a path the gate could not read,
+    passes a check that reads only the code.
+    """
     import copy
     import execution_contract as c
     from protocol_contract import finalize_artifact
     original = c.load(CASES / 'clean-s03.json')
-    cases = [('the declared public camera and shot request', copy.deepcopy(original), None)]
+    for key in ('expected_status', 'expected_code', 'expected_unmeasured'):
+        original.pop(key, None)
+    # label, submission, expected code, a fragment its message must carry
+    cases = [('the declared public camera and shot request', copy.deepcopy(original), None, None)]
     missing_read = copy.deepcopy(original)
     missing_read.pop('route_reading')
-    cases.append(('reading evidence is required', missing_read, 'ROUTE_READING_INVALID'))
+    cases.append(('reading evidence is required', missing_read, 'ROUTE_READING_INVALID',
+                  "missing required field 'route_reading'"))
     missing_visual = copy.deepcopy(original)
     missing_visual.pop('visual_continuity')
-    cases.append(('visual evidence is required', missing_visual, 'VISUAL_CONTINUITY_INVALID'))
+    cases.append(('visual evidence is required', missing_visual, 'VISUAL_CONTINUITY_INVALID',
+                  "missing required field 'visual_continuity'"))
+    missing_hash = copy.deepcopy(original)
+    missing_hash.pop('visual_continuity_sha256')
+    cases.append(('the block carries its hash', missing_hash, 'VISUAL_CONTINUITY_INVALID',
+                  "missing required field 'visual_continuity_sha256'"))
+    edited = copy.deepcopy(original)
+    edited['visual_continuity']['basis']['locator'] = 'another part'
+    cases.append(('a block edited after it was built', edited, 'VISUAL_CONTINUITY_INVALID',
+                  'does not match the visual_continuity block'))
     wrong_subject = copy.deepcopy(original)
     wrong_subject['visual_continuity']['subjects'] = {}
     wrong_subject['visual_continuity_sha256'] = c.content_id(wrong_subject['visual_continuity'])
-    cases.append(('camera subjects must match the declaration', wrong_subject, 'VISUAL_CONTINUITY_INVALID'))
+    cases.append(('camera subjects must match the declaration', wrong_subject, 'VISUAL_CONTINUITY_INVALID',
+                  'differ from the visible_subjects'))
     wrong_camera = copy.deepcopy(original)
     ref = wrong_camera['visual_continuity']['shot_request']
     request = c.load(CASES / ref['path'])
@@ -832,16 +963,277 @@ def check_public_visual_contract(results: list[dict], errors: list[str]) -> None
     request = finalize_artifact(request)
     path = CASES / 'fixtures' / 'another-camera-request.json'
     path.write_bytes(c.encoded(request))
-    wrong_camera['visual_continuity']['shot_request'] = {'path': str(path.relative_to(CASES)), 'sha256': c.digest(path.read_bytes())}
+    # A project-relative path is POSIX on every platform. `str()` of a relative
+    # Windows path carries backslashes, and the gate refuses that path before it
+    # ever compares the request with the camera.
+    wrong_camera['visual_continuity']['shot_request'] = {'path': path.relative_to(CASES).as_posix(),
+                                                         'sha256': c.digest(path.read_bytes())}
     wrong_camera['visual_continuity_sha256'] = c.content_id(wrong_camera['visual_continuity'])
-    cases.append(('request must reference the selected camera', wrong_camera, 'VISUAL_CONTINUITY_INVALID'))
-    for label, specimen, expected_code in cases:
+    cases.append(('request must reference the selected camera', wrong_camera, 'VISUAL_CONTINUITY_INVALID',
+                  'the request is written for another camera'))
+    for label, specimen, expected_code, fragment in cases:
         report = run_gate(label, specimen, PROFILES, CASES, assemble=False)
         codes = {item['code'] for item in report['errors']}
         expected = 'refused' if expected_code else 'admitted'
         results.append({'case': label, 'expected': expected, 'actual': report['status'], 'codes': sorted(codes)})
-        if report['status'] != expected or expected_code and expected_code not in codes:
-            errors.append(label + ': ' + json.dumps(report, ensure_ascii=False))
+        matched = [item for item in report['errors']
+                   if item['code'] == expected_code and fragment in item['message']]
+        if report['status'] != expected or expected_code and not matched:
+            errors.append(label + f': expected {expected_code} carrying {fragment!r}: '
+                          + json.dumps(report['errors'], ensure_ascii=False))
+        # An absent block is not a changed one.
+        if expected_code and 'missing' in fragment and any('does not match' in item['message'] for item in report['errors']):
+            errors.append(label + ': an absent field is reported as a hash mismatch')
+
+
+def generated_case(name: str) -> dict:
+    """One assembled example submission, without its expectations."""
+
+    value = json.loads((CASES / f"{name}.json").read_text(encoding="utf-8"))
+    for key in ("expected_status", "expected_code", "expected_unmeasured"):
+        value.pop(key, None)
+    return value
+
+
+# An admitted example of each kind, from which one field at a time is removed.
+KIND_BASES = {"shot": "clean-s03", "page": "clean-panel", "passage": "clean-passage",
+              "asset": "asset-needs-no-plot"}
+FIELD_TABLE = re.compile(r"<!-- submission-fields -->(.*?)<!-- end submission-fields -->", re.S)
+
+
+def documented_fields() -> dict[str, set[str]]:
+    """The field table scripts/README.md publishes: each field and the kinds requiring it."""
+
+    text = (ROOT / "scripts" / "README.md").read_text(encoding="utf-8")
+    block = FIELD_TABLE.search(text)
+    if block is None:
+        raise ValueError("scripts/README.md carries no <!-- submission-fields --> table")
+    table: dict[str, set[str]] = {}
+    for line in block.group(1).splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) < 3 or not cells[0].startswith("`"):
+            continue
+        field = cells[0].strip("`")
+        required = cells[1]
+        if required == "every kind":
+            kinds = set(KINDS)
+        elif required == "none":
+            kinds = set()
+        else:
+            kinds = {kind.strip() for kind in required.split(",")}
+        table[field] = kinds
+    return table
+
+
+def check_required_fields(results: list[dict], errors: list[str]) -> None:
+    """The documented field list is the gate's, and each required field is refused when absent.
+
+    The table in scripts/README.md is compared with the constants the gate
+    declares, and the constants with what the gate does: every required field is
+    removed from an admitted submission of each kind in turn.
+    """
+
+    try:
+        documented = documented_fields()
+    except ValueError as error:
+        errors.append(f"required fields: {error}")
+        return
+    declared = {field: {kind for kind in KINDS if field in required_fields(kind)} for field in FIELDS}
+    results.append({"case": "required fields: the documented table is the gate's",
+                    "expected": "equal", "actual": "equal" if documented == declared else "differs"})
+    if set(documented) != set(declared):
+        errors.append(
+            "required fields: scripts/README.md lists "
+            f"{sorted(set(documented) - set(declared))} that the gate does not read and omits "
+            f"{sorted(set(declared) - set(documented))} that it does")
+    for field in sorted(set(documented) & set(declared)):
+        if documented[field] != declared[field]:
+            errors.append(
+                f"required fields: scripts/README.md says {field!r} is required for "
+                f"{sorted(documented[field]) or 'none'} and the gate requires it for "
+                f"{sorted(declared[field]) or 'none'}")
+    if not set(REQUIRED_EVERY_KIND) <= set(MISSING_CODES) or not all(
+            set(fields) <= set(MISSING_CODES) for fields in REQUIRED_BY_KIND.values()):
+        errors.append("required fields: a required field has no code to refuse its absence")
+
+    for kind, name in KIND_BASES.items():
+        base = generated_case(name)
+        report = run_gate(f"required: {kind} base", base, PROFILES, CASES, assemble=False)
+        if report["status"] != "admitted":
+            errors.append(f"required fields: the {kind} base {name} is not admitted: {report['errors']}")
+            continue
+        for field in required_fields(kind):
+            specimen = {key: value for key, value in base.items() if key != field}
+            report = run_gate(f"required: {kind} without {field}", specimen, PROFILES, CASES, assemble=False)
+            found = [item for item in report["errors"] if item.get("field") == field
+                     and item["code"] == MISSING_CODES[field]
+                     and item["message"].startswith(f"missing required field {field!r}")]
+            results.append({"case": f"required: {kind} without {field}", "expected": MISSING_CODES[field],
+                            "actual": sorted({item["code"] for item in report["errors"]})})
+            if not found:
+                errors.append(f"required fields: a {kind} without {field!r} is not refused as missing it: "
+                              f"{[item['message'] for item in report['errors']]}")
+        for field in sorted(set(FIELDS) - set(required_fields(kind)) & set(base)):
+            specimen = {key: value for key, value in base.items() if key != field}
+            report = run_gate(f"optional: {kind} without {field}", specimen, PROFILES, CASES, assemble=False)
+            results.append({"case": f"optional: {kind} without {field}", "expected": "admitted",
+                            "actual": report["status"]})
+            if report["status"] != "admitted":
+                errors.append(f"required fields: {field!r} is documented as optional for {kind} and its "
+                              f"absence is refused: {[item['message'] for item in report['errors']]}")
+
+
+def check_placeholders(results: list[dict], errors: list[str]) -> None:
+    """A placeholder is refused by the path of its field, and nothing else is read."""
+
+    specimen = generated_case("clean-page")
+    specimen["text"] = {"placeholder": "the model-facing text"}
+    specimen["obligations"]["locks"] = {"placeholder": "the lock surfaces"}
+    specimen["inputs"][0] = {"placeholder": "the reference sent with the text"}
+    report = run_gate("placeholders", specimen, PROFILES, CASES, assemble=False)
+    messages = sorted(item["message"] for item in report["errors"])
+    expected = sorted(f"placeholder not filled: {field}" for field in ("text", "obligations.locks", "inputs[0]"))
+    results.append({"case": "placeholders", "expected": expected, "actual": messages})
+    if messages != expected or any(not item.get("asks") for item in report["errors"]):
+        errors.append(f"placeholders: expected exactly {expected}, each with what it asks for; got "
+                      f"{report['errors']}")
+
+
+def check_text_mode(results: list[dict], errors: list[str]) -> None:
+    """The text report carries the review requirements the JSON report carries."""
+
+    from submission_gate import main as gate_main
+
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
+        code = gate_main([str(CASES / "clean-s03.json"), "--root", str(CASES)])
+    wanted = "review  declared-feature-0 (rendition-review): white stripe from brow to nape"
+    results.append({"case": "text mode carries review requirements", "expected": 0, "actual": code})
+    if code != 0 or wanted not in stdout.getvalue():
+        errors.append(f"text mode: expected exit 0 and the line {wanted!r}; got {code}: {stdout.getvalue()!r}")
+
+
+DRAFT_BLOCK = re.compile(r"<!-- executable-example: submission-draft -->\s*```text\n(.*?)```", re.S)
+
+
+def draft_project(directory: Path) -> Path:
+    """A synthetic project holding what a submission draft reads."""
+
+    import shutil
+
+    project = directory / "project"
+    (project / "narrative" / "scenes").mkdir(parents=True)
+    (project / "media" / "characters").mkdir(parents=True)
+    shutil.copyfile(CASES / "fixtures" / "narrative.json", project / "narrative" / "narrative.json")
+    shutil.copyfile(CASES / "fixtures" / "scene-plot-pages.json", project / "narrative" / "scenes" / "sc01-plot.json")
+    shutil.copyfile(CASES / "fixtures" / "large.jpg", project / "media" / "characters" / "c01-sheet.jpg")
+    (project / "prompt.txt").write_bytes(
+        b"A boathouse loft at first light. The very broad anthro badger lights a second brass lantern "
+        b"beside the first on the bench.\n")
+    return project
+
+
+def run_script(arguments: list[str]) -> tuple[int, str]:
+    import os
+    import subprocess
+
+    environment = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8", "PYTHONDONTWRITEBYTECODE": "1"}
+    done = subprocess.run([sys.executable, *arguments], cwd=ROOT, capture_output=True, text=True,
+                          encoding="utf-8", env=environment)
+    return done.returncode, done.stdout + done.stderr
+
+
+def check_documented_draft(results: list[dict], errors: list[str]) -> None:
+    """The commands scripts/README.md documents take a draft to an admitted submission.
+
+    The block is run as written, with PROJECT and KEY replaced. Between the last
+    two commands the check fills the placeholders the draft leaves for the
+    author, as an agent would, and nothing else.
+    """
+
+    import shlex
+    from reading_fixtures import fixture_reading
+
+    text = (ROOT / "scripts" / "README.md").read_text(encoding="utf-8")
+    block = DRAFT_BLOCK.search(text)
+    if block is None:
+        errors.append("documented draft: scripts/README.md carries no submission-draft example")
+        return
+    lines = [line for line in block.group(1).splitlines() if line.strip()]
+    with tempfile.TemporaryDirectory(prefix="scd-draft-") as directory:
+        project = draft_project(Path(directory))
+        key = None
+        submission = None
+        for number, line in enumerate(lines):
+            arguments = [part.replace("PROJECT", project.as_posix()) for part in shlex.split(line)]
+            if key is not None:
+                arguments = [key if part == "KEY" else part for part in arguments]
+            if arguments[1].endswith("submission_gate.py"):
+                # The author's decisions the draft left open.
+                submission = Path(arguments[2])
+                value = json.loads(submission.read_text(encoding="utf-8"))
+                value["obligations"] = {"locks": [], "permanent_features": ["white stripe from brow to nape"]}
+                submission.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            if "--applied" in arguments:
+                # The applications an agent writes after reading, one per required document.
+                applied = Path(arguments[arguments.index("--applied") + 1])
+                applied.parent.mkdir(parents=True, exist_ok=True)
+                elsewhere = Path(directory) / "elsewhere"
+                elsewhere.mkdir(exist_ok=True)
+                record = fixture_reading(route="media", project=elsewhere)
+                applied.write_text(json.dumps(record["applied"], ensure_ascii=False), encoding="utf-8")
+            code, output = run_script(arguments[1:])
+            found = re.search(r"^reading-key: media ([0-9a-f]{32})$", output, re.M)
+            if found:
+                key = found.group(1)
+            results.append({"case": f"documented draft: line {number + 1}", "expected": 0, "actual": code})
+            if code != 0:
+                errors.append(f"documented draft: line {number + 1} exited {code}: {output[-1500:]}")
+                return
+            if arguments[1].endswith("submission_draft.py") and "new" in arguments:
+                report = json.loads(output)
+                if report["placeholders"] != ["obligations.locks", "obligations.permanent_features",
+                                              "route_reading.applied", "visual_continuity"]:
+                    errors.append(f"documented draft: the draft left {report['placeholders']}")
+        if submission is None:
+            errors.append("documented draft: the example ends without running the gate")
+
+
+def check_draft_refusals(results: list[dict], errors: list[str]) -> None:
+    """The draft refuses what the gate would, before it writes anything, and says what is declared."""
+
+    with tempfile.TemporaryDirectory(prefix="scd-draft-refusal-") as directory:
+        project = draft_project(Path(directory))
+        base = ["scripts/submission_draft.py", "new", "--project", project.as_posix(),
+                "--target", "xai-grok-imagine-2", "--scene-plot", "narrative/scenes/sc01-plot.json"]
+        out = ["--out", (project / "media" / "draft.submission.json").as_posix()]
+        # name, arguments, a fragment the error must carry
+        cases = [
+            ("a page the plot does not declare", base + out + ["--kind", "page", "--unit", "PG09"],
+             "which declares pages PG01 (3 panels), PG02 (1 panel)"),
+            ("a panel outside its page", base + out + ["--kind", "page", "--unit", "PG02", "--panel", "2"],
+             "declares with 1 panel"),
+            ("a shot of a plot realized as pages", base + out + ["--kind", "shot", "--unit", "PG01"],
+             "is realized as pages"),
+            ("a target no profile records",
+             [part if part != "xai-grok-imagine-2" else "no-such-target" for part in base]
+             + out + ["--kind", "page", "--unit", "PG01"], "the profiles record"),
+            ("a submission under shots/", base + ["--out", (project / "shots" / "x.json").as_posix(),
+                                                  "--kind", "page", "--unit", "PG01"], "typed artifact"),
+            ("a character the scene does not contain",
+             base + out + ["--kind", "page", "--unit", "PG01", "--character", "C02"], "CHARACTER_NOT_IN_SCENE"),
+        ]
+        for name, arguments, fragment in cases:
+            code, output = run_script(arguments)
+            results.append({"case": f"draft refusal: {name}", "expected": 1, "actual": code})
+            try:
+                message = json.loads(output)["error"]
+            except (ValueError, KeyError):
+                message = output
+            if code != 1 or fragment not in message and fragment not in output:
+                errors.append(f"draft refusal {name!r}: expected exit 1 carrying {fragment!r}; got {code}: {output[-800:]}")
+            if (project / "media" / "draft.submission.json").exists():
+                errors.append(f"draft refusal {name!r}: a refused draft was written")
 
 
 def check_all() -> int:
@@ -853,7 +1245,13 @@ def check_all() -> int:
     fixtures = len(results)
     if fixtures < 9:
         errors.append(f"expected at least nine fixtures, found {fixtures}")
+    check_required_fields(results, errors)
+    check_placeholders(results, errors)
+    check_text_mode(results, errors)
+    check_documented_draft(results, errors)
+    check_draft_refusals(results, errors)
     check_exclusivity(results, errors)
+    check_second_service(results, errors)
     check_resolution_floor(results, errors)
     check_feature_review(results, errors)
     check_prohibition_boundary(results, errors)
@@ -885,4 +1283,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

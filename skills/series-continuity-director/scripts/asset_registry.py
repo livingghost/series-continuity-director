@@ -41,6 +41,9 @@ PATH_TOKEN = re.compile(
     + r")\b",
     re.IGNORECASE,
 )
+# The template records one hash as `SHA-256` and several as `SHA-256 per file`.
+HASH_KEYS = ("sha-256", "sha-256 per file")
+HASH_TOKEN = re.compile(r"(?<![0-9A-Fa-f])[0-9A-Fa-f]{64}(?![0-9A-Fa-f])")
 
 
 def parse(text: str) -> list[dict[str, Any]]:
@@ -104,6 +107,37 @@ def files_of(record: dict[str, Any]) -> list[str]:
     for value in values:
         found.extend(PATH_TOKEN.findall(value))
     return found
+
+
+def hashes_of(record: dict[str, Any]) -> list[tuple[str | None, str]]:
+    """Each recorded SHA-256, in lowercase, with the one file its line names.
+
+    A hash on a line that names no file, or several, is paired with None. File
+    names are removed before the search, so a hash inside a name is not read.
+    """
+    pairs: list[tuple[str | None, str]] = []
+    for key in HASH_KEYS:
+        for value in [record["fields"].get(key, ""), *record["lists"].get(key, [])]:
+            names = PATH_TOKEN.findall(value)
+            owner = names[0] if len(names) == 1 else None
+            pairs.extend((owner, token.lower()) for token in HASH_TOKEN.findall(PATH_TOKEN.sub(" ", value)))
+    return pairs
+
+
+def binds(record: dict[str, Any], path: str, sha256: str) -> bool:
+    """Whether a record names this exact file and records exactly these bytes for it.
+
+    A hash on a line that names the file belongs to it. When the record names
+    only this file, a hash on a line that names no file belongs to it as well.
+    """
+    files = files_of(record)
+    if path not in files:
+        return False
+    pairs = hashes_of(record)
+    recorded = {digest for owner, digest in pairs if owner == path}
+    if not recorded and set(files) == {path}:
+        recorded = {digest for owner, digest in pairs if owner is None}
+    return recorded == {sha256.lower()}
 
 
 def is_placeholder(record: dict[str, Any]) -> bool:

@@ -1,0 +1,33 @@
+{
+  "submission_id": "placeholder-unfilled",
+  "kind": "passage",
+  "scene_plot": "fixtures/scene-plot-passages.json",
+  "scene_id": "SUBMISSION-GATE-PASSAGES",
+  "passage_id": "PA01",
+  "expected_status": "refused",
+  "expected_code": "PLACEHOLDER_UNFILLED",
+  "target": "xai-grok-imagine-2",
+  "text": {
+    "placeholder": "the model-facing text, written from the approved plot"
+  },
+  "inputs": [
+    {
+      "role": "reference",
+      "path": "fixtures/large.jpg"
+    },
+    {
+      "role": "reference",
+      "path": "fixtures/large.jpg"
+    }
+  ],
+  "obligations": {
+    "locks": {
+      "placeholder": "a list of the lock surfaces this frame shows"
+    },
+    "permanent_features": []
+  },
+  "narrative": "fixtures/narrative.json",
+  "characters": [
+    "C01"
+  ]
+}

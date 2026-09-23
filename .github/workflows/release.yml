@@ -15,9 +15,64 @@ env:
   PYTHONUTF8: "1"
 
 jobs:
+  provenance:
+    name: Verify the tagged commit
+    runs-on: ubuntu-latest
+    # One interpreter start and three API reads.
+    timeout-minutes: 10
+    permissions:
+      # The tag's commit and its comparison with main.
+      contents: read
+      # The CI runs recorded for that commit.
+      actions: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Bind the tag to the product version
+        run: python skills/series-continuity-director/scripts/release_contract.py --tag "$GITHUB_REF_NAME"
+
+      # A release publishes only a commit that main contains and that CI passed
+      # on main. The checkout resolves an annotated tag to its commit.
+      - name: Require the commit on main with a successful CI run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          commit=$(git rev-parse HEAD)
+          # Base main, head the commit: "behind" or "identical" means main
+          # already contains the commit.
+          status=$(gh api "repos/$GITHUB_REPOSITORY/compare/main...$commit" --jq .status)
+          case "$status" in
+            behind|identical) ;;
+            *)
+              echo "::error::$GITHUB_REF_NAME points at $commit, which main does not contain (comparison status: $status)"
+              exit 1
+              ;;
+          esac
+          passed=$(gh api -X GET "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
+            -f head_sha="$commit" -f branch=main -f event=push -f status=success --jq .total_count)
+          if [ "$passed" -lt 1 ]; then
+            echo "::error::CI has no successful push run on main for $commit; wait for it, or rerun it, before tagging"
+            exit 1
+          fi
+          echo "$GITHUB_REF_NAME: $commit is on main, and CI passed on it"
+
   build:
     name: build (${{ matrix.os }})
+    needs: provenance
     runs-on: ${{ matrix.os }}
+    # The same single run of the aggregate as the CI validate job, with its
+    # limit and its reason.
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -50,15 +105,9 @@ jobs:
           if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           if (-not (Get-Command ffprobe -ErrorAction SilentlyContinue)) { throw 'ffprobe is required for the declared media tests' }
 
-      - name: Validate product identity, documentation and process evidence
-        shell: bash
-        run: |
-          python skills/series-continuity-director/scripts/release_contract.py --tag "$GITHUB_REF_NAME"
-          python skills/series-continuity-director/scripts/release_management_smoke_test.py
-          python skills/series-continuity-director/scripts/readme_smoke_test.py
-          python skills/series-continuity-director/scripts/agent_evaluation_smoke_test.py
-          python skills/series-continuity-director/scripts/resource_handling_smoke_test.py
-
+      # build_release.py runs validate_skill.py once on the staged tree, which
+      # holds exactly the release members, then zips the stage and compares the
+      # extracted files with it byte for byte.
       - name: Build validated release files
         shell: bash
         run: |
@@ -80,6 +129,8 @@ jobs:
     name: Compare release archives across operating systems
     needs: build
     runs-on: ubuntu-latest
+    # Two downloads, one comparison and one upload.
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -137,7 +188,11 @@ jobs:
 
   publish:
     needs: package-consistency
+    # package-consistency needs build, which needs provenance, so a commit that
+    # failed the provenance check never reaches this job.
     runs-on: ubuntu-latest
+    # One download and one release creation.
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:

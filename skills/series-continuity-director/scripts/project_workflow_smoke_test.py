@@ -55,16 +55,82 @@ class ProjectWorkflow(unittest.TestCase):
         wanted=self.save('chosen.json',{'categories':[]});p=self.save('resources.json',{'resources':{'prompt-vocabulary':'missing.json'}});os.environ['SERIES_RESOURCES']=str(p);self.assertEqual(resource_files.resolve_resource('prompt-vocabulary',str(wanted)),wanted)
     def test_missing_selected_file_does_not_use_bundled_resource(self):
         p=self.save('resources.json',{'resources':{'prompt-vocabulary':'missing.json'}});os.environ['SERIES_RESOURCES']=str(p);self.assertRaises(ValueError,resource_files.resolve_resource,'prompt-vocabulary')
+    def init(self, name='project', medium='screen'):
+        project=self.root/name
+        result=self.command('init_project.py','--out',project,'--series-id','FIXTURE-SERIES','--title','Fixture series','--medium',medium)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        return project,json.loads(result.stdout)
     def test_fresh_medium_workspaces(self):
-        for medium in ['screen','comics','prose','mixed']:
+        # A fresh project reports only the authoring nobody has done yet, and
+        # its coverage table counts the units its medium has.
+        units={'screen':['shots'],'comics':['pages'],'prose':['passages'],'mixed':['shots','pages','passages']}
+        for medium,kinds in units.items():
             with self.subTest(medium=medium):
-                project=self.root/medium;result=self.command('init_project.py','--out',project,'--series-id','FIXTURE-SERIES','--title','Fixture series','--medium',medium);self.assertEqual(result.returncode,0,result.stderr)
+                project,created=self.init(medium,medium)
                 self.assertEqual(json.loads((project/'narrative/narrative.json').read_text())['medium'],medium)
                 result=self.command('validate_project.py',project);self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+                self.assertEqual(json.loads(result.stdout)['warnings'],['the narrative is not approved, so everything below is measured against a document nobody has signed off'])
+                self.assertFalse(list((project/'narrative/personas').glob('c01*.md')))
+                self.assertIn('session_entry_points.py',created['next'][0]['run']);self.assertIn('--next',created['next'][0]['run'])
+                header=self.command('narrative_coverage.py',project).stdout.splitlines()[2].split()
+                self.assertEqual([word for word in header if word in ('shots','pages','passages')],kinds)
     def test_project_persona_creation(self):
-        project=self.root/'project';self.assertEqual(self.command('init_project.py','--out',project,'--series-id','FIXTURE-SERIES','--title','Fixture').returncode,0)
-        result=self.command('narrative_entity.py','--series',project,'add','persona','second','--character','C02');self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        project,_=self.init()
+        result=self.command('narrative_entity.py','--project',project,'add','persona','second','--character','C02');self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         text=(project/'narrative/personas/second.md').read_text(encoding='utf-8');self.assertGreater(len(text.splitlines()),1000)
+    def test_design_record_named_by_init(self):
+        project,created=self.init()
+        self.assertIn('add design project',created['next'][1]['run'])
+        result=self.command('narrative_entity.py','--project',project,'add','design','project','--name','Fixture series')
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertTrue((project/'narrative/design/project.md').is_file())
+    def test_validate_reports_each_problem_once(self):
+        project,_=self.init()
+        (project/'narrative/scenes/sc01-plot.json').write_text('{"artifact_type": "scene-plot",, }',encoding='utf-8')
+        report=json.loads(self.command('validate_project.py',project).stdout)
+        naming=[message for message in report['errors'] if 'sc01-plot.json' in message]
+        self.assertEqual(len(naming),1,report['errors'])
+        self.assertTrue(naming[0].startswith('narrative/scenes/sc01-plot.json: not valid JSON'),naming[0])
+        self.assertFalse([message for message in report['errors']+report['warnings'] if chr(92) in message])
+        self.assertEqual(len(report['errors']),len(set(report['errors'])))
+    def test_validate_names_a_mistyped_project_once(self):
+        for target,fragment in ((self.root/'no-such-project','the directory does not exist'),(self.root,'has no project-manifest.json')):
+            with self.subTest(target=target.name):
+                result=self.command('validate_project.py',target);report=json.loads(result.stdout)
+                self.assertNotEqual(result.returncode,0);self.assertEqual(len(report['errors']),1,report['errors']);self.assertIn(fragment,report['errors'][0])
+    def test_work_ledger_writes_only_into_a_project(self):
+        loose=self.root/'loose';loose.mkdir()
+        for argv,fragment,written in ((['--project',loose],'has no project-manifest.json',loose/'work'),([],'has no project-manifest.json',self.root/'work'),(['--project',ROOT],'inside the installed suite',ROOT/'work')):
+            with self.subTest(argv=argv):
+                result=self.command('work_ledger.py',*argv,'begin','--goal','g','--step','s')
+                self.assertNotEqual(result.returncode,0);self.assertIn(fragment,result.stderr);self.assertFalse(written.exists())
+    def test_writers_refuse_the_installed_suite(self):
+        inside=ROOT/'scd-suite-write-probe'
+        result=self.command('init_project.py','--out',inside,'--series-id','FIXTURE-SERIES','--title','Fixture')
+        self.assertNotEqual(result.returncode,0);self.assertIn('inside the installed suite',result.stderr);self.assertFalse(inside.exists())
+        result=self.command('init_line.py','--project',ROOT,'--line','E01')
+        self.assertNotEqual(result.returncode,0);self.assertIn('inside the installed suite',result.stderr);self.assertFalse((ROOT/'media').exists())
+    def test_concurrent_steps_all_land(self):
+        # Two sessions marking steps at once both land: every writer holds the
+        # project lock and replaces the open task in one step.
+        project,_=self.init()
+        count=6
+        steps=[value for n in range(1,count+1) for value in ('--step',f'step {n}')]
+        self.assertEqual(self.command('work_ledger.py','--project',project,'begin','--goal','Synthetic concurrency check',*steps).returncode,0)
+        processes=[subprocess.Popen([sys.executable,str(ROOT/'scripts'/'work_ledger.py'),'--project',str(project),'step',str(n)],cwd=self.root,env=os.environ.copy(),stdout=subprocess.PIPE,stderr=subprocess.PIPE) for n in range(1,count+1)]
+        for process in processes:
+            _,error=process.communicate(timeout=120);self.assertEqual(process.returncode,0,error)
+        task=json.loads((project/'work/current.json').read_text(encoding='utf-8'))
+        self.assertTrue(all(step['done_at'] for step in task['steps']),task)
+        events=[json.loads(line)['event'] for line in (project/'work/ledger.jsonl').read_text(encoding='utf-8').splitlines()]
+        self.assertEqual(events.count('step'),count)
+        result=self.command('validate_project.py',project);self.assertEqual(result.returncode,0,result.stdout)
+    def test_truncated_open_task_is_explained(self):
+        project,_=self.init()
+        self.assertEqual(self.command('work_ledger.py','--project',project,'begin','--goal','g','--step','s').returncode,0)
+        current=project/'work/current.json';current.write_bytes(current.read_bytes()[:20])
+        result=self.command('work_ledger.py','--project',project,'show')
+        self.assertNotEqual(result.returncode,0);self.assertIn('work/current.json is not a readable task',result.stderr);self.assertNotIn('Traceback',result.stderr)
     def test_drafted_contract_finalization(self):
         data=json.loads((ROOT/'examples/protocol-exchange/fixtures/character-identity-contract.json').read_text());data['contract_id']='CIC-authored';source=self.save('identity-draft.json',data);out=self.root/'identity.json'
         result=self.command('state_protocol.py','finalize',source,'--out',out);self.assertEqual(result.returncode,0,result.stdout+result.stderr)
@@ -73,7 +139,7 @@ class ProjectWorkflow(unittest.TestCase):
         event=state_protocol.load_jsonl(ROOT/'examples/mixed-viewpoint-workshop/source/events.jsonl')[0]
         self.assertRaisesRegex(ValueError,'missing character state schema',state_protocol.resolve_world,base_state={'characters':{}},events=[event],processes=[],timeline_id='main',story_order=10,story_time='now',snapshot_id='world',scene_context_id='scene')
     def test_dry_dispatch_from_project_service_file(self):
-        service=self.save('service-profiles.json',{'services':{'runware':{'endpoint':{'base_url':'https://example.invalid/not-called'},'operations':{'imageInference':{}},'observed_at':'synthetic-test'}}})
+        service=self.save('service-profiles.json',{'services':{'runware':{'transport':'runware','endpoint':{'base_url':'https://example.invalid/not-called'},'operations':{'imageInference':{}},'observed_at':'synthetic-test'}}})
         spec=self.save('submission.json',{'submission_id':'preview-fixture','kind':'asset','target':'xai-grok-imagine-2','service':'runware','operation':'imageInference','text':'A painted empty room, warm light across a wooden table.','inputs':[],'parameters':{'width':1024,'height':1024,'numberResults':1},'obligations':{}})
         import execution_contract as c
         import production_test_support as support
@@ -153,4 +219,6 @@ class ProjectWorkflow(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     stream=io.StringIO();result=unittest.TextTestRunner(stream=stream,verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(ProjectWorkflow));sys.stderr.write(stream.getvalue());print(json.dumps({'ok':result.wasSuccessful(),'tests':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'skipped':len(result.skipped)}));raise SystemExit(not result.wasSuccessful())

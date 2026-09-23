@@ -10,17 +10,21 @@ Renaming is the case that has to be a command. An id appears in the file, in the
 narrative's persona pointers, in every scene plot that happens at that place, and
 in the references other files declare. Renaming by hand means finding all of them.
 
-    python scripts/narrative_entity.py --series <dir> add location kanda-station \\
+Every command writes into one project, and refuses a directory with no
+project-manifest.json or one inside the installed suite.
+
+    python scripts/narrative_entity.py --project <dir> add location kanda-station \\
         --name "Kanda station, east side"
-    python scripts/narrative_entity.py --series <dir> add persona c01-school \\
+    python scripts/narrative_entity.py --project <dir> add persona c01-school \\
         --character C01 --phase school
-    python scripts/narrative_entity.py --series <dir> rename kanda-station kanda-east
-    python scripts/narrative_entity.py --series <dir> remove kanda-east
+    python scripts/narrative_entity.py --project <dir> rename kanda-station kanda-east
+    python scripts/narrative_entity.py --project <dir> remove kanda-east
 """
 from __future__ import annotations
 
 import argparse
 import json
+import report_output
 import os
 import re
 import sys
@@ -31,6 +35,7 @@ from urllib.parse import quote, unquote, urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from narrative_index import ENTITY_ID, FRONT_MATTER, KINDS, scan  # noqa: E402
+from project_layout import require_project  # noqa: E402
 
 NL = chr(10)
 
@@ -324,7 +329,8 @@ def rewrite_intent_paths(series: Path, previous: Path, target: Path) -> list[str
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split(NL)[0])
-    parser.add_argument("--series", type=Path, required=True)
+    parser.add_argument("--project", type=Path, required=True,
+                        help="The project directory, the one holding project-manifest.json")
     sub = parser.add_subparsers(dest="action", required=True)
 
     creator = sub.add_parser("add", help="Create one entity file")
@@ -345,29 +351,33 @@ def main(argv: Sequence[str] | None = None) -> int:
     remover.add_argument("--force", action="store_true",
                          help="Remove it even though something still names it")
 
+    for command in (creator, renamer, remover):
+        report_output.add_json_flag(command)
     args = parser.parse_args(argv)
-    series = args.series.resolve()
-    if not series.is_dir():
-        print(json.dumps({"ok": False, "errors": [f"no series at {series}"]}, indent=2))
+    report_output.use_json(args.json)
+    try:
+        series = require_project(args.project)
+    except ValueError as exc:
+        report_output.emit({"ok": False, "errors": [str(exc)]})
         return 1
 
     if args.action == "add":
         if any(char in text for text in (args.name, args.character, args.phase) for char in "\r\n"):
-            print(json.dumps({"ok": False, "errors": ["front matter values must be single-line text"]}, indent=2))
+            report_output.emit({"ok": False, "errors": ["front matter values must be single-line text"]})
             return 1
         if not ENTITY_ID.fullmatch(args.id):
-            print(json.dumps({"ok": False, "errors": [
+            report_output.emit({"ok": False, "errors": [
                 f"an id is letters, digits and . _ : - starting with a letter or digit, "
-                f"got {args.id!r}"]}, ensure_ascii=False, indent=2))
+                f"got {args.id!r}"]})
             return 1
         if args.kind == "persona" and not args.character:
-            print(json.dumps({"ok": False, "errors": [
+            report_output.emit({"ok": False, "errors": [
                 "a persona describes one person: pass --character with the id the narrative "
-                "gives them"]}, ensure_ascii=False, indent=2))
+                "gives them"]})
             return 1
         if args.kind != "persona" and (args.character or args.phase):
-            print(json.dumps({"ok": False, "errors": [
-                "--character and --phase belong to a persona"]}, ensure_ascii=False, indent=2))
+            report_output.emit({"ok": False, "errors": [
+                "--character and --phase belong to a persona"]})
             return 1
         existing = locate(series, args.id)
         if existing is not None:
@@ -378,9 +388,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             # in whichever separator the platform happens to use, so the same
             # file was named two ways in one session.
             where = existing[1].relative_to(series).as_posix()
-            print(json.dumps({"ok": False, "errors": [
-                f"{args.id!r} already exists at {where}"]},
-                ensure_ascii=False, indent=2))
+            report_output.emit({"ok": False, "errors": [
+                f"{args.id!r} already exists at {where}"]})
             return 1
         path = series / KINDS[args.kind] / f"{args.id}.md"
         try:
@@ -389,37 +398,36 @@ def main(argv: Sequence[str] | None = None) -> int:
                     design_document(args.id, args.name) if args.kind == "design" else
                     stub(args.kind, args.id, args.name, args.character, args.phase))
         except (OSError, ValueError) as exc:
-            print(json.dumps({"ok": False, "errors": [str(exc)]}, indent=2))
+            report_output.emit({"ok": False, "errors": [str(exc)]})
             return 1
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(body, encoding="utf-8", newline=NL)
-        print(json.dumps({
+        report_output.emit({
             "ok": True,
             "written": str(path.relative_to(series)).replace("\\", "/"),
             "next": (
-                "point the narrative at it"
+                f"point the narrative at it: the character {args.character} in "
+                f"narrative/narrative.json names {path.relative_to(series).as_posix()} as its "
+                "persona, or as the persona of the phase this file describes"
                 if args.kind == "persona"
                 else "record scope and declared dependencies; a design root is not approval"
                 if args.kind == "design"
                 else "name it from the design, scene, persona or world file that uses it, or "
                      "narrative_index.py will report it as named by nothing"
             ),
-        }, ensure_ascii=False, indent=2))
+        })
         return 0
 
     if args.action == "rename":
         found = locate(series, args.old)
         if found is None:
-            print(json.dumps({"ok": False, "errors": [f"no entity named {args.old!r}"]},
-                             ensure_ascii=False, indent=2))
+            report_output.emit({"ok": False, "errors": [f"no entity named {args.old!r}"]})
             return 1
         if not ENTITY_ID.fullmatch(args.new):
-            print(json.dumps({"ok": False, "errors": [f"not an id: {args.new!r}"]},
-                             ensure_ascii=False, indent=2))
+            report_output.emit({"ok": False, "errors": [f"not an id: {args.new!r}"]})
             return 1
         if locate(series, args.new) is not None:
-            print(json.dumps({"ok": False, "errors": [f"{args.new!r} already exists"]},
-                             ensure_ascii=False, indent=2))
+            report_output.emit({"ok": False, "errors": [f"{args.new!r} already exists"]})
             return 1
         path = found[1]
         text = path.read_text(encoding="utf-8")
@@ -440,38 +448,54 @@ def main(argv: Sequence[str] | None = None) -> int:
         touched = rewrite_references(series, args.old, args.new)
         touched.extend(rewrite_intent_paths(series, path, target))
         touched = list(dict.fromkeys(touched))
-        print(json.dumps({
+        result: dict[str, Any] = {
             "ok": True,
             "renamed": f"{path.relative_to(series)} -> {target.relative_to(series)}".replace("\\", "/"),
             "rewritten": touched,
-        }, ensure_ascii=False, indent=2))
+        }
+        # A rewritten narrative has a new hash, and every plot written against
+        # the old one is now behind it. The approvals are the author's to give
+        # again; this names the commands that record them.
+        if any(item.startswith("narrative/narrative.json") for item in touched) or any(
+                item.endswith("(approval dropped)") for item in touched):
+            scripts = ROOT / "scripts"
+            result["next"] = [
+                f"python {scripts / 'narrative.py'} approve {series / 'narrative' / 'narrative.json'} "
+                "--by <name>, once the author approves the narrative as it now reads",
+                f"python {scripts / 'scene_plot.py'} behind --project {series}, which lists every "
+                "plot written against an earlier narrative",
+                f"python {scripts / 'scene_plot.py'} approve <plot> --by <name>, for each plot the "
+                "author approves again",
+            ]
+        report_output.emit(result)
         return 0
 
     found = locate(series, args.id)
     if found is None:
-        print(json.dumps({"ok": False, "errors": [f"no entity named {args.id!r}"]},
-                         ensure_ascii=False, indent=2))
+        report_output.emit({"ok": False, "errors": [f"no entity named {args.id!r}"]})
         return 1
     report = scan(series)
     sources = [source for source in report["named"].get(args.id, [])
                if source != "authoring design root"]
     if sources and not args.force:
-        print(json.dumps({
+        report_output.emit({
             "ok": False,
             "errors": [f"{args.id!r} is named by {', '.join(sources)}; removing it leaves those "
                        "names with nothing behind them"],
             "named_by": sources,
-        }, ensure_ascii=False, indent=2))
+        })
         return 1
     path = found[1]
     path.unlink()
-    print(json.dumps({
+    report_output.emit({
         "ok": True,
         "removed": str(path.relative_to(series)).replace("\\", "/"),
         "left_dangling": sources,
-    }, ensure_ascii=False, indent=2))
+    })
     return 0
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

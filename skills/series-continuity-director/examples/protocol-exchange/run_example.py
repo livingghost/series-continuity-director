@@ -27,7 +27,7 @@ def exercise(out: Path) -> dict:
 
     def call(script: str, *args: object) -> dict:
         command = [sys.executable, str(ROOT / 'scripts' / script), *map(str, args)]
-        p = subprocess.run(command, cwd=out, env=env, capture_output=True, text=True, timeout=60)
+        p = subprocess.run(command, cwd=out, env=env, capture_output=True, text=True, encoding='utf-8', timeout=60)
         log.append({'argv': command, 'returncode': p.returncode, 'stdout': p.stdout, 'stderr': p.stderr})
         if p.returncode:
             raise ValueError(p.stdout + p.stderr)
@@ -40,7 +40,7 @@ def exercise(out: Path) -> dict:
         timeline_id='main', story_order=0, story_time='opening', snapshot_id='room-opening',
         scene_context_id='room',
     )
-    (out / 'snapshot.json').write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    (out / 'snapshot.json').write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     call('protocol_exchange.py', 'inspect', '--root', out, '--artifact', 'snapshot.json')
     exported = call('protocol_exchange.py', 'export', '--root', out, '--artifact', 'snapshot.json', '--out', 'outgoing')
     (out / 'receiver').mkdir()
@@ -68,12 +68,14 @@ def exercise(out: Path) -> dict:
               'contract_set_sha256': installed['contract_set_sha256'],
               'transport_verified': True, 'complete_shot_binding': True,
               'canonical_adoption': False, 'referenced_media_verified': False, 'model_calls': 0}
-    (out / 'command-log.json').write_text(json.dumps(log, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    (out / 'result.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+    (out / 'command-log.json').write_text(json.dumps(log, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
+    (out / 'result.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8', newline='\n')
     return result
 
 
 if __name__ == '__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', required=True, type=Path)
     args = parser.parse_args()

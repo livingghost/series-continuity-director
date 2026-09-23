@@ -28,24 +28,35 @@ and only the second one binds.
 
 | About to do this | Read first |
 |---|---|
+| Start or resume any work in a project | `state-and-trust.md` section 2, `continuity-core.md`, `story-structure.md` section 6, `runtime-capabilities.md` |
 | Make a saved deliverable, choose its depiction or delegate a bounded action | `production-direction.md`, `production-execution.md` |
+| Fill a production template or run the final checklist | `templates.md` |
 | Look up a craft method while planning, composing, or repairing | `tactic-consultation.md` |
+| Compare creative alternatives without adopting them | `creative-options.md` |
 | Revise a reviewed candidate or recover a retained output | `production-repair.md`, `production-execution.md` |
 | Build, inspect or revise timed material and an assembled interval | `timed-production.md`, `production-execution.md` |
 | Create or rename a full persona, world or intent record | `narrative-authoring.md`, `story-structure.md` |
 | Add a person to the cast, or decide how much of a persona a scene needs | `story-structure.md` section 6, `scene-persona.md` |
 | Settle or revise what the series is about, its arcs, chapters, characters, promises, questions, or who knows what | `story-structure.md` section 6, `continuity-core.md` |
 | Plan or revise a scene or episode | `story-structure.md` sections 6 and 7, `continuity-core.md`, `blocking-and-coverage.md` |
-| Break a scene into shots and choose coverage | `blocking-and-coverage.md`, `shot-continuity.md`, `third-person-camera.md` |
-| Place a camera, choose scale, angle, height, or lens | `third-person-camera.md`, `visual-language.md`, `cinematic-lexicon.md` |
+| Break a scene into shots, pages or passages and choose coverage | `viewpoint-profiles.md`, `blocking-and-coverage.md`, `shot-continuity.md` |
+| Choose whose viewpoint a scene or shot takes, or switch it between shots | `viewpoint-profiles.md`, `viewpoint-transitions.md` |
+| Place a camera, choose scale, angle, height, or lens | `viewpoint-profiles.md`, then `third-person-camera.md` or `first-person-camera.md` for the chosen viewpoint, `visual-language.md`, `cinematic-lexicon.md` |
+| Stage physical contact between characters | `contact-scenes.md`, `performance-details.md` |
+| Direct dialogue, voice or sound | `dialogue-and-audio.md` |
+| Set weather, light or atmosphere | `atmosphere-quality.md`, `visual-language.md` |
 | Design a recurring subject or revise its approved appearance | `visual-contracts.md` sections 1 and 2, `morphology-and-species-contracts.md`, `performance-details.md` |
 | Receive or deliver a public protocol artifact | `visual-contracts.md` section 8, `state-and-trust.md` |
 | Write a start frame, boundary frame, or any still | `prompt-composition.md`, `model-facing-artifacts.md`, `morphology-and-species-contracts.md` |
 | Write any text a model will receive | `prompt-composition.md`, `model-facing-artifacts.md`, `scoped-lexicon.md` |
 | Choose a target model, operation, or input mode | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md`, `model-evidence.md` |
 | Judge a returned take | `shot-continuity.md`, `post-production.md`, `performance-details.md` |
+| Inspect saved production evidence or define an evidence study | `evidence-review.md` |
 | Register, accept, or replace a produced file | `state-and-trust.md` sections 4 and 5 |
 | Continue from an accepted endpoint | `continuity-core.md`, `shot-continuity.md` |
+| Resolve a character's state at a story time | `temporal-state.md` |
+| Bind visual contracts to a shot with a shot-request, or activate a visual-contract-package | `visual-contracts.md` |
+| Finish accepted picture and sound | `post-production.md` |
 | Write anything back to canon | `state-and-trust.md`, `temporal-state.md`, `story-structure.md` section 6 |
 | Send a submission, present a result, or generate again | `state-and-trust.md` section 6 |
 | Prepare or reuse a scene's complete Persona-based authoring material | `scene-persona.md` |
@@ -83,10 +94,10 @@ Reference checks bind accepted images, declared influence, and delivered bytes.
 It reports facts that the selected contracts cannot establish as unmeasured.
 The designated reviewer evaluates wording, depicted features, and artistic quality.
 
-It knows no provider. The submission names a target,
-`skills/series-continuity-director/protocols/target/profiles/`
-says which request keys that target exposes and which exclude each other, and the
-gate compares the two. A surface it has never seen is supported by adding a
+It knows no provider. The submission names a target, and its profile under
+`skills/series-continuity-director/protocols/target/profiles/` names the model's input modes and which
+exclude each other. A submission that names a service adds that service's offering:
+its request keys and request shape. The gate compares the two. A surface it has never seen is supported by adding a
 profile, not by editing the gate.
 
 The author grants execution and adoption authority for their stated scopes.
@@ -103,8 +114,10 @@ actor. Each additional run follows the same scope and budget checks.
 python skills/series-continuity-director/scripts/session_entry_points.py
 ```
 
-It prints the installed location, the table above, and, in a
-project workspace, the roles whose asset is not settled.
+It prints the version and location of the installed copy, and compares it with
+any other copy of the suite that holds the working directory. In a project
+workspace it also prints the open task, the roles whose asset is not settled,
+the next actions and the table above. Outside a project it prints one line.
 
 ## What the skill conforms to
 
@@ -120,7 +133,8 @@ every host reads and what every host refuses:
 - Scripts are executed rather than read into context.
 
 `skills/series-continuity-director/scripts/validate_skill.py` refuses a `name` or `description` over
-the cap, reports the body's line count without bounding it, and settles that every
+the cap, reports the body's line count without bounding it, warns when the body's
+estimated tokens (characters / 4) exceed 5000, and settles that every
 reference is reachable from `SKILL.md` and that every command is documented
 somewhere the suite routes to. The routing table is what keeps references one
 level deep.
@@ -147,14 +161,15 @@ Tags and hosted releases require a separate instruction.
 ## Working on this repository
 
 ```
-python skills/series-continuity-director/scripts/build_flat.py            regenerate the flat adapter
-python skills/series-continuity-director/scripts/build_example.py         regenerate the worked example
-python skills/series-continuity-director/scripts/build_host_packages.py   regenerate the host files
-python skills/series-continuity-director/scripts/validate_skill.py        the aggregate check
+python skills/series-continuity-director/scripts/build_derived.py    regenerate every derived file
+python skills/series-continuity-director/scripts/validate_skill.py   the aggregate check
 ```
 
-Run them in that order. The first three write files that the fourth checks, and
-two of them write release members.
+Run them in that order. The first rebuilds each derived file after the sources it
+comes from: the vocabulary, the narrative corpus and seal, the flat adapter, the
+worked example, the host files and the checked examples. The second checks them,
+and several of them are release members. `build_derived.py --check` reports what
+is out of date and writes nothing.
 
 The declared layout is in `skills/series-continuity-director/scripts/tree_layout.py`. It states which
 files the repository owns and which the suite owns, and `validate_skill.py`

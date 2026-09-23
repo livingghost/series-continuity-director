@@ -123,8 +123,14 @@ knowledge       who learned which fact, and in which chapter
 approved        by, at as an RFC3339 UTC time, and content_sha256
 ```
 
-Validate it with `python scripts/narrative.py <narrative>`, and
-`python scripts/narrative.py <narrative> --content-sha256` prints the hash an approval records.
+Validate it with `python scripts/narrative.py <narrative>`. The author decides when it is approved.
+`python scripts/narrative.py approve <narrative> --by "<name>"` then records that approval with its
+content hash, and lists the scene plots written against an earlier version:
+
+```text
+{"ok": true, "approved": "narrative/narrative.json", "by": "The author",
+ "at": "2026-09-23T09:00:00Z", "content_sha256": "c829b39a...", "plots_behind": []}
+```
 
 ### Promises, questions, and knowledge
 
@@ -259,10 +265,12 @@ written anywhere:
 One line proves no habitual voice, one action proves no value, and a rendered detail adopts no
 visual canon.
 
-Then approve the narrative again. Its `content_sha256` covers what it now says, so a scene plot
-approved against the version before it is approved against a document that no longer exists. Run
-`python scripts/narrative_coverage.py <project>` to read what the series still declares and no scene
-covers.
+Then the author approves the narrative again, and `narrative.py approve` records it. Its
+`content_sha256` covers what it now says, so every scene plot approved against the version before
+it is behind. `python scripts/scene_plot.py behind --project <project>` lists each one with the
+recorded and current hashes; each needs the author's approval again, recorded with
+`scene_plot.py approve`. Run `python scripts/narrative_coverage.py <project>` to read what the series
+still declares and no scene covers.
 
 ### What is declared against what is covered
 
@@ -277,12 +285,21 @@ python scripts/narrative_coverage.py <project> --json --strict
 ```
 
 It reports three things. Contradictions are errors: a scene naming a chapter or an arc the narrative
-does not carry, two scenes with the same id, a beat teaching someone who is in no part of the series.
+does not carry, two scenes with the same id or the same place in a chapter, a beat teaching someone
+who is in no part of the series. Each plot is checked whole in one run, and an unknown id is named
+beside the declared id closest to it:
+
+```text
+narrative/scenes/sc01-plot.json: names chapter 'ch01', which the narrative does not carry; did you mean 'ch1'?
+narrative/scenes/sc01-plot.json: names arc 'a01', which the narrative does not carry; did you mean 'a1'?
+```
+
 Gaps are not errors, because a series in progress has gaps by definition and the point is to name
 them: a chapter nothing covers, a complete chapter that turns nothing, a chapter whose scenes neither
 open nor close it, a promise nothing plants, a question the chapters ran past, a character who
 appears in no scene. The third is a table of what each chapter holds, including which persona phase
-is in force in it, so the shape of the series is readable without opening every file.
+is in force in it, so the shape of the series is readable without opening every file. It counts the
+units the medium has: shots, pages or passages, and all three for a mixed series.
 
 `--strict` exits nonzero on a gap, for a checkout that has decided its series is finished.
 
@@ -299,7 +316,12 @@ names the channel that moved from the list in the relationship progression secti
 The proposition says why the scene exists. The plot says what its units take from it, and it is
 approved before any shot text is written.
 
-Write it as `narrative/scenes/<scene-id>-plot.json`:
+Start it with `python scripts/scene_plot.py draft --project <project> --scene-id <id> --chapter <chapter>`.
+The command writes `narrative/scenes/<scene-id>-plot.json` with what the narrative declares: the
+chapter, the next free place in it, the arcs the chapter carries with their characters and themes,
+the narrative hash and the realization the medium implies. Every field the author decides holds a
+`<fill: ...>` value, which the reader refuses as `placeholder not filled: <field>` until it is
+replaced. Remove any candidate arc, character or theme the scene does not carry. The fields:
 
 ```text
 artifact_type   "scene-plot"
@@ -395,8 +417,9 @@ Rules:
   carries it, or it is context.
 - `approved.content_sha256` is the hash of the plot without its own approval. An approval that names
   only a time is a claim about a document that can change after the claim, so a plot edited after
-  approval is refused. `python scripts/scene_plot.py <plot> --content-sha256` prints the hash to
-  record.
+  approval is refused. Once the author approves a plot, `python scripts/scene_plot.py approve <plot>
+  --by "<name>"` records it: the command binds the plot to the current narrative, writes the hash,
+  and refuses a plot with any failed check or undeclared id, listing every one.
 - The plot names no target and no model. It is approved first and the interface is chosen after,
   because what a surface can hold changes the plan and not only the wording.
 - Where the chosen interface cannot hold what the plot asks for, return that to whoever approved it

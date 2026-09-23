@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import difflib
 import filecmp
 import json
 import shutil
@@ -17,6 +18,7 @@ SOURCE = EXAMPLE / "source"
 GENERATED = EXAMPLE / "generated"
 
 sys.path.insert(0, str(ROOT / "scripts"))
+from execution_contract import LOCK_NAME  # noqa: E402
 from state_protocol import (  # noqa: E402
     artifact_hash as state_artifact_hash,
     build_projection,
@@ -557,9 +559,25 @@ def file_map(root: Path) -> dict[str, bytes]:
     for path in sorted(root.rglob("*")):
         relative = path.relative_to(root)
         # Input fixtures are scoped to this example, not to the checkout's parents.
-        if path.is_file() and path.name not in {"build_example.py", "README.md"} and relative.parts[0] != "source":
+        # A project lock holds a platform-specific byte, so it is not output.
+        if (path.is_file() and path.name not in {"build_example.py", "README.md", LOCK_NAME}
+                and relative.parts[0] != "source"):
             result[relative.as_posix()] = path.read_bytes()
     return result
+
+
+def difference(committed: bytes, rebuilt: bytes, name: str) -> str:
+    """A unified diff of one committed file against its rebuilt bytes.
+
+    A carriage return prints as \\r, so a line-ending difference shows.
+    """
+
+    def lines(raw: bytes) -> list[str]:
+        return raw.decode("utf-8", "replace").replace("\r", "\\r").split("\n")
+
+    shown = "\n".join(difflib.unified_diff(
+        lines(committed), lines(rebuilt), f"{name} (committed)", f"{name} (rebuilt)", lineterm=""))
+    return shown.encode("ascii", "backslashreplace").decode("ascii") or f"{name} differs in bytes that do not decode as UTF-8."
 
 
 def main() -> int:
@@ -577,6 +595,9 @@ def main() -> int:
                 missing = sorted(set(expected) - set(actual))
                 extra = sorted(set(actual) - set(expected))
                 changed = sorted(k for k in set(expected) & set(actual) if expected[k] != actual[k])
+                # The first changed file, in full, shows what kind of change it is.
+                if changed:
+                    print(difference(expected[changed[0]], actual[changed[0]], changed[0]), file=sys.stderr)
                 print(json.dumps({"ok": False, "missing": missing, "extra": extra, "changed": changed}, indent=2))
                 return 1
         print(json.dumps({"ok": True, "example": "mixed-viewpoint-workshop"}, indent=2))
@@ -592,4 +613,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    import stdio_utf8
+    stdio_utf8.configure()
     raise SystemExit(main())

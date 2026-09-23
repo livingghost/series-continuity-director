@@ -68,4 +68,7 @@ class TimedTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):t.render_files(self.root,self.plan,self.root/'existing.mp4')
         self.assertEqual((self.root/'existing.mp4').read_bytes(),b'retain')
 
-if __name__=='__main__':unittest.main(verbosity=2)
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    unittest.main(verbosity=2)

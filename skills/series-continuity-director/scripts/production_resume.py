@@ -42,7 +42,7 @@ def _freshness(root: Path, prepared: dict, rows: list[dict], skill_root: Path) -
             route_reading.require_route_reading(prepared["route_reading"], project=root,
                 routes={prepared["task"]["route"]}, features=prepared["task"]["features"])
             reading = {"current": True}
-        except (OSError, ValueError, KeyError, TypeError, UnicodeError) as exc:
+        except c.EXPECTED_ERRORS as exc:
             reading = {"current": False, "reason": str(exc)}
     return {"current": not changes and reading["current"] is not False,
             "changes": changes, "reading": reading}
@@ -51,8 +51,7 @@ def _freshness(root: Path, prepared: dict, rows: list[dict], skill_root: Path) -
 def _artifacts(rows: list[dict]) -> list[dict]:
     result = []
     for row in rows:
-        if row["event"] in {"dispatch-results", "candidate", "review", "selection",
-                             "adoption-result", "completion"}:
+        if row["event"] in {"dispatch-results", "candidate", "review", "selection", "completion"}:
             result.append({"event": row["event"], "receipt": row["sha256"],
                 "files": copy.deepcopy(row["data"].get("files", [])),
                 "recorded": True})
@@ -62,7 +61,6 @@ def _artifacts(rows: list[dict]) -> list[dict]:
 def _execution(rows: list[dict], states: dict) -> dict:
     claims = [row for row in rows if row["event"] == "dispatch-claim"]
     results = [row for row in rows if row["event"] == "dispatch-results"]
-    external = [row for row in rows if row["event"] == "external-claim"]
     boundaries = [row for row in rows if row["event"] == "reservation-start"]
     claim = claims[-1] if claims else None
     result = next((row for row in reversed(results)
@@ -86,8 +84,6 @@ def _execution(rows: list[dict], states: dict) -> dict:
         state = "claim-cancelled-before-start"
     elif claim is not None:
         state = "claimed-before-start"
-    elif external:
-        state = "external-authority-handed-off"
     else:
         state = "no-dispatch-claim"
     return {"state": state, "claim": claim["sha256"] if claim else None,
@@ -107,7 +103,7 @@ def report(root: Path, run: str) -> dict:
         try:
             _, prepared, _, rows = workflow.load_run(root, run)
             states = lifecycle.derive(rows, prepared, run)
-        except (OSError, ValueError, KeyError, TypeError, UnicodeError) as exc:
+        except c.EXPECTED_ERRORS as exc:
             return {"ok": False, "run": run, "next": "inspect-integrity",
                     "integrity": {"ok": False, "reason": str(exc)},
                     "freshness": None, "artifacts": [], "reservations": None,
@@ -132,8 +128,6 @@ def report(root: Path, run: str) -> dict:
         if state == "boundary-recorded-outcome-unconfirmed":
             next_stage = "recover-recording-or-resolve-remote-status"
             actions.extend(_recover_actions(root, run, execution))
-        elif state == "external-authority-handed-off" and "candidate" not in events:
-            next_stage = "resolve-external-outcome"
         elif state == "outputs-recorded" and not execution["candidate_registration_complete"]:
             next_stage = "recover-recording"
             actions.append(_action("recover-recording", root, run,
@@ -144,7 +138,7 @@ def report(root: Path, run: str) -> dict:
                 try:
                     workflow.verify_completion(root, run, prepared["task"]["task_id"])
                     next_stage = "done"
-                except (OSError, ValueError, KeyError, TypeError) as exc:
+                except c.EXPECTED_ERRORS as exc:
                     next_stage = "inspect-completion"
                     blockers.append({"code": "completion-evidence", "selector": run, "reason": str(exc)})
         elif not fresh["current"]:

@@ -282,7 +282,7 @@ class InputToolsTests(unittest.TestCase):
 
     def test_cli_help_documents_no_side_effect_build(self):
         run = subprocess.run([sys.executable, str(tool.ROOT / 'scripts/production_workflow.py'),
-                              'build-inputs', '--help'], capture_output=True, text=True, check=False)
+                              'build-inputs', '--help'], capture_output=True, text=True, encoding='utf-8', check=False)
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertIn('--choices', run.stdout)
         self.assertIn('--out-dir', run.stdout)
@@ -291,7 +291,7 @@ class InputToolsTests(unittest.TestCase):
         run = subprocess.run([sys.executable, str(tool.ROOT / 'scripts/production_workflow.py'),
                               'build-inputs', '--root', str(self.root), '--task', 'task.json',
                               '--choices', 'choices.json', '--out-dir', 'cli-built'],
-                             capture_output=True, text=True, check=False)
+                             capture_output=True, text=True, encoding='utf-8', check=False)
         self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
         self.assertEqual(json.loads(run.stdout)['state'], 'built')
         actual = c.load(self.root / 'cli-built/route-reading.json')
@@ -299,4 +299,6 @@ class InputToolsTests(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     unittest.main()

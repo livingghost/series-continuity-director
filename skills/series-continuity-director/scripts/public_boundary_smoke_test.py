@@ -39,7 +39,7 @@ class Boundary(unittest.TestCase):
         return contract.validate_envelope(value or self.envelope,**options)
     def command(self,*args):
         env={k:v for k,v in os.environ.items() if k not in {'PYTHONPATH'}};env['PYTHONDONTWRITEBYTECODE']='1';env['HOME']=str(self.root/'home');Path(env['HOME']).mkdir(exist_ok=True)
-        return subprocess.run([sys.executable,str(ROOT/'scripts/build_interchange_envelope.py'),*map(str,args)],cwd=self.root,env=env,capture_output=True,text=True,timeout=30)
+        return subprocess.run([sys.executable,str(ROOT/'scripts/build_interchange_envelope.py'),*map(str,args)],cwd=self.root,env=env,capture_output=True,text=True, encoding='utf-8',timeout=30)
     def args(self,out):
         return ['--profile','shot-request','--payload',self.root/'artifact.json','--payload-type',self.kind,'--payload-id',self.envelope['payload']['artifact_id'],'--out',out]
     def test_current_capability_declaration(self):
@@ -99,4 +99,6 @@ class Boundary(unittest.TestCase):
         p=self.root/'bad.json';p.write_text('{"x":1,"x":2}');self.assertRaises(ValueError,contract.read_json,p)
 
 if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
     stream=io.StringIO();result=unittest.TextTestRunner(stream=stream,verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(Boundary));sys.stderr.write(stream.getvalue());print(json.dumps({'ok':result.wasSuccessful(),'tests':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'skipped':len(result.skipped)}));raise SystemExit(not result.wasSuccessful())
