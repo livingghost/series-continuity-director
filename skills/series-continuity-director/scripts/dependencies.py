@@ -17,6 +17,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shlex
 import shutil
 import subprocess
@@ -48,8 +49,51 @@ FFMPEG_MANAGERS = {
 SYSTEM_MANAGERS = {'apt-get', 'pacman', 'apk'}
 
 
+BOUND = re.compile(r'(>=|<)\s*([0-9]+(?:\.[0-9]+)*)')
+
+
+def requirements() -> dict[str, dict]:
+    """The version bounds of each media distribution, as requirements-media.txt writes them.
+
+    Each line names one distribution with a lower bound `>=` and an upper bound
+    `<`, in either order, which is also how a dependency update rewrites it.
+    """
+    result = {}
+    for raw in REQUIREMENTS.read_text(encoding='utf-8').splitlines():
+        line = raw.split('#', 1)[0].strip()
+        if not line:
+            continue
+        match = re.fullmatch(r'([A-Za-z0-9][A-Za-z0-9._-]*)\s*(\S.*)', line)
+        bounds = {}
+        for part in (match.group(2).split(',') if match else []):
+            found = BOUND.fullmatch(part.strip())
+            if found is None or found.group(1) in bounds:
+                bounds = {}
+                break
+            bounds[found.group(1)] = list(_release(found.group(2)))
+        if set(bounds) != {'>=', '<'}:
+            raise ValueError(f'{REQUIREMENTS.name}: {line!r} must name a distribution with one >= and one < '
+                             'numeric release bound')
+        result[match.group(1)] = {'requirement': line, 'minimum_release': bounds['>='],
+                                  'maximum_release_exclusive': bounds['<']}
+    return result
+
+
 def declaration() -> dict:
-    return json.loads((ROOT / 'config/dependencies.json').read_text(encoding='utf-8'))
+    """The dependency declaration, with each media version read from requirements-media.txt.
+
+    The requirements file is the one place a version is written, so an update to
+    it, by hand or by a dependency update, needs no second edit.
+    """
+    declared = json.loads((ROOT / 'config/dependencies.json').read_text(encoding='utf-8'))
+    bounds = requirements()
+    distributions = declared['media']['distributions']
+    if set(distributions) != set(bounds):
+        raise ValueError('requirements-media.txt and config/dependencies.json name different distributions: '
+                         + ', '.join(sorted(set(distributions) ^ set(bounds))))
+    for name, rule in distributions.items():
+        rule.update(bounds[name])
+    return declared
 
 
 def _release(value: str) -> tuple[int, ...]:
@@ -60,7 +104,8 @@ def _release(value: str) -> tuple[int, ...]:
 
 
 # What each declared media requirement is needed for, so a report can say what
-# a missing one affects. The versions and names stay in config/dependencies.json.
+# a missing one affects. requirements-media.txt holds the versions, and
+# config/dependencies.json the import names and the executables.
 USES = {
     'Pillow': 'reading and measuring images, and decoding reference rasters',
     'resvg-py': 'rendering an SVG reference to a raster',

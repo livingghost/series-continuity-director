@@ -6,47 +6,16 @@
   "media": {
     "distributions": {
       "Pillow": {
-        "import": "PIL",
-        "minimum_release": [
-          12
-        ],
-        "maximum_release_exclusive": [
-          13
-        ],
-        "requirement": "Pillow>=12,<13"
+        "import": "PIL"
       },
       "resvg-py": {
-        "import": "resvg_py",
-        "minimum_release": [
-          0,
-          5
-        ],
-        "maximum_release_exclusive": [
-          0,
-          6
-        ],
-        "requirement": "resvg-py>=0.5,<0.6"
+        "import": "resvg_py"
       },
       "defusedxml": {
-        "import": "defusedxml",
-        "minimum_release": [
-          0,
-          7
-        ],
-        "maximum_release_exclusive": [
-          1
-        ],
-        "requirement": "defusedxml>=0.7,<1"
+        "import": "defusedxml"
       },
       "tinycss2": {
-        "import": "tinycss2",
-        "minimum_release": [
-          1
-        ],
-        "maximum_release_exclusive": [
-          2
-        ],
-        "requirement": "tinycss2>=1,<2"
+        "import": "tinycss2"
       }
     },
     "executables": [

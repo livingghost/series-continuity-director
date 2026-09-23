@@ -1,6 +1,6 @@
 # Changelog
 
-## [2026.09.23.2] - 2026-09-23
+## [2026.09.23.3] - 2026-09-23
 
 Initial release.
 
@@ -29,5 +29,5 @@ Initial release.
 - Send only to https endpoints within an operator-set network deadline, never follow a redirect with a credential, and record a redirect, a server error or a lost connection as an unknown outcome that blocks resending.
 - Write every command's output as UTF-8 whatever the console code page, print readable text in a terminal and JSON to a pipe or with `--json`, write project files atomically under the project lock, and refuse to write into a directory that is not a project or lies inside the installed suite.
 - Render SVG references with resvg, which pip installs on every platform without a system library; it draws images a document embeds as data and reads no file or URL the document names.
-- Count a media dependency as present only when its smallest operation runs, print the command that installs each missing one, and run those commands with `--install` once the user confirms. Python packages go through the running Python's installer, pip or uv, or into a virtual environment with `--venv` where the system manages that Python; FFmpeg comes from the platform's package manager.
+- Count a media dependency as present only when its smallest operation runs, print the command that installs each missing one, and run those commands with `--install` once the user confirms. Python packages go through the running Python's installer, pip or uv, or into a virtual environment with `--venv` where the system manages that Python; FFmpeg comes from the platform's package manager. Each media version is written once, in `requirements-media.txt`, so a dependency update needs no second edit.
 - Validate with one aggregate check that runs its commands concurrently and names each one as it finishes; CI runs every check once per platform and publishes a release only from a commit on main whose CI succeeded.

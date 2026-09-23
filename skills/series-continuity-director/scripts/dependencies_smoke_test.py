@@ -15,9 +15,23 @@ import dependencies as d
 
 
 class DependencyTests(unittest.TestCase):
-    def test_requirements_match_declared_distributions(self):
-        lines = (d.ROOT / 'requirements-media.txt').read_text().splitlines()
-        self.assertEqual(lines, [rule['requirement'] for rule in d.declaration()['media']['distributions'].values()])
+    def test_requirements_and_declaration_name_the_same_distributions(self):
+        declared = json.loads((d.ROOT / 'config/dependencies.json').read_text(encoding='utf-8'))
+        self.assertEqual(sorted(d.requirements()), sorted(declared['media']['distributions']))
+        self.assertTrue(all(set(rule) == {'import'} for rule in declared['media']['distributions'].values()))
+
+    def test_bounds_are_read_in_either_order(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'requirements-media.txt'
+            path.write_text('Pillow>=12.3.0,<13\nresvg-py<0.6, >=0.5  # renderer\n', encoding='utf-8')
+            with patch.object(d, 'REQUIREMENTS', path):
+                bounds = d.requirements()
+            self.assertEqual(bounds['Pillow']['minimum_release'], [12, 3, 0])
+            self.assertEqual(bounds['resvg-py']['maximum_release_exclusive'], [0, 6])
+            for broken in ('Pillow>=12', 'Pillow>=12,<13,<14', 'Pillow~=12.0', 'Pillow'):
+                path.write_text(broken + '\n', encoding='utf-8')
+                with self.subTest(line=broken), patch.object(d, 'REQUIREMENTS', path), self.assertRaises(ValueError):
+                    d.requirements()
 
     def test_core_imports_on_bare_interpreter(self):
         for name in ('production_workflow', 'submission_gate', 'production_dispatch', 'production_inputs', 'route_reading'):
