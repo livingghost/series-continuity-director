@@ -292,6 +292,19 @@ class FormPersonaTests(unittest.TestCase):
                        'from': '9. KNOWLEDGE > Expertise > field', 'quoted': False}, changes)
         self.assertEqual({c['change'] for c in changes}, {'renamed'})
 
+    def test_a_changed_scene_plot_reaches_its_material(self):
+        import session_entry_points
+        self.drafted()
+        scene.build(self.root, 'plan.json', 'material')
+        self.plot('ch2')
+        row = scene.impact(self.root)['scenes'][0]
+        self.assertEqual(row['status'], 'stale')
+        self.assertIn({'source': 'narrative/scenes/SC01-plot.json', 'status': 'stale',
+                       'changes': [{'anchor': scene.WHOLE, 'change': 'changed', 'quoted': True}]}, row['sources'])
+        action = session_entry_points.persona_change_action(self.root)
+        self.assertTrue(action.startswith('Rebuild the scene persona material for SC01 (material/material.json): '
+                                          'narrative/scenes/SC01-plot.json changed. '), action)
+
     def test_a_scene_without_material_is_listed_for_its_persona(self):
         report = scene.impact(self.root, 'narrative/personas/c02.md')
         self.assertEqual([(row['scene_id'], row['character']) for row in report['unrecorded']], [('SC01', 'C02')])

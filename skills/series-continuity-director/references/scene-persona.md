@@ -130,7 +130,7 @@ in story order, each with its status:
 
 | Status | Meaning |
 |---|---|
-| `stale` | A heading or field the material quoted changed, or a field appeared under a quoted heading. |
+| `stale` | A heading or field the material quoted changed, a field appeared under a quoted heading, or a source without headings, such as the scene plot, changed. |
 | `review` | Only headings or fields it did not quote changed, were added, answered or removed. |
 | `current` | Nothing it read changed. |
 | `superseded` | A later material names it in `supersedes`. |

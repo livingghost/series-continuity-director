@@ -36,6 +36,8 @@ RELATIONS = '13. RELATIONSHIPS > Relationship-Specific Realizations > '
 IMPORTANT_PEOPLE = '13. RELATIONSHIPS > Important People'
 # Where no material is kept: runs hold pinned copies of one, and media holds renders.
 SKIPPED = ('production', 'runs', 'media')
+# The anchor a change to a source without headings is reported at.
+WHOLE = 'the whole file'
 
 
 def schema(value: dict, name: str) -> None:
@@ -502,7 +504,12 @@ def renames(before: dict[str, dict], after: dict[str, dict]) -> dict[str, str]:
 
 
 def compare_source(root: Path, value: dict, source: dict) -> dict:
-    """What changed in one Markdown source since the material read it, and whether the material quoted it."""
+    """What changed in one source since the material read it, and whether the material quoted it.
+
+    A Markdown source is compared heading by heading. Any other source, such as
+    the scene plot, has no parts the material quotes, so any change to it
+    reaches the material whole.
+    """
     row = {'source': source['path'], 'changes': []}
     try:
         raw = m.read(m.local(root, source['path']))
@@ -510,6 +517,8 @@ def compare_source(root: Path, value: dict, source: dict) -> dict:
         return {**row, 'status': 'missing'}
     if m.digest(raw) == source['sha256']:
         return {**row, 'status': 'current'}
+    if not source['units']:
+        return {**row, 'status': 'stale', 'changes': [{'anchor': WHOLE, 'change': 'changed', 'quoted': True}]}
     before = {unit['anchor']: unit for unit in source['units']}
     after = {unit['anchor']: unit for unit in units_of.units(raw.decode('utf-8'))[0]}
     definitions = [d for d in value['definitions'] if d['source_id'] == source['source_id']]
@@ -554,7 +563,7 @@ def impact(root: Path, persona: str | None = None) -> dict:
     runs = material_runs(root)
     scenes, touched = [], set()
     for relative, value in materials:
-        sources = [s for s in value['sources'] if s.get('units') and (persona is None or s['path'] == persona)]
+        sources = [s for s in value['sources'] if persona is None or s['path'] == persona]
         if not sources:
             continue
         compared = [compare_source(root, value, source) for source in sources]

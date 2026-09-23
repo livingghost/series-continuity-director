@@ -58,6 +58,16 @@ def main() -> int:
         expect(bool(validate_changelog(text.replace("Initial release.", "").replace("Product changes.", "" ).replace("- \n", "\n"), "2026.09.19.1", style=style)), f"{style}: heading-only current section rejected")
         expect(bool(validate_changelog(text.replace(heading, "Current capabilities"), "2026.09.19.1", style=style)), f"{style}: dated release required")
         expect(bool(validate_changelog(text + f"\n## {heading}\nDuplicate.\n", "2026.09.19.1", style=style)), f"{style}: duplicate current entry rejected")
+        older = "2026.09.18.2" if style == "plain" else "[2026.09.18.2] - 2026-09-18"
+        newer = "2026.09.19.2" if style == "plain" else "[2026.09.19.2] - 2026-09-19"
+        history = f"# Changelog\n\n## {newer}\n\n- Later changes.\n\n## {heading}\n\n- Product changes.\n\n## {older}\n\nInitial release.\n"
+        expect(not validate_changelog(history, "2026.09.19.2", style=style), f"{style}: earlier entries kept below the current one")
+        expect(bool(validate_changelog(history.replace(f"## {older}", f"## {newer.replace('09.19.2', '09.19.3')}"), "2026.09.19.2", style=style)),
+               f"{style}: a newer entry below an older one rejected")
+        expect(bool(validate_changelog(history.replace("Initial release.\n", ""), "2026.09.19.2", style=style)),
+               f"{style}: an earlier entry without notes rejected")
+        expect(bool(validate_changelog(history.replace(f"## {older}", "## Earlier notes"), "2026.09.19.2", style=style)),
+               f"{style}: an earlier heading that is not a release rejected")
     expect(bool(validate_changelog("# Log\n## [2026.09.19.1] - 2026-09-18\nChanges.\n", "2026.09.19.1", style="dated")), "explicit date must match CalVer date")
     # Check actual distributed product files via the CLI, not only parser units.
     cli = subprocess.run([sys.executable, str(Path(__file__).with_name("release_contract.py")), "--root", str(root), "--tag", "v" + version], capture_output=True, text=True, encoding='utf-8')

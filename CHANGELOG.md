@@ -1,21 +1,73 @@
 # Changelog
 
+## [2026.09.23.10] - 2026-09-23
+
+- Keep one CHANGELOG entry per release, newest first, with every earlier entry as it was written. The release contract checks each entry's heading, date, order and notes.
+- Report a scene material as stale in `scene_persona.py impact` and `session_entry_points.py --next` when a source without headings, such as its scene plot, changed; the report compared only Markdown sources.
+- Drop an unused import from `persona_units.py`.
+
 ## [2026.09.23.9] - 2026-09-23
 
-Initial release.
+- Report a Persona heading or field whose text stayed and whose name changed, or that moved under a renamed heading, as renamed in `scene_persona.py impact`, with the anchor it had. The scene material keeps a second hash of every heading and field it read, without its own heading line or field label.
+- Check that `scene_persona.py impact` names each production run that used a material, with its recorded selection, against a real prepared run.
+
+## [2026.09.23.8] - 2026-09-23
+
+- Cut a scene's Persona material by heading and field, as `persona_units.py` names them, and record the hash of every heading and field read. `scene_persona.py draft` starts a plan from a scene plot with each character's Persona core and relations. The build refuses a Persona of the wrong phase for the chapter, and a core left out or unanswered. `scene_persona.py impact` lists in story order every scene a later Persona change reaches, quoted or only read, with the runs that used it; a rebuilt material records how it treated each change and which material it supersedes.
+
+## [2026.09.23.7] - 2026-09-23
+
+- Write a frame of two or more figures so they stay apart: the count and their relation first, each figure in its own passage, a difference the camera can see, and a carrier that holds each identity (an adopted image per figure, a regional control, or one generation per figure composed). Contact that merges two figures is repaired by rebuilding it, and the gate carries the figures a visual block names to review.
+
+## [2026.09.23.6] - 2026-09-23
+
+- Build a shot's state from one chain file with `shot_chain.py`: the world at the story point with the scene's id as the scene context, each character's state, the scene context and each projection, then every hash the camera, shot projection and request bind, each sealed and checked complete.
+- Show two recurring characters in one frame once each has an image adopted for its `ID/identity` role. The refusal names the single-subject sheet that comes first, and `session_entry_points.py --next` lists what a series still lacks in order: its story, the identity sheets, the camera of the next shot and that shot's request.
+- Name scenes, shots and transitions with one id shape across scene plots, cameras, requests and state, and open a production line under its id as given.
+- Draft request settings with `submission_draft.py new --parameter NAME VALUE`. The dispatch dry run names each field a send reads beyond the submission, with the values that fill it. `vocabulary.py read` reads a prose text for the listed terms inside it.
+- Keep a project's working inputs, such as reading applications and state requests, under `work/`, where validation checks only their syntax. `seal_contract.py` also seals the public contract manifest after a schema changes.
+
+## [2026.09.23.5] - 2026-09-23
+
+- Load a SKILL.md under the specification's 5,000-token cap: the stage checklists, the project files and the command details live in the references and `scripts/README.md`, which the routing table names, and validation refuses a body over the cap.
+
+## [2026.09.23.4] - 2026-09-23
+
+- Require Pillow 12.3.0, defusedxml 0.7.1 and tinycss2 1.5.1 or later within their major versions.
+- Derive the versions the dependency tests simulate from the declared minimums, so moving a bound needs no test edit.
+
+## [2026.09.23.3] - 2026-09-23
+
+- Write each media version once, in `requirements-media.txt`, so a dependency update needs no second edit; `config/dependencies.json` keeps only import names and executables.
+- Refuse a requirement line without exactly one lower and one upper numeric bound, and a distribution the two files do not both name.
+
+## [2026.09.23.2] - 2026-09-23
+
+- Render SVG references with resvg, which pip installs on every platform without a system library; it draws images a document embeds as data and reads no file or URL the document names.
+- Count a media dependency as present only when its smallest operation runs, print the command that installs each missing one, and run those commands with `--install` once the user confirms. Python packages go through the running Python's installer, pip or uv, or into a virtual environment with `--venv` where the system manages that Python; FFmpeg comes from the platform's package manager.
+- Print readable text in a terminal and JSON to a pipe or with `--json` for the commands a person runs directly.
+- Accept SVG editor metadata, `data-*`, `aria-*` and `role` attributes while still refusing event handlers and external references.
+- Record WAV as `audio/wav`, resolve a drafted submission's paths against the project, and require `--suite-maintenance` to update the suite's own target profiles.
+
+## [2026.09.23.1] - 2026-09-23
+
+- Record the author's approval of the narrative and of each scene plot with a command that computes its hash, draft a scene plot from what the narrative declares, and list the plots written against an earlier narrative.
+- Write a submission with `submission_draft.py` and its visual continuity block with `visual_continuity.py`; every field still to decide is a placeholder the gate refuses until it is filled.
+- Submit images for comics and prose: a page, a panel of a page, or a passage of the approved scene plot is a unit a submission can depict.
+- Work with any generation service. A target profile describes the model, each service's offering carries its own request keys and request shape, and a service record names its transport, which implements the transport contract. A submission that names no service is checked against the model alone.
+- Send only to https endpoints within an operator-set network deadline, never follow a redirect with a credential, and record a redirect, a server error or a lost connection as an unknown outcome that blocks resending.
+- Write every command's output as UTF-8 whatever the console code page, write project files atomically under the project lock, and refuse to write into a directory that is not a project or lies inside the installed suite.
+- Validate with one aggregate check that runs its commands concurrently and names each one as it finishes; CI runs every check once per platform and publishes a release only from a commit on main whose CI succeeded.
+- Run production in every initialized project, under a symlinked parent directory and on volumes without hard links; accept the registry's own record shape; refuse path names that are ambiguous on Windows.
+- Accept static SVG with editor metadata while refusing active and external content, and record an oversized image as unmeasured.
+
+## [2026.09.22.3] - 2026-09-22
 
 - Consult directing vocabulary and complete project tactics, preserve explicit applications as production sources, and review their effect on actual results.
 - Save series work before it is reused: a one-off answer needs no project, work whose decisions a later step reuses gets its project before the first draft that will be revised, checkpoints are written at recoverable boundaries, and a session resumes in a stated order and reports what is saved by its actual guarantee. The project's `work/README.md` states both.
 - Admit a person to the cast on the author's decision: an agent-proposed named character is a candidate in the design record until confirmed, a confirmation covers only its stated scope, an unnamed recurring participant keeps a stable identity, every person uses the one persona form at the depth their use needs, and what a finished scene adds about a person is classified before it is written back. Story Structure section 6 owns these rules.
 - The verified Scene Persona document is the record that a persona is ready for one use; the persona form's completion rule governs a release.
 - Agent trials of unprompted depth, cast admission or persistence carry no reminders; the author's answer to a correctly raised admission request is a scripted input.
-- Direct a recurring-character series so the story above it and the identity, state, wardrobe, prop ownership, camera geography and accepted history below it survive from scene to scene: narrative, persona, world and visual design in a project workspace, scene plots approved before any wording, shots with explicit viewpoint and coverage, and a submission gate that refuses what can be proved wrong before anything is spent.
-- Bind production to explicit authority: prepared immutable runs, bounded submissions with durable no-resend recovery, reviewed child runs for repairs, and retained-output recovery.
-- Reuse verified scene material: scene-specific Persona documents built from complete sources, preserved originals with evidence-bound extraction proposals, and creative alternatives kept outside accepted work.
-- Cut a scene's Persona material by heading and field, as `persona_units.py` names them, and record the hash of every heading and field read. `scene_persona.py draft` starts a plan from a scene plot with each character's Persona core and relations. The build refuses a Persona of the wrong phase for the chapter, and a core left out or unanswered. `scene_persona.py impact` lists in story order every scene a later Persona change reaches, quoted or only read, with the runs that used it, and reports a heading or field that only changed name as renamed; a rebuilt material records how it treated each change and which material it supersedes.
-- Build timed material on separate story, performance, source and edit clocks, render declared trims, holds, retiming, layered motion and audio mixing through FFmpeg, and inspect actual media and locators.
-- Inspect outcomes without a parallel ledger: read-only run reviews, evidence studies, explicitly configured agent trials and repair analysis over recorded reviews.
-- Read complete material by default with operator-owned budgets instead of invented ceilings. The product identity is CalVer (`YYYY.MM.DD.N`, UTC), checked by the release contract in CI and release validation.
 - Read full route documents and active guides through one snapshot, with paged replay and source-bound application records.
 - Build formal inputs from explicit choices, accepted identities, reference bindings, and current evidence instead of copying hashes by hand.
 - Keep undecided visual exploration in single-subject candidates until the author supplies the decisions required for adoption or shared scenes.
@@ -23,19 +75,14 @@ Initial release.
 - Release unused reservations through the recorded execution boundary, retaining consumed uses and refusing automatic resubmission after uncertainty.
 - Preserve original schema sources, record attributed reference schemas, and attach completed trial evidence to exact observed request profiles.
 - Draft variations from recorded candidates and resume from retained evidence, preserving valid sources and delegation without reusing execution tokens.
-- Record the author's approval of the narrative and of each scene plot with a command that computes its hash, draft a scene plot from what the narrative declares, and list the plots written against an earlier narrative.
-- Write a submission with `submission_draft.py` and its visual continuity block with `visual_continuity.py`; every field still to decide is a placeholder the gate refuses until it is filled.
-- Submit images for comics and prose: a page, a panel of a page, or a passage of the approved scene plot is a unit a submission can depict.
-- Work with any generation service. A target profile describes the model, each service's offering carries its own request keys and request shape, and a service record names its transport, which implements the transport contract. A submission that names no service is checked against the model alone.
-- Send only to https endpoints within an operator-set network deadline, never follow a redirect with a credential, and record a redirect, a server error or a lost connection as an unknown outcome that blocks resending.
-- Write every command's output as UTF-8 whatever the console code page, print readable text in a terminal and JSON to a pipe or with `--json`, write project files atomically under the project lock, and refuse to write into a directory that is not a project or lies inside the installed suite.
-- Render SVG references with resvg, which pip installs on every platform without a system library; it draws images a document embeds as data and reads no file or URL the document names.
-- Count a media dependency as present only when its smallest operation runs, print the command that installs each missing one, and run those commands with `--install` once the user confirms. Python packages go through the running Python's installer, pip or uv, or into a virtual environment with `--venv` where the system manages that Python; FFmpeg comes from the platform's package manager. Each media version is written once, in `requirements-media.txt`, so a dependency update needs no second edit. The media scope requires Pillow 12.3.0, defusedxml 0.7.1 and tinycss2 1.5.1 or later within their major versions.
-- Load a SKILL.md under the specification's 5,000-token cap: the stage checklists, the project files and the command details live in the references and `scripts/README.md`, which the routing table names, and validation refuses a body over the cap.
-- Validate with one aggregate check that runs its commands concurrently and names each one as it finishes; CI runs every check once per platform and publishes a release only from a commit on main whose CI succeeded.
-- Build a shot's state from one chain file with `shot_chain.py`: the world at the story point with the scene's id as the scene context, each character's state, the scene context and each projection, then every hash the camera, shot projection and request bind, each sealed and checked complete.
-- Show two recurring characters in one frame once each has an image adopted for its `ID/identity` role. The refusal names the single-subject sheet that comes first, and `session_entry_points.py --next` lists what a series still lacks in order: its story, the identity sheets, the camera of the next shot and that shot's request.
-- Name scenes, shots and transitions with one id shape across scene plots, cameras, requests and state, and open a production line under its id as given.
-- Draft request settings with `submission_draft.py new --parameter NAME VALUE`. The dispatch dry run names each field a send reads beyond the submission, with the values that fill it. `vocabulary.py read` reads a prose text for the listed terms inside it.
-- Keep a project's working inputs, such as reading applications and state requests, under `work/`, where validation checks only their syntax. `seal_contract.py` also seals the public contract manifest after a schema changes.
-- Write a frame of two or more figures so they stay apart: the count and their relation first, each figure in its own passage, a difference the camera can see, and a carrier that holds each identity (an adopted image per figure, a regional control, or one generation per figure composed). Contact that merges two figures is repaired by rebuilding it, and the gate carries the figures a visual block names to review.
+
+## [2026.09.20.1] - 2026-09-20
+
+Initial release.
+
+- Direct a recurring-character series so the story above it and the identity, state, wardrobe, prop ownership, camera geography and accepted history below it survive from scene to scene: narrative, persona, world and visual design in a project workspace, scene plots approved before any wording, shots with explicit viewpoint and coverage, and a submission gate that refuses what can be proved wrong before anything is spent.
+- Bind production to explicit authority: prepared immutable runs, bounded submissions with durable no-resend recovery, reviewed child runs for repairs, and retained-output recovery.
+- Reuse verified scene material: scene-specific Persona documents built from complete sources, preserved originals with evidence-bound extraction proposals, and creative alternatives kept outside accepted work.
+- Build timed material on separate story, performance, source and edit clocks, render declared trims, holds, retiming, layered motion and audio mixing through FFmpeg, and inspect actual media and locators.
+- Inspect outcomes without a parallel ledger: read-only run reviews, evidence studies, explicitly configured agent trials and repair analysis over recorded reviews.
+- Read complete material by default with operator-owned budgets instead of invented ceilings. The product identity is CalVer (`YYYY.MM.DD.N`, UTC), checked by the release contract in CI and release validation.

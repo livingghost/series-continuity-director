@@ -259,7 +259,7 @@ def persona_change_action(project: Path) -> str | None:
     """The first scene a Persona change reaches, quoted before merely read."""
 
     sys.path.insert(0, str(ROOT / "scripts"))
-    from scene_persona import impact  # noqa: PLC0415
+    from scene_persona import WHOLE, impact  # noqa: PLC0415
 
     try:
         reach = impact(project)
@@ -272,10 +272,13 @@ def persona_change_action(project: Path) -> str | None:
                 continue
             source = next(s for s in row["sources"] if s["status"] == status)
             change = next(c for c in source["changes"] if c["quoted"] == (status == "stale"))
-            quoted = "which it quoted" if status == "stale" else "which it did not quote"
+            if change["anchor"] == WHOLE:
+                where = f"{source['source']} changed"
+            else:
+                quoted = "which it quoted" if status == "stale" else "which it did not quote"
+                where = f"{source['source']} changed at {change['anchor']}, {quoted}"
             return (f"{verb} the scene persona material for {row['scene_id']} ({row['material']}): "
-                    f"{source['source']} changed at {change['anchor']}, {quoted}. {command} lists "
-                    "every scene the change reaches")
+                    f"{where}. {command} lists every scene the change reaches")
     return None
 
 

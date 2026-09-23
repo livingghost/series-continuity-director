@@ -55,29 +55,51 @@ def validate_metadata(manifest: Mapping[str, Any], tag: str | None = None) -> li
 
 
 def validate_changelog(text: str, version: str, *, style: str) -> list[str]:
-    """Check the single current product entry and its substantive release notes."""
+    """Check every release entry, newest first, and that the newest is the current release.
+
+    Each release adds its own entry above the earlier ones, which stay as they
+    were. An entry is a heading in the declared style, whose date matches its
+    CalVer, followed by substantive notes.
+    """
     try:
-        year, month, day, _ = calver_parts(version)
+        calver_parts(version)
     except ValueError as exc:
         return [str(exc)]
     if style not in {"plain", "dated"}:
         raise ValueError("unsupported product changelog heading style")
-    iso = date(year, month, day).isoformat()
-    expected = version if style == "plain" else f"[{version}] - {iso}"
+
+    def heading_of(release: str) -> str:
+        year, month, day, _ = calver_parts(release)
+        return release if style == "plain" else f"[{release}] - {date(year, month, day).isoformat()}"
+
+    expected = heading_of(version)
     sections = list(re.finditer(r"(?m)^##[ \t]+([^\r\n]+)[ \t]*$", text))
-    if len(sections) != 1:
-        return ["CHANGELOG.md must contain one current product release entry"]
-    index, heading = 0, sections[0]
+    if not sections:
+        return [f"CHANGELOG.md must open its entries with ## {expected}"]
     errors = []
-    if heading.group(1).strip() != expected:
+    if sections[0].group(1).strip() != expected:
         errors.append(f"CHANGELOG.md newest release must be ## {expected}")
-    end = sections[index + 1].start() if index + 1 < len(sections) else len(text)
-    body = text[heading.end():end]
-    # A heading-only section is not a release record.
-    if not any(line.strip() and not line.lstrip().startswith(("#", "<!--")) for line in body.splitlines()):
-        errors.append("CHANGELOG.md current release has no substantive change notes")
-    if sum(m.group(1).strip() == expected for m in sections) != 1:
-        errors.append("CHANGELOG.md must contain exactly one current release entry")
+    releases: list[str] = []
+    for index, heading in enumerate(sections):
+        label = heading.group(1).strip()
+        found = re.fullmatch(r"\[([^\]]+)\] - .+" if style == "dated" else r"(.+)", label)
+        try:
+            release = found.group(1) if found else ""
+            if heading_of(release) != label:
+                raise ValueError
+        except ValueError:
+            errors.append(f"CHANGELOG.md heading ## {label} is not a release entry in the form ## {expected}")
+            continue
+        end = sections[index + 1].start() if index + 1 < len(sections) else len(text)
+        # A heading-only section is not a release record.
+        if not any(line.strip() and not line.lstrip().startswith(("#", "<!--"))
+                   for line in text[heading.end():end].splitlines()):
+            errors.append(f"CHANGELOG.md entry {release} has no substantive change notes")
+        if release in releases:
+            errors.append(f"CHANGELOG.md repeats the entry {release}")
+        elif releases and calver_parts(release) > calver_parts(releases[-1]):
+            errors.append(f"CHANGELOG.md entry {release} sits below the older {releases[-1]}; entries run newest first")
+        releases.append(release)
     return errors
 
 
