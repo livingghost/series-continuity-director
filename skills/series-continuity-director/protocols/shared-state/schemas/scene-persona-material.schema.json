@@ -319,6 +319,10 @@
                   "type": "string",
                   "pattern": "^[0-9a-f]{64}$"
                 },
+                "body_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
                 "blank": {
                   "type": "boolean"
                 }
@@ -326,6 +330,7 @@
               "required": [
                 "anchor",
                 "sha256",
+                "body_sha256",
                 "blank"
               ],
               "additionalProperties": false

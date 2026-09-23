@@ -278,6 +278,20 @@ class FormPersonaTests(unittest.TestCase):
                                           'narrative/personas/c01.md changed at 7. SPEECH > Speech Patterns > first_person'),
                         action)
 
+    def test_a_renamed_heading_or_field_is_reported_as_renamed(self):
+        self.drafted()
+        scene.build(self.root, 'plan.json', 'material')
+        persona = self.root / 'narrative/personas/c01.md'
+        text = persona.read_text(encoding='utf-8')
+        persona.write_text(text.replace('#### C02', '#### Tamsin').replace('- **field**:', '- **trade**:'), encoding='utf-8')
+        changes = scene.impact(self.root, 'narrative/personas/c01.md')['scenes'][0]['sources'][0]['changes']
+        relations = '13. RELATIONSHIPS > Relationship-Specific Realizations > '
+        self.assertIn({'anchor': relations + 'Tamsin > speech_realization', 'change': 'renamed',
+                       'from': relations + 'C02 > speech_realization', 'quoted': True}, changes)
+        self.assertIn({'anchor': '9. KNOWLEDGE > Expertise > trade', 'change': 'renamed',
+                       'from': '9. KNOWLEDGE > Expertise > field', 'quoted': False}, changes)
+        self.assertEqual({c['change'] for c in changes}, {'renamed'})
+
     def test_a_scene_without_material_is_listed_for_its_persona(self):
         report = scene.impact(self.root, 'narrative/personas/c02.md')
         self.assertEqual([(row['scene_id'], row['character']) for row in report['unrecorded']], [('SC01', 'C02')])

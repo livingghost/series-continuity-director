@@ -12,7 +12,9 @@ Its anchor is the heading path and, for a field, the field name, joined by
 `7. SPEECH > Speech Patterns > first_person`. A document with one level-1
 heading treats it as the title, and paths start below it. Template comments are
 instructions, not content: the text and the hash leave them out, so a comment
-that changes changes no unit.
+that changes changes no unit. A second hash leaves out the unit's own heading
+line or field label, so a renamed heading or field can be matched with what it
+was.
 
 An anchor written shorter than the full path names the one unit or heading whose
 path ends with it. A heading anchor covers every unit below the heading.
@@ -60,6 +62,16 @@ def _normalized(lines: list[str]) -> str:
     while kept and not kept[-1]:
         kept.pop()
     return "\n".join(kept)
+
+
+def _body(text: str, kind: str) -> str:
+    """A unit's text without its own heading line or field label, which a rename changes."""
+    lines = text.split("\n")
+    if kind == "heading" and lines and HEADING.match(lines[0]):
+        lines = lines[1:]
+    elif kind == "field" and lines:
+        lines[0] = FIELD.sub("", lines[0], count=1).strip()
+    return "\n".join(lines).strip("\n")
 
 
 def _blank(text: str, kind: str) -> bool:
@@ -175,6 +187,7 @@ def units(text: str) -> tuple[list[dict[str, Any]], list[str]]:
     counts: dict[str, int] = {}
     for unit in found:
         unit["sha256"] = hashlib.sha256(unit["text"].encode("utf-8")).hexdigest()
+        unit["body_sha256"] = hashlib.sha256(_body(unit["text"], unit["kind"]).encode("utf-8")).hexdigest()
         unit["blank"] = _blank(unit["text"], unit["kind"])
         counts[unit["anchor"]] = counts.get(unit["anchor"], 0) + 1
     repeated = sorted(anchor for anchor, count in counts.items() if count > 1)

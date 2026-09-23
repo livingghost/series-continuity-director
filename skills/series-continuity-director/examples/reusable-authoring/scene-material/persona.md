@@ -62,4 +62,4 @@ These cover complete originals, including definitions not quoted here. Reading a
 - scene (scene): 7a0158e5af8805bdbf93835eeb32d7f2647f2fd5ded6457087ae27e21cebb7c7
   Reading basis: Constructed example: the complete short source is shown; not evidence of real-agent reading.
 
-Material content SHA-256: 9c6139b83f34c4ef8a673ec2cb2d936e51a19fceeb7946ceef651a690a20a224
+Material content SHA-256: 9d4d0ca6776d22ae1c1b79a4a68672df10137a4046ed5727ae1993f5846879fd

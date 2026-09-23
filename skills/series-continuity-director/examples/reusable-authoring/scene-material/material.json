@@ -21,7 +21,7 @@
   "constraints": [
     "Do not infer a human voice or body from this functional model."
   ],
-  "content_sha256": "9c6139b83f34c4ef8a673ec2cb2d936e51a19fceeb7946ceef651a690a20a224",
+  "content_sha256": "9d4d0ca6776d22ae1c1b79a4a68672df10137a4046ed5727ae1993f5846879fd",
   "definitions": [
     {
       "anchor": "Controlling definition",
@@ -91,16 +91,19 @@
         {
           "anchor": "Controlling definition",
           "blank": false,
+          "body_sha256": "87e5dafbe4e1e62c38c65bf716a96899edcc28d4464e6675c4516c2ed30438c8",
           "sha256": "3e0daf8ce6c543bdd322aeb38b44884e0c731b421c7e058c0cc868622b519179"
         },
         {
           "anchor": "Expression",
           "blank": false,
+          "body_sha256": "3e7c10cf3526b97359ffb2f65b337b863dc09e03995b89b5356889424e73fc64",
           "sha256": "03cac6ab015afb20387d79c0b5c64d1a3be0013fd05ed6835503e5c4dfc1d28d"
         },
         {
           "anchor": "Contextual condition",
           "blank": false,
+          "body_sha256": "cba4368269489c60e906be5a284e407bab69f768d6ec675bb2f9b517f8296deb",
           "sha256": "382dacc171a44caddf311294138cbc87b1e73256642c7f2d457c7365932f1ebe"
         }
       ]
@@ -117,6 +120,7 @@
         {
           "anchor": "preamble",
           "blank": false,
+          "body_sha256": "8b4d09cee05ea01ad46d9d33e72d5e1e6863c2d090bf6b532f06465f0dde0a5b",
           "sha256": "8b4d09cee05ea01ad46d9d33e72d5e1e6863c2d090bf6b532f06465f0dde0a5b"
         }
       ]

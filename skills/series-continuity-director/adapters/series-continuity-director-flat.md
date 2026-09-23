@@ -320,6 +320,12 @@ in story order, each with its status:
 | `superseded` | A later material names it in `supersedes`. |
 | `missing` | A source it read is gone. |
 
+Each change is `changed`, `added`, `filled` (a blank field answered),
+`removed` or `renamed`. A heading or field whose text stayed and whose name
+changed, or that moved under a renamed heading, is `renamed` with the anchor it
+had. A quoted rename changes no meaning, but the plan still names the old
+anchor: point it at the new one and rebuild.
+
 It also lists the production runs that used each material, and the approved
 scene plots that read the Persona with no material recording what they relied
 on. A report, trimmed (synthetic):

@@ -58,6 +58,12 @@ class ProductionTests(unittest.TestCase):
         self.assertTrue(any(d['space'] == 'project' and d['path'] == 'persona.md' for d in prepared['dependencies']))
         self.assertNotIn('persona', prepared['route']['features'])
         self.assertFalse(any(r['path'].endswith('persona-template.md') for r in prepared['route']['reads']))
+    def test_impact_names_the_runs_that_used_a_material(self):
+        import scene_persona
+        self.scene_task(); run, _ = self.selected()
+        rows = scene_persona.impact(self.root)['scenes']
+        self.assertEqual([(row['material'], row['runs']) for row in rows],
+                         [('scene-material/material.json', [{'run': run, 'selection_recorded': True}])])
     def test_scene_run_invalidated_by_unquoted_original_content(self):
         self.scene_task(); run = self.prepare()
         with (self.root/'persona.md').open('a') as handle:

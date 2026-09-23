@@ -1,6 +1,6 @@
 # Changelog
 
-## [2026.09.23.8] - 2026-09-23
+## [2026.09.23.9] - 2026-09-23
 
 Initial release.
 
@@ -12,7 +12,7 @@ Initial release.
 - Direct a recurring-character series so the story above it and the identity, state, wardrobe, prop ownership, camera geography and accepted history below it survive from scene to scene: narrative, persona, world and visual design in a project workspace, scene plots approved before any wording, shots with explicit viewpoint and coverage, and a submission gate that refuses what can be proved wrong before anything is spent.
 - Bind production to explicit authority: prepared immutable runs, bounded submissions with durable no-resend recovery, reviewed child runs for repairs, and retained-output recovery.
 - Reuse verified scene material: scene-specific Persona documents built from complete sources, preserved originals with evidence-bound extraction proposals, and creative alternatives kept outside accepted work.
-- Cut a scene's Persona material by heading and field, as `persona_units.py` names them, and record the hash of every heading and field read. `scene_persona.py draft` starts a plan from a scene plot with each character's Persona core and relations. The build refuses a Persona of the wrong phase for the chapter, and a core left out or unanswered. `scene_persona.py impact` lists in story order every scene a later Persona change reaches, quoted or only read, with the runs that used it; a rebuilt material records how it treated each change and which material it supersedes.
+- Cut a scene's Persona material by heading and field, as `persona_units.py` names them, and record the hash of every heading and field read. `scene_persona.py draft` starts a plan from a scene plot with each character's Persona core and relations. The build refuses a Persona of the wrong phase for the chapter, and a core left out or unanswered. `scene_persona.py impact` lists in story order every scene a later Persona change reaches, quoted or only read, with the runs that used it, and reports a heading or field that only changed name as renamed; a rebuilt material records how it treated each change and which material it supersedes.
 - Build timed material on separate story, performance, source and edit clocks, render declared trims, holds, retiming, layered motion and audio mixing through FFmpeg, and inspect actual media and locators.
 - Inspect outcomes without a parallel ledger: read-only run reviews, evidence studies, explicitly configured agent trials and repair analysis over recorded reviews.
 - Read complete material by default with operator-owned budgets instead of invented ceilings. The product identity is CalVer (`YYYY.MM.DD.N`, UTC), checked by the release contract in CI and release validation.

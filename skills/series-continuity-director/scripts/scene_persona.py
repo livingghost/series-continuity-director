@@ -277,8 +277,8 @@ def compile_plan(root: Path, plan: dict) -> dict:
         if found:
             parsed[source['source_id']] = found
         sources.append({**copy.deepcopy(source), 'bytes': len(raw),
-                        'units': [{'anchor': unit['anchor'], 'sha256': unit['sha256'], 'blank': unit['blank']}
-                                  for unit in found]})
+                        'units': [{'anchor': unit['anchor'], 'sha256': unit['sha256'],
+                                   'body_sha256': unit['body_sha256'], 'blank': unit['blank']} for unit in found]})
     definitions = []
     for spec in plan['excerpts']:
         if spec['source_id'] not in raw_sources:
@@ -478,6 +478,29 @@ def material_runs(root: Path) -> dict[str, list[dict]]:
     return used
 
 
+def renames(before: dict[str, dict], after: dict[str, dict]) -> dict[str, str]:
+    """Anchors that only changed name: the same body under a new heading or field name.
+
+    A pair is the same field under a renamed heading, or a renamed heading or field
+    in the same place, and it must be the only match both ways.
+    """
+    removed = [anchor for anchor in before if anchor not in after]
+    added = [anchor for anchor in after if anchor not in before]
+
+    def fits(old: str, new: str) -> bool:
+        if before[old].get('body_sha256') != after[new]['body_sha256']:
+            return False
+        was, now = old.split(units_of.SEPARATOR), new.split(units_of.SEPARATOR)
+        return len(was) == len(now) and (was[-1] == now[-1] or was[:-1] == now[:-1])
+
+    pairs = {}
+    for old in removed:
+        options = [new for new in added if fits(old, new)]
+        if len(options) == 1 and sum(fits(other, options[0]) for other in removed) == 1:
+            pairs[old] = options[0]
+    return pairs
+
+
 def compare_source(root: Path, value: dict, source: dict) -> dict:
     """What changed in one Markdown source since the material read it, and whether the material quoted it."""
     row = {'source': source['path'], 'changes': []}
@@ -491,7 +514,13 @@ def compare_source(root: Path, value: dict, source: dict) -> dict:
     after = {unit['anchor']: unit for unit in units_of.units(raw.decode('utf-8'))[0]}
     definitions = [d for d in value['definitions'] if d['source_id'] == source['source_id']]
     quoted = {anchor for d in definitions for anchor in d['covers']}
+    moved = renames(before, after)
+    for old_anchor, new_anchor in moved.items():
+        row['changes'].append({'anchor': new_anchor, 'change': 'renamed', 'from': old_anchor,
+                               'quoted': old_anchor in quoted})
     for anchor in [*before, *(a for a in after if a not in before)]:
+        if anchor in moved or anchor in moved.values():
+            continue
         old, new = before.get(anchor), after.get(anchor)
         if old and new and old['sha256'] == new['sha256']:
             continue
