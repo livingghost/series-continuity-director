@@ -255,6 +255,30 @@ def shot_record_actions(project: Path, plots: list[dict]) -> list[str]:
     return actions
 
 
+def persona_change_action(project: Path) -> str | None:
+    """The first scene a Persona change reaches, quoted before merely read."""
+
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from scene_persona import impact  # noqa: PLC0415
+
+    try:
+        reach = impact(project)
+    except (ValueError, OSError, KeyError, TypeError):
+        return None
+    command = f"{ROOT / 'scripts' / 'scene_persona.py'} impact --root {project}"
+    for status, verb in (("stale", "Rebuild"), ("review", "Check")):
+        for row in reach["scenes"]:
+            if row["status"] != status:
+                continue
+            source = next(s for s in row["sources"] if s["status"] == status)
+            change = next(c for c in source["changes"] if c["quoted"] == (status == "stale"))
+            quoted = "which it quoted" if status == "stale" else "which it did not quote"
+            return (f"{verb} the scene persona material for {row['scene_id']} ({row['material']}): "
+                    f"{source['source']} changed at {change['anchor']}, {quoted}. {command} lists "
+                    "every scene the change reaches")
+    return None
+
+
 def next_actions(project: Path) -> list[str]:
     """The next thing to do, in the order the layers depend on each other.
 
@@ -369,6 +393,9 @@ def next_actions(project: Path) -> list[str]:
     if sheets:
         actions.append(sheets)
     actions.extend(shot_record_actions(project, approved))
+    persona_change = persona_change_action(project)
+    if persona_change:
+        actions.append(persona_change)
 
     # `index["gaps"]` is one list of unlike findings: a file still carrying the
     # blank form, a persona document the narrative names and nobody wrote, and

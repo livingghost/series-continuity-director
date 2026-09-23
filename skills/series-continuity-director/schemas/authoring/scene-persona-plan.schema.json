@@ -127,13 +127,9 @@
             "type": "string",
             "minLength": 1
           },
-          "start_line": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "end_line": {
-            "type": "integer",
-            "minimum": 1
+          "anchor": {
+            "type": "string",
+            "minLength": 1
           },
           "subject_ids": {
             "type": "array",
@@ -161,8 +157,7 @@
         "required": [
           "excerpt_id",
           "source_id",
-          "start_line",
-          "end_line",
+          "anchor",
           "subject_ids",
           "depends_on",
           "reason"
@@ -311,19 +306,71 @@
             "minLength": 1
           },
           "minItems": 0
+        },
+        "revisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "from_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "kind": {
+                "enum": [
+                  "correction",
+                  "addition"
+                ]
+              },
+              "anchors": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              },
+              "decision": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "source_id",
+              "from_sha256",
+              "kind",
+              "anchors",
+              "decision"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
         }
       },
       "required": [
         "by",
         "decision",
         "basis",
-        "limitations"
+        "limitations",
+        "revisions"
       ],
       "additionalProperties": false
     },
     "max_document_bytes": {
       "type": "integer",
       "minimum": 1
+    },
+    "supersedes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
     }
   },
   "required": [
@@ -340,7 +387,8 @@
     "constraints",
     "unknowns",
     "reopen_when",
-    "review"
+    "review",
+    "supersedes"
   ],
   "additionalProperties": false
 }

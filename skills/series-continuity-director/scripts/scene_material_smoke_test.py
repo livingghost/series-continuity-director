@@ -29,15 +29,16 @@ def fixture(root: Path, *, empty: bool = False, functional: bool = False) -> dic
     plan = {'material_id':'M','scene_id':'S','scene_source_id':'S','purpose':'Render the stated activity without inventing an obligatory arc.',
             'conditions':['Only the declared participants and information are in scope.'], 'subjects':subjects,
             'sources':source_specs,'excerpts':[] if empty else [
-                {'excerpt_id':'core','source_id':'P','start_line':1,'end_line':2,'subject_ids':['A'],'depends_on':[],
+                {'excerpt_id':'core','source_id':'P','anchor':'Portrayal','subject_ids':['A'],'depends_on':[],
                  'reason':'Preserve the controlling portrayal pattern.'},
-                {'excerpt_id':'expression','source_id':'P','start_line':3,'end_line':4,'subject_ids':['A'],'depends_on':['core'],
+                {'excerpt_id':'expression','source_id':'P','anchor':'Expression','subject_ids':['A'],'depends_on':['core'],
                  'reason':'Expression depends on the controlling portrayal pattern.'}],
             'applications':[] if empty else [{'application_id':'apply','subject_ids':['A'],'definition_ids':['expression','core'],
                 'kind':'interpretation','text':'Choose the response under these definitions; a pause need not signal distress.'}],
             'interactions':[], 'constraints':['No automatic canonical change.'], 'unknowns':[],
             'reopen_when':['A new topic, participant, source change, or portrayal aim changes applicability.'],
-            'review':{'by':'fixture-author','decision':'ready','basis':'Constructed reading/application test, not an empirical agent run.','limitations':[]}}
+            'review':{'by':'fixture-author','decision':'ready','basis':'Constructed reading/application test, not an empirical agent run.','limitations':[],'revisions':[]},
+            'supersedes':None}
     (root/'plan.json').write_bytes(m.encoded(plan))
     return plan
 
@@ -127,6 +128,171 @@ class SceneMaterialTests(unittest.TestCase):
     def test_no_persona_model_invented_for_absent_cast(self):
         self.plan=fixture(self.root,empty=True);self.build()
         v=m.decode((self.root/'material/material.json').read_bytes());self.assertEqual(v['subjects'],[])
+
+
+FIXTURES = Path(__file__).resolve().parents[1] / 'examples' / 'submission-gate' / 'fixtures'
+
+
+def form_persona(title: str, *, speech: str = 'plain first person, short sentences', core: bool = True) -> str:
+    """A persona in the installed form's shape, cut to the headings a scene reads."""
+    answer = (lambda text: ' ' + text) if core else (lambda text: '')
+    return (f'---\nkind: persona\nid: x\n---\n# {title}\n\n'
+            '## 1. TIMELINE\n\n### Epistemic Position in This Phase\n\n'
+            f'- **available_evidence**:{answer("what the subject saw at the bench")}\n'
+            '  <!-- Evidence legitimately available in this phase. -->\n\n'
+            '## 2. PORTRAYAL IDENTITY\n\n### Established Identity Facts\n\n'
+            f'- **identity_core**:{answer("keeps a promise to the letter")}\n\n'
+            '## 7. SPEECH\n\n### Speech Patterns\n\n'
+            f'- **first_person**:{answer(speech)}\n\n'
+            '## 9. KNOWLEDGE\n\n### Expertise\n\n- **field**: bench repair\n- **hobby**:\n\n'
+            '## 13. RELATIONSHIPS\n\n### Important People\n\n| Person | Relationship |\n|---|---|\n| C02 | bench partner |\n\n'
+            '### Relationship-Specific Realizations\n\n#### C02\n\n- **speech_realization**: drops the formal register\n\n'
+            f'## 17. PROHIBITIONS\n\n- **never**:{answer("does not lie to C02")}\n')
+
+
+class FormPersonaTests(unittest.TestCase):
+    """A persona in the form: its core, its phase, a drafted plan and the reach of a later change."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        (self.root / 'narrative' / 'personas').mkdir(parents=True)
+        (self.root / 'narrative' / 'scenes').mkdir()
+        narrative = json.loads((FIXTURES / 'narrative.json').read_text(encoding='utf-8'))
+        narrative.pop('approved')
+        c01, c02 = narrative['characters']
+        c01['persona'] = 'narrative/personas/c01-later.md'
+        c01['phases'] = [{'id': 'early', 'persona': 'narrative/personas/c01.md', 'from_chapter': 'ch1'},
+                         {'id': 'later', 'persona': 'narrative/personas/c01-later.md', 'from_chapter': 'ch2',
+                          'changed': 'speaks more openly', 'held': 'keeps promises'}]
+        c02['persona'] = 'narrative/personas/c02.md'
+        self.write('narrative/narrative.json', m.encoded(narrative))
+        self.write('narrative/personas/c01.md', form_persona('C01 early').encode('utf-8'))
+        self.write('narrative/personas/c01-later.md', form_persona('C01 later', speech='open, longer sentences').encode('utf-8'))
+        self.write('narrative/personas/c02.md', form_persona('C02').encode('utf-8'))
+        self.plot('ch1')
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def write(self, relative: str, raw: bytes) -> None:
+        (self.root / relative).write_bytes(raw)
+
+    def plot(self, chapter: str) -> None:
+        from scene_plot import content_sha256
+        plot = json.loads((FIXTURES / 'scene-plot.json').read_text(encoding='utf-8'))
+        plot.pop('approved')
+        plot.update(scene_id='SC01', chapter=chapter, characters=['C01', 'C02'])
+        plot['approved'] = {'by': 'fixture author', 'at': '2026-09-23T00:00:00Z', 'content_sha256': content_sha256(plot)}
+        self.write('narrative/scenes/SC01-plot.json', m.encoded(plot))
+
+    def drafted(self, name: str = 'plan.json') -> dict:
+        result = scene.draft(self.root, 'narrative/scenes/SC01-plot.json', name)
+        self.assertTrue(result['ok'])
+        plan = m.load(self.root, name)
+        for source in plan['sources']:
+            source['reading_basis'] = 'Constructed test: the complete file was read.'
+        for subject in plan['subjects']:
+            subject['portrayal_basis'] = 'Constructed test portrayal.'
+        plan.update(purpose='Constructed test scene.', conditions=['At the bench.'], reopen_when=['A source changes.'])
+        plan['review'].update(by='fixture author', basis='Constructed test review.', decision='ready')
+        (self.root / name).write_bytes(m.encoded(plan))
+        return plan
+
+    def test_comments_are_not_content(self):
+        import persona_units
+        first = persona_units.index(form_persona('C01'))
+        second = persona_units.index(form_persona('C01').replace('<!-- Evidence legitimately available in this phase. -->',
+                                                                  '<!-- Different instructions. -->'))
+        self.assertEqual(first, second)
+
+    def test_draft_names_the_core_and_the_other_person(self):
+        plan = self.drafted()
+        anchors = {row['excerpt_id']: row['anchor'] for row in plan['excerpts']}
+        self.assertEqual(anchors['C01-core-2'], '1. TIMELINE > Epistemic Position in This Phase')
+        self.assertEqual(anchors['C01-with-C02'], '13. RELATIONSHIPS > Relationship-Specific Realizations > C02')
+        self.assertEqual(plan['sources'][1]['path'], 'narrative/personas/c01.md')
+        self.assertTrue(scene.build(self.root, 'plan.json', 'material')['ok'])
+
+    def test_an_unfilled_draft_is_refused(self):
+        scene.draft(self.root, 'narrative/scenes/SC01-plot.json', 'raw.json')
+        with self.assertRaisesRegex(ValueError, 'placeholder not filled: .*purpose'):
+            scene.build(self.root, 'raw.json', 'material')
+
+    def test_the_core_is_carried_and_answered(self):
+        plan = self.drafted()
+        plan['excerpts'] = [row for row in plan['excerpts'] if row['anchor'] != '7. SPEECH > Speech Patterns']
+        (self.root / 'plan.json').write_bytes(m.encoded(plan))
+        with self.assertRaisesRegex(ValueError, "leaves out '7. SPEECH > Speech Patterns' of the persona core"):
+            scene.build(self.root, 'plan.json', 'material')
+        self.write('narrative/personas/c02.md', form_persona('C02', core=False).encode('utf-8'))
+        plan = self.drafted('blank.json')
+        with self.assertRaisesRegex(ValueError, 'C02: the persona core .* is blank'):
+            scene.build(self.root, 'blank.json', 'material')
+
+    def test_the_chapter_decides_the_phase(self):
+        self.drafted()
+        self.plot('ch2')
+        plan = m.load(self.root, 'plan.json')
+        plan['sources'][0]['sha256'] = m.digest((self.root / 'narrative/scenes/SC01-plot.json').read_bytes())
+        (self.root / 'plan.json').write_bytes(m.encoded(plan))
+        with self.assertRaisesRegex(ValueError, 'C01 is in the phase whose persona is narrative/personas/c01-later.md'):
+            scene.build(self.root, 'plan.json', 'material')
+
+    def test_impact_separates_quoted_from_unquoted_changes(self):
+        self.drafted()
+        scene.build(self.root, 'plan.json', 'material')
+        self.assertEqual(scene.impact(self.root)['scenes'][0]['status'], 'current')
+        persona = self.root / 'narrative/personas/c01.md'
+        persona.write_text(persona.read_text(encoding='utf-8').replace('- **hobby**:', '- **hobby**: kite flying'), encoding='utf-8')
+        report = scene.impact(self.root, 'narrative/personas/c01.md')
+        row = report['scenes'][0]
+        self.assertEqual((row['status'], report['ok']), ('review', True))
+        self.assertEqual(row['sources'][0]['changes'],
+                         [{'anchor': '9. KNOWLEDGE > Expertise > hobby', 'change': 'filled', 'quoted': False}])
+        persona.write_text(persona.read_text(encoding='utf-8').replace('short sentences', 'clipped sentences'), encoding='utf-8')
+        report = scene.impact(self.root, 'narrative/personas/c01.md')
+        self.assertEqual((report['scenes'][0]['status'], report['ok']), ('stale', False))
+        self.assertIn({'anchor': '7. SPEECH > Speech Patterns > first_person', 'change': 'changed', 'quoted': True},
+                      report['scenes'][0]['sources'][0]['changes'])
+        self.assertEqual(report['unrecorded'], [])
+
+    def test_the_blank_form_carries_no_answer(self):
+        import persona_units
+        template = Path(__file__).resolve().parents[1] / 'assets/project-templates/narrative/personas/persona-template.md'
+        found, repeated = persona_units.units(template.read_text(encoding='utf-8'))
+        self.assertEqual(repeated, [])
+        # Table headers, rules and the defaults a form ships in a row are not answers.
+        self.assertEqual([unit['anchor'] for unit in found if not unit['blank']],
+                         ['front matter', 'Persona Template (Single Phase)'])
+
+    def test_next_names_the_scene_a_quoted_change_reaches(self):
+        import session_entry_points
+        self.drafted()
+        scene.build(self.root, 'plan.json', 'material')
+        self.assertIsNone(session_entry_points.persona_change_action(self.root))
+        persona = self.root / 'narrative/personas/c01.md'
+        persona.write_text(persona.read_text(encoding='utf-8').replace('short sentences', 'clipped sentences'), encoding='utf-8')
+        action = session_entry_points.persona_change_action(self.root)
+        self.assertTrue(action.startswith('Rebuild the scene persona material for SC01 (material/material.json): '
+                                          'narrative/personas/c01.md changed at 7. SPEECH > Speech Patterns > first_person'),
+                        action)
+
+    def test_a_scene_without_material_is_listed_for_its_persona(self):
+        report = scene.impact(self.root, 'narrative/personas/c02.md')
+        self.assertEqual([(row['scene_id'], row['character']) for row in report['unrecorded']], [('SC01', 'C02')])
+
+    def test_a_replaced_material_is_superseded(self):
+        plan = self.drafted()
+        first = scene.build(self.root, 'plan.json', 'material')['content_sha256']
+        plan['supersedes'] = first
+        plan['review']['revisions'] = [{'source_id': 'persona-C01', 'from_sha256': '1' * 64, 'kind': 'correction',
+                                        'anchors': ['7. SPEECH > Speech Patterns > first_person'],
+                                        'decision': 'Constructed test: the scene keeps the corrected register.'}]
+        (self.root / 'plan2.json').write_bytes(m.encoded(plan))
+        scene.build(self.root, 'plan2.json', 'material2')
+        statuses = {row['material']: row['status'] for row in scene.impact(self.root)['scenes']}
+        self.assertEqual(statuses, {'material/material.json': 'superseded', 'material2/material.json': 'current'})
 
 
 class SourceMaterialTests(unittest.TestCase):

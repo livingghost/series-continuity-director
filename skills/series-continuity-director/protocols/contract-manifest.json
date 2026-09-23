@@ -147,7 +147,7 @@
     },
     {
       "schema": "shared-state/scene-persona-material.schema.json",
-      "sha256": "e7f4c30b6eb7ed194795fcbbcc631975f804b49ac296c90b3b301a82ae199a18"
+      "sha256": "3505faf10901c8bced04a9bcff4b0a71e22ed797799194322bb9d32a85e1965f"
     },
     {
       "schema": "shared-state/source-extraction-proposal.schema.json",
@@ -416,5 +416,5 @@
     "path": "protocols/semantics.md",
     "sha256": "c5b7cf3f0770e05f90f8c5f8f52f4994557e328c2c8590ad73b019082664d261"
   },
-  "contract_set_sha256": "4afbf958e6294ae0b0a61a86b97e87538c976daa1255eb3f015f08c779fb3afe"
+  "contract_set_sha256": "e5f5aa487c0e70a73f344843538b8902256bdaee0ce5ecfca6d50e40aac18292"
 }

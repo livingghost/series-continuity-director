@@ -16,7 +16,7 @@ Use this small declared response model; do not presume human psychology.
 
 ## Applicable definition text
 ### attention
-Source: model, lines 1-2; complete source SHA-256: 568809ee54283dc92dd3b742b08dc761d4eca923681a6b0b330484148975cf23
+Source: model, Controlling definition; complete source SHA-256: 568809ee54283dc92dd3b742b08dc761d4eca923681a6b0b330484148975cf23
 Subjects: subject
 Dependencies: none declared
 Reason for inclusion: The controlling definition governs expression.
@@ -25,7 +25,7 @@ Reason for inclusion: The controlling definition governs expression.
 > Attend to the recipient before choosing a response.
 
 ### expression
-Source: model, lines 3-4; complete source SHA-256: 568809ee54283dc92dd3b742b08dc761d4eca923681a6b0b330484148975cf23
+Source: model, Expression; complete source SHA-256: 568809ee54283dc92dd3b742b08dc761d4eca923681a6b0b330484148975cf23
 Subjects: subject
 Dependencies: attention
 Reason for inclusion: Do not replace a contextual response with a stock emotion.
@@ -62,4 +62,4 @@ These cover complete originals, including definitions not quoted here. Reading a
 - scene (scene): 7a0158e5af8805bdbf93835eeb32d7f2647f2fd5ded6457087ae27e21cebb7c7
   Reading basis: Constructed example: the complete short source is shown; not evidence of real-agent reading.
 
-Material content SHA-256: 47ded1391f47aa70566423ae629decbc692a96dd6aecabf8d9e60a0dc28c916a
+Material content SHA-256: 9c6139b83f34c4ef8a673ec2cb2d936e51a19fceeb7946ceef651a690a20a224

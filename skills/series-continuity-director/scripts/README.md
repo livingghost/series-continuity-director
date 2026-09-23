@@ -449,7 +449,8 @@ These checks are run by `validate_skill.py`.
 
 ## Reusable authoring and observed execution
 
-- `scene_persona.py`: prepare exact scene definitions and applications; verify whole originals; output JSON and Markdown.
+- `scene_persona.py`: draft a plan from a scene plot, prepare exact scene definitions by heading and field, verify whole originals, and list the scenes a Persona change reaches; output JSON and Markdown.
+- `persona_units.py FILE [--anchor A]`: list every heading and field of a Markdown definition with whether it carries an answer, or print the text an anchor names.
 - `source_material.py`: retain original bytes and authored segmentation; attach actual source spans to extraction candidates.
 - `agent_evaluation.py`: inspect an explicit host command plan, execute only the approved plan, retain logs/outputs and unknown metrics.
 - `repair_analysis.py`: derive repeated failure groups and attributed hypotheses from actual run reviews, without execution.

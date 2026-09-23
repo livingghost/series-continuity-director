@@ -21,37 +21,41 @@
   "constraints": [
     "Do not infer a human voice or body from this functional model."
   ],
-  "content_sha256": "47ded1391f47aa70566423ae629decbc692a96dd6aecabf8d9e60a0dc28c916a",
+  "content_sha256": "9c6139b83f34c4ef8a673ec2cb2d936e51a19fceeb7946ceef651a690a20a224",
   "definitions": [
     {
+      "anchor": "Controlling definition",
+      "covers": [
+        "Controlling definition"
+      ],
       "depends_on": [],
-      "end_line": 2,
       "excerpt_id": "attention",
       "reason": "The controlling definition governs expression.",
       "source_id": "model",
       "source_sha256": "568809ee54283dc92dd3b742b08dc761d4eca923681a6b0b330484148975cf23",
-      "start_line": 1,
       "subject_ids": [
         "subject"
       ],
-      "text": "# Controlling definition\nAttend to the recipient before choosing a response.\n",
-      "text_sha256": "751267ad70a01cb939dc34c9173b83dfb784e84f92108be97fe923006a0a179f"
+      "text": "# Controlling definition\nAttend to the recipient before choosing a response.",
+      "text_sha256": "3e0daf8ce6c543bdd322aeb38b44884e0c731b421c7e058c0cc868622b519179"
     },
     {
+      "anchor": "Expression",
+      "covers": [
+        "Expression"
+      ],
       "depends_on": [
         "attention"
       ],
-      "end_line": 4,
       "excerpt_id": "expression",
       "reason": "Do not replace a contextual response with a stock emotion.",
       "source_id": "model",
       "source_sha256": "568809ee54283dc92dd3b742b08dc761d4eca923681a6b0b330484148975cf23",
-      "start_line": 3,
       "subject_ids": [
         "subject"
       ],
-      "text": "# Expression\nA pause is an available response, not automatically distress.\n",
-      "text_sha256": "41d87a97129105701e528e623654f2b694d77e557ea04e8073c230462c3698d7"
+      "text": "# Expression\nA pause is an available response, not automatically distress.",
+      "text_sha256": "03cac6ab015afb20387d79c0b5c64d1a3be0013fd05ed6835503e5c4dfc1d28d"
     }
   ],
   "interactions": [],
@@ -66,7 +70,8 @@
     "decision": "ready",
     "limitations": [
       "This is not evidence of artistic suitability; read real full Personas when preparing actual work."
-    ]
+    ],
+    "revisions": []
   },
   "scene_id": "activity",
   "scene_source_id": "scene",
@@ -81,6 +86,23 @@
       "source_id": "model",
       "subject_ids": [
         "subject"
+      ],
+      "units": [
+        {
+          "anchor": "Controlling definition",
+          "blank": false,
+          "sha256": "3e0daf8ce6c543bdd322aeb38b44884e0c731b421c7e058c0cc868622b519179"
+        },
+        {
+          "anchor": "Expression",
+          "blank": false,
+          "sha256": "03cac6ab015afb20387d79c0b5c64d1a3be0013fd05ed6835503e5c4dfc1d28d"
+        },
+        {
+          "anchor": "Contextual condition",
+          "blank": false,
+          "sha256": "382dacc171a44caddf311294138cbc87b1e73256642c7f2d457c7365932f1ebe"
+        }
       ]
     },
     {
@@ -90,7 +112,14 @@
       "role": "scene",
       "sha256": "7a0158e5af8805bdbf93835eeb32d7f2647f2fd5ded6457087ae27e21cebb7c7",
       "source_id": "scene",
-      "subject_ids": []
+      "subject_ids": [],
+      "units": [
+        {
+          "anchor": "preamble",
+          "blank": false,
+          "sha256": "8b4d09cee05ea01ad46d9d33e72d5e1e6863c2d090bf6b532f06465f0dde0a5b"
+        }
+      ]
     }
   ],
   "subjects": [
@@ -103,6 +132,7 @@
       "subject_id": "subject"
     }
   ],
+  "supersedes": null,
   "unknowns": [
     "The recipient and final response are intentionally unspecified."
   ]

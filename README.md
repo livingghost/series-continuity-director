@@ -174,7 +174,7 @@ python skills/series-continuity-director/scripts/source_material.py verify --roo
 ```
 <!-- end-readme-example -->
 
-`scene-material/persona.md` carries the definitions themselves, each tied to its source, lines and whole-file hash, followed by their application in the scene; `material.json` binds the document to the source files and excerpt choices. For real work, author a plan against the [scene-material plan schema](skills/series-continuity-director/schemas/authoring/scene-persona-plan.schema.json), then:
+`scene-material/persona.md` carries the definitions themselves, each tied to its source, the heading or field it quotes, and the whole-file hash, followed by their application in the scene; `material.json` binds the document to the source files and excerpt choices. For real work, author a plan against the [scene-material plan schema](skills/series-continuity-director/schemas/authoring/scene-persona-plan.schema.json), then:
 
 ```sh
 python skills/series-continuity-director/scripts/scene_persona.py inspect --root PROJECT --plan scene-plan.json

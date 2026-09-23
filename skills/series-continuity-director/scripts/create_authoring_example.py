@@ -22,10 +22,12 @@ def create(root: Path) -> dict:
     (root/'originals/subject.md').write_text(
         '# Controlling definition\nAttend to the recipient before choosing a response.\n'
         '# Expression\nA pause is an available response, not automatically distress.\n'
-        '# Contextual condition\nReconsider the application if the recipient or available information changes.\n', encoding='utf-8')
+        '# Contextual condition\nReconsider the application if the recipient or available information changes.\n',
+        encoding='utf-8', newline='\n')
     (root/'originals/scene.md').write_text(
         'A declared activity with one modeled subject and an unspecified recipient.\n'
-        'No obligatory conflict, emotional change, human body or spoken dialogue is assumed.\n',encoding='utf-8')
+        'No obligatory conflict, emotional change, human body or spoken dialogue is assumed.\n',
+        encoding='utf-8', newline='\n')
     def committed(identifier,path,role,subjects):
         return {'source_id':identifier,'path':path,'role':role,'subject_ids':subjects,
                 'sha256':m.digest((root/path).read_bytes()),
@@ -36,9 +38,9 @@ def create(root: Path) -> dict:
           'subjects':[{'subject_id':'subject','model':'functional','source_ids':['model'],
                        'portrayal_basis':'Use this small declared response model; do not presume human psychology.'}],
           'sources':[committed('model','originals/subject.md','functional',['subject']),committed('scene','originals/scene.md','scene',[])],
-          'excerpts':[{'excerpt_id':'attention','source_id':'model','start_line':1,'end_line':2,
+          'excerpts':[{'excerpt_id':'attention','source_id':'model','anchor':'Controlling definition',
                         'subject_ids':['subject'],'depends_on':[],'reason':'The controlling definition governs expression.'},
-                       {'excerpt_id':'expression','source_id':'model','start_line':3,'end_line':4,
+                       {'excerpt_id':'expression','source_id':'model','anchor':'Expression',
                         'subject_ids':['subject'],'depends_on':['attention'],'reason':'Do not replace a contextual response with a stock emotion.'}],
           'applications':[{'application_id':'response','subject_ids':['subject'],'definition_ids':['attention','expression'],
                            'kind':'option','text':'A pause may be chosen after attending to the recipient; no exact line or motive is prescribed.'}],
@@ -46,7 +48,9 @@ def create(root: Path) -> dict:
           'unknowns':['The recipient and final response are intentionally unspecified.'],
           'reopen_when':['The recipient, information, purpose or original model changes.'],
           'review':{'by':'constructed-example-author','decision':'ready','basis':'Software/data-flow demonstration only.',
-                    'limitations':['This is not evidence of artistic suitability; read real full Personas when preparing actual work.']}}
+                    'limitations':['This is not evidence of artistic suitability; read real full Personas when preparing actual work.'],
+                    'revisions':[]},
+          'supersedes':None}
     (root/'scene-plan.json').write_bytes(m.encoded(plan))
     scene_result=scene.build(root,'scene-plan.json','scene-material')
     primary='originals/subject.md'
