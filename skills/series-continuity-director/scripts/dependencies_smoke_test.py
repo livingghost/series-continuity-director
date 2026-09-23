@@ -95,7 +95,9 @@ class DependencyTests(unittest.TestCase):
         self.assertTrue(report['summary'].startswith('Not ready for media work'))
 
     def test_installed_distribution_that_does_not_import_is_not_ready(self):
-        versions = {'Pillow': '12.0.0', 'resvg-py': '0.5.0', 'defusedxml': '0.7.1', 'tinycss2': '1.4.0'}
+        # Each distribution at its declared minimum, so the bounds can move without editing this test.
+        versions = {name: '.'.join(map(str, rule['minimum_release']))
+                    for name, rule in d.declaration()['media']['distributions'].items()}
         native = 'ImportError: DLL load failed while importing resvg_py'
         with patch.object(d.importlib.metadata, 'version', side_effect=versions.__getitem__), \
                 patch.object(d, 'probe_error', side_effect=lambda name, module: native if name == 'resvg-py' else None), \
