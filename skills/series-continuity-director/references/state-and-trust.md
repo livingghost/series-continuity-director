@@ -16,11 +16,13 @@ Use approved records to preserve continuity. Record proposals, intended depictio
 
 | File | Owns | Must not own |
 |---|---|---|
+| `project-manifest.json` | what the project is, and the series id every artifact in it carries | canon, target facts, anything another record owns |
 | `series-state.md` | approved canon, chronology, scene and episode ledger, series format | target controls, asset implementation, unapproved render interpretation |
 | `character-profiles.md` | stable identity pointers, behavior, voice, performance vocabulary, relationship boundaries | episode chronology, target specifications |
 | `asset-registry.md` | media versions, asset role and status, visible support, derivation, effective range, actual uses, supersession and staleness | personality, story motives, target limits |
 | `production-state.md` | dated target evidence, operation cards, exact submissions, outputs, observations, scoped tactics | approved story canon |
 | `state/events.jsonl` | approved variable-state events in story order | target behavior, prompt drafts, unapproved render accidents |
+| `runs/gallery.html`, `runs/gallery.json` | every dispatched run in order, with the text as sent, the model, every setting, the seed and the result; the tools write them at initialization and after every dispatch | anything written by hand |
 | `work/` | the open task (goal, steps, which are done, what is next, what it waits on) and the trail of tasks | canon, target facts, prompt text, anything another record owns |
 | `narrative/narrative.json` | what the series is about: themes, arcs, chapters and the story orders each covers, characters with the persona in force and the chapters they are in the series for, promises, questions, who knows what | what a frame shows, any target or model, media |
 | `narrative/personas/` | who a character is, one file per phase of a life | what they look like, which `character-profiles.md` owns |

@@ -193,7 +193,8 @@
     "scene": {
       "when": "scene production",
       "reads": [
-        "references/story-structure.md"
+        "references/story-structure.md",
+        "references/production-stages.md"
       ],
       "features": [],
       "stages": [
@@ -209,7 +210,8 @@
     "performance": {
       "when": "performance production",
       "reads": [
-        "references/performance-details.md"
+        "references/performance-details.md",
+        "references/production-stages.md"
       ],
       "features": [
         "persona"
@@ -227,7 +229,8 @@
     "media": {
       "when": "media production",
       "reads": [
-        "references/model-facing-artifacts.md"
+        "references/model-facing-artifacts.md",
+        "references/production-stages.md"
       ],
       "features": [],
       "stages": [
@@ -243,7 +246,8 @@
     "timed-sequence": {
       "when": "timed-sequence production",
       "reads": [
-        "references/timed-production.md"
+        "references/timed-production.md",
+        "references/production-stages.md"
       ],
       "features": [
         "timed"
@@ -262,7 +266,8 @@
       "when": "edit production",
       "reads": [
         "references/post-production.md",
-        "references/production-repair.md"
+        "references/production-repair.md",
+        "references/production-stages.md"
       ],
       "features": [
         "timed"
@@ -280,7 +285,8 @@
     "adoption": {
       "when": "adoption production",
       "reads": [
-        "references/state-and-trust.md"
+        "references/state-and-trust.md",
+        "references/production-stages.md"
       ],
       "features": [],
       "stages": [

@@ -172,7 +172,6 @@ $ python skills/series-continuity-director/scripts/validate_skill.py --only stat
 validate_skill: 2 checks, at most 24 at a time
 [1/2] pass scripts/release_contract.py
 [2/2] pass static
-warning: SKILL.md body is an estimated 7631 tokens (characters / 4); the specification states under 5000
 validate_skill: 2 of 2 checks passed
 ```
 

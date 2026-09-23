@@ -30,6 +30,7 @@ and only the second one binds.
 |---|---|
 | Start or resume any work in a project | `state-and-trust.md` section 2, `continuity-core.md`, `story-structure.md` section 6, `runtime-capabilities.md` |
 | Make a saved deliverable, choose its depiction or delegate a bounded action | `production-direction.md`, `production-execution.md` |
+| Work through a production stage: plan, inspect and direct, or observe and continue | `production-stages.md`, `templates.md` section 14 |
 | Fill a production template or run the final checklist | `templates.md` |
 | Look up a craft method while planning, composing, or repairing | `tactic-consultation.md` |
 | Compare creative alternatives without adopting them | `creative-options.md` |
@@ -133,7 +134,7 @@ every host reads and what every host refuses:
 - Scripts are executed rather than read into context.
 
 `skills/series-continuity-director/scripts/validate_skill.py` refuses a `name` or `description` over
-the cap, reports the body's line count without bounding it, warns when the body's
+the cap, reports the body's line count without bounding it, refuses a body whose
 estimated tokens (characters / 4) exceed 5000, and settles that every
 reference is reachable from `SKILL.md` and that every command is documented
 somewhere the suite routes to. The routing table is what keeps references one

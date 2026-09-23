@@ -96,7 +96,7 @@ every host reads and what every host refuses:
 - Scripts are executed rather than read into context.
 
 `{suite_root}/scripts/validate_skill.py` refuses a `name` or `description` over
-the cap, reports the body's line count without bounding it, warns when the body's
+the cap, reports the body's line count without bounding it, refuses a body whose
 estimated tokens (characters / 4) exceed 5000, and settles that every
 reference is reachable from `SKILL.md` and that every command is documented
 somewhere the suite routes to. The routing table is what keeps references one

@@ -1,6 +1,6 @@
 # Changelog
 
-## [2026.09.23.4] - 2026-09-23
+## [2026.09.23.5] - 2026-09-23
 
 Initial release.
 
@@ -30,4 +30,5 @@ Initial release.
 - Write every command's output as UTF-8 whatever the console code page, print readable text in a terminal and JSON to a pipe or with `--json`, write project files atomically under the project lock, and refuse to write into a directory that is not a project or lies inside the installed suite.
 - Render SVG references with resvg, which pip installs on every platform without a system library; it draws images a document embeds as data and reads no file or URL the document names.
 - Count a media dependency as present only when its smallest operation runs, print the command that installs each missing one, and run those commands with `--install` once the user confirms. Python packages go through the running Python's installer, pip or uv, or into a virtual environment with `--venv` where the system manages that Python; FFmpeg comes from the platform's package manager. Each media version is written once, in `requirements-media.txt`, so a dependency update needs no second edit. The media scope requires Pillow 12.3.0, defusedxml 0.7.1 and tinycss2 1.5.1 or later within their major versions.
+- Load a SKILL.md under the specification's 5,000-token cap: the stage checklists, the project files and the command details live in the references and `scripts/README.md`, which the routing table names, and validation refuses a body over the cap.
 - Validate with one aggregate check that runs its commands concurrently and names each one as it finishes; CI runs every check once per platform and publishes a release only from a commit on main whose CI succeeded.

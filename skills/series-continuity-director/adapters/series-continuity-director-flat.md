@@ -77,6 +77,7 @@ Find the action about to be performed and read those files before performing it.
 |---|---|
 | Start or resume any work in a project | `state-and-trust.md` section 2, `continuity-core.md`, `story-structure.md` section 6, `runtime-capabilities.md` |
 | Make a saved deliverable, choose its depiction or delegate a bounded action | `production-direction.md`, `production-execution.md` |
+| Work through a production stage: plan, inspect and direct, or observe and continue | `production-stages.md`, `templates.md` section 14 |
 | Fill a production template or run the final checklist | `templates.md` |
 | Look up a craft method while planning, composing, or repairing | `tactic-consultation.md` |
 | Compare creative alternatives without adopting them | `creative-options.md` |
@@ -118,72 +119,25 @@ not from the working directory, which belongs to the project.
 
 ## Artifact-bearing production
 
-Read [Production Direction](#purpose-portrayal-and-production-choices), [Production Execution](#production-execution-and-bounded-authority), and the selected route's references before building a saved deliverable. A route is a named kind of work, such as `development` or `media`, with the documents it requires. `scripts/execution_routes.py read ROUTE --root PROJECT` outputs those documents in full and ends with a reading key, which later records cite as proof of the reading. Retain the key and author each required application, the passage applied and why; use the returned cursor to continue a paged read.
+Read [Production Direction](#purpose-portrayal-and-production-choices), [Production Execution](#production-execution-and-bounded-authority), and the selected route's references before building a saved deliverable. A route is a named kind of work, such as `development` or `media`, with the documents it requires. `scripts/execution_routes.py read ROUTE --root PROJECT` outputs those documents in full and ends with a reading key, which later records cite as proof of the reading; author each required application, the passage applied and why.
 
-Prepare a task with the full applicable sources, purpose, meaningful choices, selected realization, intentional departures and evidence criteria. `scripts/production_workflow.py` connects preparation, handoff, actual candidates, observation review, authorized selection and completion in the same run. Its `status`, `resume` and `impact` expose interrupted work and changed dependencies. Complete the linked work task only after that run completes.
+`scripts/production_workflow.py` connects preparation, handoff, actual candidates, observation review, authorized selection and completion in one run, and its `status`, `resume` and `impact` expose interrupted work. Complete the linked work task only after that run completes. For time-dependent material, read [Timed Production](#time-bearing-realization-and-review); still-image-to-video is not a mandatory method.
 
-Use `production_workflow.py inspect-inputs`, `draft-inputs`, and `build-inputs` to assemble authored choices. The [input example](../examples/input-assembly/README.md) records public command results.
+## Commands
 
-For time-dependent uncertainties, read [Timed Production](#time-bearing-realization-and-review). `scripts/timed_sequence.py` validates four distinct clocks, renders playable roughs from declared materials, and extracts frames or audio intervals. Use actual timed evidence for pacing and response; proxy materials cannot verify missing expression or sound. Plan construction is a directing decision, not an automatic plot-to-film claim. The Skill also supports other capable tools through the recorded handoff; still-image-to-video is not a mandatory method.
+The scripts sit beside this file, under `scripts/`. Run them with `python`, or `python3` where that name is not on the path. Each names what to run next.
 
-## Scripts
+- `scripts/session_entry_points.py --project <directory> --next` says what to do next in a project; `scripts/init_project.py` starts one.
+- `scripts/submission_draft.py new` writes a submission, `scripts/submission_gate.py <submission.json> --json` checks it before anything is sent, and `scripts/dispatch.py <spec.json>` shows the exact request and sends it with `--send` once the user has approved it.
+- `scripts/dependencies.py --scope media` names missing media tools and the command that installs each.
 
-The scripts sit beside this file, under `scripts/`.
-
-| Before doing this | Run |
-|---|---|
-| Writing the submission for a shot, page, passage or asset | `scripts/submission_draft.py new --project <directory> --out <file> --kind <kind> --target <id>`; every decision it cannot make is a placeholder the gate refuses until filled |
-| Sending any text or file to a generation surface | `scripts/submission_gate.py <submission.json> --json` |
-| Putting an approved submission on the wire and recording what came back | `scripts/dispatch.py <spec.json>` to show the request, `--send` once the user has approved it |
-| Starting a project workspace | `scripts/init_project.py --out <directory> --series-id <id> --title "<title>" [--medium screen\|comics\|prose\|mixed]` |
-| Opening a new episode or a second cut of one inside a project | `scripts/init_line.py --project <directory> --line <id>` |
-| Calling a service, or checking how old its recorded facts are | `scripts/service_profile.py <service-id> --profiles <project/service-profiles.json>` |
-| Storing a service's parameter schema for a model so the gate can read it | `scripts/observe_schema.py schema --root <project> --profile <file> --service <s> --model <id> --operation <op> --acquisition <file> --out-dir <dir> --profiles <project profile dir>` |
-| Looking a term up while writing, or reading a finished prompt back term by term before it is sent | `scripts/vocabulary.py search <query>`, `scripts/vocabulary.py read <file> --negative <file>` |
-| Settling the narrative, or recording the approval the author gave | `scripts/narrative.py <narrative>`, `approve <narrative> --by <name>` |
-| Starting, settling or recording the approval of a scene plot before any shot text exists | `scripts/scene_plot.py draft --project <directory> --scene-id <id> --chapter <id>`, `<plot>`, `approve <plot> --by <name>`, `behind --project <directory>` |
-| Asking what the series declares that no scene covers yet | `scripts/narrative_coverage.py <directory>` |
-| Creating, renaming or removing a person, place, group, system, object or term | `scripts/narrative_entity.py --project <directory> add persona <id> --character <id>`, `rename <old> <new>`, `remove <id>` |
-| Asking what the narrative directory holds and what names it | `scripts/narrative_index.py <directory>` |
-| Asking what to do next in a project | `scripts/session_entry_points.py --project <directory> --next` |
-| Trusting a workspace's state and registry | `scripts/validate_project.py <directory>` |
-| Seal a drafted public contract | `scripts/state_protocol.py finalize <draft.json> --out <contract.json>` |
-| Check a public artifact or explicit exchange bundle | `scripts/protocol_exchange.py inspect --root <project> --artifact <file>`, or `verify --root <project> --bundle <directory>` |
-| Using a visual-contract-package in a shot | `scripts/reference_activation_gate.py <activation.json> --json` |
-
-Run them with `python`, or with `python3` where that name is not on the path, which is the
-default on macOS and on Debian and Ubuntu.
-
-The gate refuses what can be proved wrong before anything is spent, and reports
-what it could not measure rather than passing it. Its verdict is evidence for the
-user's decision to send. It is not that decision.
-`references/prompt-composition.md` section 18 states the sixteen rules it settles,
-and `scripts/README.md` documents every other command.
+The gate refuses what can be proved wrong before anything is spent and reports what it could not measure. Its verdict is evidence for the user's decision to send, not that decision. `references/prompt-composition.md` section 18 states its rules, and `scripts/README.md` documents every command.
 
 ## Project ownership
 
-Read `references/state-and-trust.md` section 2 for the responsibility layers, then `references/temporal-state.md` for state resolution. Intent, approved facts, direction, submission, observed output and adoption answer different questions. Storage paths and service endpoints do not assign authority. Public exchange serializes selected evidence; it is not another creative stage.
+Read `references/state-and-trust.md` section 2 for what each project file owns and the responsibility layers, then `references/temporal-state.md` for state resolution. Intent, approved facts, direction, submission, observed output and adoption answer different questions. Storage paths and service endpoints do not assign authority.
 
-The project has two halves. `media/`, `state/`, `shots/` and the last five files below hold what the production made and what is true at a moment. `narrative/` holds what the series is about, and nothing in the first half answers that.
-
-- `project-manifest.json`: what this project is, and the series id every artifact in it carries.
-- `narrative/narrative.json`: themes, arcs, chapters and the story orders each covers, characters with the persona in force and the chapters they are in the series for, promises, questions, knowledge.
-- `narrative/personas/`, `narrative/world/`, `narrative/glossary/`: one subject per file, written once and pointed at.
-- `narrative/scenes/`: one scene plot per scene, approved before any shot text exists.
-
-These five, and the four above them, sit in the project workspace and not in the suite.
-
-A one-off answer needs no project. Work whose decisions a later step reuses gets its project before the first draft that will be revised, whatever the turn count and before any model is chosen; `work/README.md` in the project states where checkpoints are written and the order a session resumes in.
-
-- `series-state.md`: approved canon, chronology, series format, scene and episode ledger.
-- `character-profiles.md`: stable identity pointers, behavior, voice, performance, relationship boundaries.
-- `asset-registry.md`: adopted media, versions, role and status, visible support, effective range, derivation, supersession, actual uses.
-- `production-state.md`: target evidence, operation cards, exact submissions, returned variants, observations, scoped tactics.
-- `state/events.jsonl`: approved variable-state history.
-- `work/current.json`, `work/ledger.jsonl`: the open task with its steps and what comes next, and the trail of tasks. A session reads the open task before anything else and continues it; open one before work that takes more than one step.
-- `runs/gallery.html`, `runs/gallery.json`: every run in the order it happened, with the text as sent, the model, every setting, the seed, and the result; written at initialization and after every dispatch, never by hand.
-
-One project holds one canon. Work that shares the canon and the cast but is shot again in another register, format, or surface is a production line inside it, with its own media namespace, shot ids, registry prefix, and cut list; work whose canon, cast design, or visual anchor diverges is another project. `references/state-and-trust.md` section 4.3 draws the line.
+A one-off answer needs no project. Work whose decisions a later step reuses gets its project before the first draft that will be revised, whatever the turn count and before any model is chosen; `work/README.md` in the project states where checkpoints are written and the order a session resumes in. One project holds one canon, and `references/state-and-trust.md` section 4.3 separates a production line from another project.
 
 ## Decision precedence
 
@@ -206,122 +160,13 @@ Verification gates follow capability and authority rather than an assumed human 
 - When the host lacks a required capability, return exact reproducible operator instructions and the evidence that must come back.
 - A geometry, file, duration, track, hash, or level defect that a machine check could have found before viewing is a process failure to correct, not a normal human-review task. Correct the process that let it reach the user. Whether to spend on another run stays their decision.
 
-# Production stages
+## Production sequence
 
-Stage names are navigation headings, not hidden reasoning modes. The operative difference is the evidence that exists and the artifact that evidence is sufficient to finish. The same trust, state, continuity, ownership, and requirement-transfer rules remain active in every stage.
+The stages differ by the evidence that exists, and [Production Stages](#production-stages) gives each one's full checklist.
 
-
-## Stage A: Canon, state, assets, and scene design
-
-Use when required media, state, or target evidence is missing.
-
-1. Read project state and resolve the current story time.
-2. Develop missing persona, world and visual design from the brief. Select or draft the Species, Individual, Identity, Era, Form and Appearance contracts needed by this operation. Resolve any design decisions that block the scene with the author. Validate the applicable records, then apply approved events and processes to derive current state.
-3. Define the scene's intended effect, participants when present, what changes or deliberately holds, and its relation to surrounding scenes. Realize it as shots, pages or passages according to the medium; only visual operations need the following camera and media steps.
-4. Choose an applicable viewpoint and visual register from the intended telling, not a fixed third-person default. Use no camera requirements for nonvisual work; record deliberate holds, recurrence, or withheld information.
-5. Compose the needed views, durations, repetitions, omissions and sounds. Each has a purpose, but need not add a new event or differ in scale.
-6. Define the axis of action, screen direction, eyelines, prop ownership, contact, and state visibility.
-7. Add per-shot overrides and viewpoint transitions with concrete triggers and bridges.
-8. Create missing character, scene, prop, start, end, boundary, or reference media briefs.
-9. Write a shot-request per shot when visual state, visible morphology, camera angle, crop, contact, or reference needs differ. Carry species, individual, identity, and state hashes plus visible morphology feature refs.
-10. Stop before claiming inspection of media that does not exist.
-
-## Stage B: Inspect, direct, and rewrite for the target
-
-Use when the real media and target operation are inspectable.
-
-1. Register every submitted file with an immutable asset ID, content hash, and lineage.
-2. Inspect actual composition, identity, camera, state, props, contacts, light, and occlusions.
-3. Revise the first action or camera plan when the real opening conflicts with the plan.
-4. Write the full director package, including state, shot function, camera geometry, action chain, performance, sound, and landing.
-5. Map real files to real controls or request keys.
-6. Transfer every critical requirement to the strongest available carrier.
-7. Preserve exact primary and auxiliary field contents separately from production notes. For every shot, write two statements and keep both: the scene as the world has it (who stands where, facing what) and the shot as the lens sees it from the placed camera (what fills the frame, in what facing to the camera). Only the second is sent; the first is what it is checked against.
-8. Validate scene viewpoint artifacts, state artifacts, shot continuity, and target packaging.
-9. Run the submission gate on the exact text and inputs. Report every refusal and everything it could not measure.
-10. Present the complete submission or apply its fitting explicit delegation; reserve the bounded action before sending. Mark readiness separately from a result.
-
-## Stage C: Observe, finish, and continue
-
-Use only from actual outputs or a concrete operator report.
-
-1. Preserve exact submissions and every returned variant.
-2. Verify dimensions, duration, tracks, boundary frames, and other machine-checkable facts before human review.
-3. Record visible and audible symptoms without inventing hidden model causes.
-4. Compare state, identity (part by part: count, colour, size, position, and change of every part in frame), camera, action, contact, prop ownership, performance, and landing against the director package.
-5. Present variants and scoped observations against the intended effect. Decide repairs within granted authority, otherwise return the choice to the user. Do not use a private score to justify unlimited regeneration.
-6. Finish the accepted picture and sound.
-7. Extract a finished terminal frame when a physically continuous seam needs it. Omission, a new place, a flashback, or a nonvisual transition does not automatically inherit it.
-8. Write accepted story events, asset lineage, run observations, and scoped tactics back to project state.
-9. For physically continuous work, continue from the accepted observed endpoint, not the planned one. Preserve the declared relation for noncontinuous transitions.
-
-## Scene viewpoint planning
-
-A scene defines a default profile and ordered shots. A shot may override:
-
-```text
-viewpoint profile
-camera ownership
-knowledge scope
-point of audition
-focal character
-camera position and movement
-shot scale, lens, and angle
-axis side and screen direction
-visible morphology feature refs by character
-visible identity and state obligations
-```
-
-The scene may combine external masters, over-the-shoulder coverage, first-person inserts, reaction shots, objective inserts, and fixed in-world views. Each transition records its trigger, bridge type, knowledge effect, and continuity requirements.
-
-## When external third-person coverage is selected
-
-- Give the external camera a concrete physical position.
-- Declare the axis when characters interact.
-- Preserve or deliberately cross and re-establish screen direction.
-- Match eyelines and action across cuts.
-- Describe movement through start relation, path, speed, subject relation, occlusion, and landing.
-- Do not generate redundant coverage.
-- Do not reveal hidden knowledge merely because the camera is external.
-
-## The shot-request
-
-A shot-request binds a three-layer morphology stack: species possibility space, one individual realization, and the current shot-resolved visible morphology. Author and resolve the selected contracts, bind approved state and camera evidence by hash, and compose the visual result inside those constraints. Anatomy is not rewritten through an ordinary state event, and a story change is not invented from a visual result.
-
-For each shot that needs a new still, boundary frame, or visual prompt, provide:
-
-```text
-species profile hashes by character
-individual morphology hashes by character
-identity contract hashes by character
-state snapshot hashes by character
-scene context hash
-viewpoint profile and camera spec
-visible morphology feature refs by character
-visible identity and state obligations
-wardrobe, inventory, relationship, and environment projection
-selected candidate references
-required deliverable and aspect ratio
-```
-
-Changing the camera does not change stable identity. It may change reference selection, visible obligations, crop, and prompt wording.
-
-## Delivery gate
-
-Before returning a submission-ready package:
-
-- applicable state, morphology and viewpoint artifacts validate; exchange validation is required only for a selected public handoff;
-- every shot has an explicit camera owner or external position;
-- every cut preserves or deliberately repairs continuity;
-- target controls and input combinations are current and evidenced;
-- exact submitted text is self-contained with the submitted media;
-- the submission gate has run on that text and its findings are reported, including what it could not measure;
-- the complete submission, or the plan that names it, has been confirmed by the user, and nothing has been sent outside that confirmation;
-- no returned output has been regenerated on an unrequested self-assessment;
-- no planned result is described as observed;
-- every critical requirement has a carrier or explicit accepted variation;
-- project state remains free of unapproved canon;
-- no Unicode em dash or en dash appears in runtime files.
+1. Plan while media, state or target evidence is missing: resolve story time and state, settle blocking design with the author, define the scene's effect, viewpoint and coverage, and brief the missing media. Claim no inspection of media that does not exist.
+2. Inspect and direct once the real media and target operation can be inspected: register and inspect the files, write the director package, map files to real controls, draft the submission and run the gate. Work through [templates.md](#production-templates-and-master-checklist) section 14 before returning a submission-ready package.
+3. Observe and continue only from actual outputs: preserve every variant, run the machine checks before human review, compare against the director package, finish, and write accepted results back. Continue from the accepted observed endpoint.
 
 ## Resource handling
 
@@ -1380,6 +1225,59 @@ The [model evidence workflow](../references/model-evidence.md) describes schema 
 
 ---
 
+<!-- Source: references/production-stages.md -->
+
+# Production stages
+
+Stage names are navigation headings, not hidden reasoning modes. The operative difference is the evidence that exists and the artifact that evidence is sufficient to finish. The same trust, state, continuity, ownership, and requirement-transfer rules remain active in every stage.
+
+## 1. Stage A: Canon, state, assets, and scene design
+
+Use when required media, state, or target evidence is missing.
+
+1. Read project state and resolve the current story time.
+2. Develop missing persona, world and visual design from the brief. Select or draft the Species, Individual, Identity, Era, Form and Appearance contracts needed by this operation. Resolve any design decisions that block the scene with the author. Validate the applicable records, then apply approved events and processes to derive current state.
+3. Define the scene's intended effect, participants when present, what changes or deliberately holds, and its relation to surrounding scenes. Realize it as shots, pages or passages according to the medium; only visual operations need the following camera and media steps.
+4. Choose an applicable viewpoint and visual register from the intended telling, not a fixed third-person default. Use no camera requirements for nonvisual work; record deliberate holds, recurrence, or withheld information.
+5. Compose the needed views, durations, repetitions, omissions and sounds. Each has a purpose, but need not add a new event or differ in scale.
+6. Define the axis of action, screen direction, eyelines, prop ownership, contact, and state visibility.
+7. Add per-shot overrides and viewpoint transitions with concrete triggers and bridges.
+8. Create missing character, scene, prop, start, end, boundary, or reference media briefs.
+9. Write a shot-request per shot when visual state, visible morphology, camera angle, crop, contact, or reference needs differ. Carry species, individual, identity, and state hashes plus visible morphology feature refs.
+10. Stop before claiming inspection of media that does not exist.
+
+## 2. Stage B: Inspect, direct, and rewrite for the target
+
+Use when the real media and target operation are inspectable.
+
+1. Register every submitted file with an immutable asset ID, content hash, and lineage.
+2. Inspect actual composition, identity, camera, state, props, contacts, light, and occlusions.
+3. Revise the first action or camera plan when the real opening conflicts with the plan.
+4. Write the full director package, including state, shot function, camera geometry, action chain, performance, sound, and landing.
+5. Map real files to real controls or request keys.
+6. Transfer every critical requirement to the strongest available carrier.
+7. Preserve exact primary and auxiliary field contents separately from production notes. For every shot, write two statements and keep both: the scene as the world has it (who stands where, facing what) and the shot as the lens sees it from the placed camera (what fills the frame, in what facing to the camera). Only the second is sent; the first is what it is checked against.
+8. Validate scene viewpoint artifacts, state artifacts, shot continuity, and target packaging.
+9. Draft the submission with `scripts/submission_draft.py` and run the submission gate on the exact text and inputs. Report every refusal and everything it could not measure.
+10. Work through the master checklist in [templates.md](#production-templates-and-master-checklist) section 14 before returning a submission-ready package.
+11. Present the complete submission or apply its fitting explicit delegation; reserve the bounded action before sending. Mark readiness separately from a result.
+
+## 3. Stage C: Observe, finish, and continue
+
+Use only from actual outputs or a concrete operator report.
+
+1. Preserve exact submissions and every returned variant.
+2. Verify dimensions, duration, tracks, boundary frames, and other machine-checkable facts before human review.
+3. Record visible and audible symptoms without inventing hidden model causes.
+4. Compare state, identity (part by part: count, colour, size, position, and change of every part in frame), camera, action, contact, prop ownership, performance, and landing against the director package.
+5. Present variants and scoped observations against the intended effect. Decide repairs within granted authority, otherwise return the choice to the user. Do not use a private score to justify unlimited regeneration.
+6. Finish the accepted picture and sound.
+7. Extract a finished terminal frame when a physically continuous seam needs it. Omission, a new place, a flashback, or a nonvisual transition does not automatically inherit it.
+8. Write accepted story events, asset lineage, run observations, and scoped tactics back to project state.
+9. For physically continuous work, continue from the accepted observed endpoint, not the planned one. Preserve the declared relation for noncontinuous transitions.
+
+---
+
 <!-- Source: references/tactic-consultation.md -->
 
 # Consult and apply directing knowledge
@@ -1694,11 +1592,13 @@ Use approved records to preserve continuity. Record proposals, intended depictio
 
 | File | Owns | Must not own |
 |---|---|---|
+| `project-manifest.json` | what the project is, and the series id every artifact in it carries | canon, target facts, anything another record owns |
 | `series-state.md` | approved canon, chronology, scene and episode ledger, series format | target controls, asset implementation, unapproved render interpretation |
 | `character-profiles.md` | stable identity pointers, behavior, voice, performance vocabulary, relationship boundaries | episode chronology, target specifications |
 | `asset-registry.md` | media versions, asset role and status, visible support, derivation, effective range, actual uses, supersession and staleness | personality, story motives, target limits |
 | `production-state.md` | dated target evidence, operation cards, exact submissions, outputs, observations, scoped tactics | approved story canon |
 | `state/events.jsonl` | approved variable-state events in story order | target behavior, prompt drafts, unapproved render accidents |
+| `runs/gallery.html`, `runs/gallery.json` | every dispatched run in order, with the text as sent, the model, every setting, the seed and the result; the tools write them at initialization and after every dispatch | anything written by hand |
 | `work/` | the open task (goal, steps, which are done, what is next, what it waits on) and the trail of tasks | canon, target facts, prompt text, anything another record owns |
 | `narrative/narrative.json` | what the series is about: themes, arcs, chapters and the story orders each covers, characters with the persona in force and the chapters they are in the series for, promises, questions, who knows what | what a frame shows, any target or model, media |
 | `narrative/personas/` | who a character is, one file per phase of a life | what they look like, which `character-profiles.md` owns |
@@ -3814,6 +3714,25 @@ A viewpoint change must affect at least one of:
 - transition design;
 - review criteria.
 
+## 6. Scene default and shot overrides
+
+A scene defines a default profile and ordered shots. A shot may override:
+
+```text
+viewpoint profile
+camera ownership
+knowledge scope
+point of audition
+focal character
+camera position and movement
+shot scale, lens, and angle
+axis side and screen direction
+visible morphology feature refs by character
+visible identity and state obligations
+```
+
+The scene may combine external masters, over-the-shoulder coverage, first-person inserts, reaction shots, objective inserts, and fixed in-world views. Each transition records its trigger, bridge type, knowledge effect, and continuity requirements; [Viewpoint Transitions](#viewpoint-transitions) gives the rules.
+
 ---
 
 <!-- Source: references/third-person-camera.md -->
@@ -4027,7 +3946,9 @@ Before sealing an external shot:
 - movement has path, speed, subject relation, and landing;
 - foreground objects and bodies have an occlusion plan;
 - state and prop ownership remain visible or intentionally concealed;
-- the landing can connect to the next shot.
+- the landing can connect to the next shot;
+- the shot is not redundant coverage of a view another shot already carries;
+- the external position reveals no knowledge the scene's focalization withholds.
 
 ---
 
@@ -8206,6 +8127,17 @@ When a template changes, update its validator, canonical example, contributor in
 - [ ] Loudness and true peak are measured for the destination.
 - [ ] Machine-checkable defects were checked before human review.
 - [ ] Terminal frame and audio tail were extracted after finishing.
+
+### Submission and authority
+
+- [ ] Applicable state, morphology and viewpoint artifacts validate; exchange validation ran only for a selected public handoff.
+- [ ] The exact submitted text is self-contained with the submitted media.
+- [ ] The submission gate ran on that text and inputs, and every refusal and unmeasured finding was reported.
+- [ ] The user confirmed the complete submission, or the plan that names it, and nothing was sent outside that confirmation.
+- [ ] No returned output was regenerated on an unrequested self-assessment.
+- [ ] No planned result is described as observed.
+- [ ] Project state holds no unapproved canon.
+- [ ] No Unicode em dash or en dash appears in runtime files.
 
 ### Run review, archive, and state
 

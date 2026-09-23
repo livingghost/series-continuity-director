@@ -207,4 +207,6 @@ Before sealing an external shot:
 - movement has path, speed, subject relation, and landing;
 - foreground objects and bodies have an occlusion plan;
 - state and prop ownership remain visible or intentionally concealed;
-- the landing can connect to the next shot.
+- the landing can connect to the next shot;
+- the shot is not redundant coverage of a view another shot already carries;
+- the external position reveals no knowledge the scene's focalization withholds.

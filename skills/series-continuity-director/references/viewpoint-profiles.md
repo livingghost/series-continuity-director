@@ -84,3 +84,22 @@ A viewpoint change must affect at least one of:
 - point of audition;
 - transition design;
 - review criteria.
+
+## 6. Scene default and shot overrides
+
+A scene defines a default profile and ordered shots. A shot may override:
+
+```text
+viewpoint profile
+camera ownership
+knowledge scope
+point of audition
+focal character
+camera position and movement
+shot scale, lens, and angle
+axis side and screen direction
+visible morphology feature refs by character
+visible identity and state obligations
+```
+
+The scene may combine external masters, over-the-shoulder coverage, first-person inserts, reaction shots, objective inserts, and fixed in-world views. Each transition records its trigger, bridge type, knowledge effect, and continuity requirements; [Viewpoint Transitions](viewpoint-transitions.md) gives the rules.

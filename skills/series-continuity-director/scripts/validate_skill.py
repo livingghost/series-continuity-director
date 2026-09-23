@@ -65,6 +65,7 @@ EXPECTED_KNOWLEDGE_SOURCES = [
     "references/evidence-review.md",
     "references/production-direction.md",
     "references/production-execution.md",
+    "references/production-stages.md",
     "references/tactic-consultation.md",
     "references/production-repair.md",
     "references/timed-production.md",
@@ -541,14 +542,15 @@ def static_checks(repo: Path, manifest: dict) -> tuple[list[str], list[str], dic
     body = re.split(r"(?m)^---\s*$", skill, maxsplit=2)
     body_lines = len(body[-1].splitlines())
     stats["skill_body_lines"] = body_lines
-    # Body length is observable, not a release failure. A recommended length
-    # cannot establish whether a reader has the explanations needed to use it.
-    # No tokenizer ships here, so four characters per token stands in for one,
-    # and the stat and the warning both say it is an estimate.
+    # A host loads the whole body the moment the skill activates, so the token
+    # cap the specification states is refused rather than reported. The line
+    # count is only reported. No tokenizer ships here, so four characters per
+    # token stands in for one, and the stat and the error both say it is an
+    # estimate.
     estimated_tokens = -(-len(body[-1]) // 4)
     stats["skill_body_tokens_estimate"] = estimated_tokens
     if estimated_tokens > TOKEN_BUDGET:
-        warnings.append(
+        errors.append(
             f"SKILL.md body is an estimated {estimated_tokens} tokens (characters / 4); "
             f"the specification states under {TOKEN_BUDGET}"
         )

@@ -301,6 +301,17 @@ When a template changes, update its validator, canonical example, contributor in
 - [ ] Machine-checkable defects were checked before human review.
 - [ ] Terminal frame and audio tail were extracted after finishing.
 
+### Submission and authority
+
+- [ ] Applicable state, morphology and viewpoint artifacts validate; exchange validation ran only for a selected public handoff.
+- [ ] The exact submitted text is self-contained with the submitted media.
+- [ ] The submission gate ran on that text and inputs, and every refusal and unmeasured finding was reported.
+- [ ] The user confirmed the complete submission, or the plan that names it, and nothing was sent outside that confirmation.
+- [ ] No returned output was regenerated on an unrequested self-assessment.
+- [ ] No planned result is described as observed.
+- [ ] Project state holds no unapproved canon.
+- [ ] No Unicode em dash or en dash appears in runtime files.
+
 ### Run review, archive, and state
 
 - [ ] Every returned variant was preserved and reviewed.
