@@ -150,6 +150,93 @@ def validate_catalog() -> dict[str, Any]:
     return {"ok": not errors, "profiles": len(seen_ids), "errors": errors}
 
 
+def profile_directories(profiles) -> list[Path]:
+    paths = [profiles] if isinstance(profiles, (str, Path)) else list(profiles)
+    return list(dict.fromkeys(Path(path).absolute() for path in paths))
+
+
+def resolve_profile(target: str, profiles) -> tuple[Path, dict] | None:
+    """Resolve ordered sources; duplicate target IDs in one source are ambiguous."""
+    for directory in profile_directories(profiles):
+        matches = []
+        for path in sorted(directory.glob('*.json')):
+            value = read_json(path)
+            if isinstance(value, dict) and value.get('target_id') == target:
+                if path.is_symlink():
+                    raise ValueError('target definition must be a regular file')
+                matches.append((path, value))
+        if len(matches) > 1:
+            raise ValueError('ambiguous target ID in one profile source: ' + target)
+        if matches:
+            return matches[0]
+    return None
+
+
+def selected_profile(spec: dict, profiles, root: Path | None) -> tuple[Path, dict] | None:
+    """A completed submission uses its pinned choice, not another catalog search."""
+    if isinstance(spec.get('execution_choices'), dict):
+        import execution_contract as c
+        import runtime_evidence
+        value = spec['execution_choices']
+        if spec.get('execution_choices_sha256') != c.content_id(value):
+            raise ValueError('selected execution choices changed')
+        reader = runtime_evidence.reader(root, snapshots=copy.deepcopy(spec['input_snapshots']))
+        ref = value['selection']['profile']
+        profile = reader.json(ref)
+        if profile.get('target_id') != spec.get('target'):
+            raise ValueError('pinned target definition names another target')
+        return reader.resolve(ref['path']), profile
+    return resolve_profile(str(spec.get('target') or ''), profiles)
+
+
+def describe(target: str, profiles, *, service=None, operation=None, context=None, guidance_paths=None) -> dict:
+    import execution_contract as c
+    import target_guidance
+    found = resolve_profile(target, profiles)
+    if found is None:
+        raise ValueError('target profile is absent: ' + target)
+    path, profile = found
+    result = validate_profile(profile)
+    if not result['ok']:
+        raise ValueError('target definition: ' + '; '.join(result['errors']))
+    source = {'path': str(path), 'sha256': c.digest(c.read(path))}
+    documents = target_guidance.resources(guidance_paths)
+    report = {'definition': source, 'search_order': [str(p) for p in profile_directories(profiles)],
+              'profile': profile, 'guidance_status': 'context-required', 'guidance': []}
+    if service is None or operation is None or context is None:
+        report['guidance'] = [{'source': ref, 'guidance': g} for ref, doc in documents
+                              for g in target_guidance.records(doc) if g['applies_to']['target_id'] == target]
+        report['next'] = 'Select service, operation and use context to resolve applicability.'
+        return report
+    offerings = [x for x in profile.get('offerings', []) if x.get('service') == service]
+    if len(offerings) != 1:
+        raise ValueError('select one offering for the requested service')
+    return {**report, **target_guidance.display(profile,
+            {'service': service, 'model_identifier': offerings[0]['model_identifier'], 'operation': operation},
+            context, documents, source=source)}
+
+
+def add_selection_arguments(parser, *, target_required=False):
+    parser.add_argument('--target', required=target_required, help='Explicit target profile ID for advice display.')
+    parser.add_argument('--profiles', type=Path, action='append', default=[], help='Profile directory, in priority order; repeatable.')
+    parser.add_argument('--guidance', type=Path, action='append', default=[], help='Explicit target-guidance data file; repeatable.')
+    parser.add_argument('--service', help='Exact offering service.')
+    parser.add_argument('--operation', help='Exact service operation.')
+    parser.add_argument('--output-kind', help='Output kind for recommendation applicability.')
+    parser.add_argument('--purpose', help='Use purpose for recommendation applicability.')
+    parser.add_argument('--input-mode', action='append', default=[], help='Selected input mode; repeatable.')
+    parser.add_argument('--visual-language', action='append', default=[], help='Declared visual treatment selector; repeatable.')
+
+
+def description_from_args(args):
+    context = None
+    if args.output_kind and args.purpose:
+        context = {'output_kind': args.output_kind, 'purpose': args.purpose,
+                   'input_modes': args.input_mode, 'visual_language': args.visual_language}
+    return describe(args.target, [*args.profiles, PROFILE_DIR], service=args.service,
+                    operation=args.operation, context=context, guidance_paths=args.guidance)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Series Target Protocol support tool")
     sub = parser.add_subparsers(dest="command")
@@ -162,8 +249,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     p_seal.add_argument("--out")
 
     sub.add_parser("validate-catalog", help="Validate every profile the manifest lists")
+    p_inspect = sub.add_parser("inspect", help="Show selected definition and applicable advice")
+    add_selection_arguments(p_inspect, target_required=True)
+    p_guidance = sub.add_parser("validate-guidance", help="Validate explicit target advice data")
+    p_guidance.add_argument("path", type=Path)
 
     args = parser.parse_args(argv)
+    if args.command == "inspect":
+        print(json.dumps(description_from_args(args), ensure_ascii=False, indent=2))
+        return 0
+    if args.command == "validate-guidance":
+        import target_guidance
+        values = target_guidance.records(read_json(args.path))
+        print(json.dumps({"ok": True, "guidance_records": len(values)}))
+        return 0
     if args.command == "validate":
         report = validate_profile(read_json(Path(args.path)))
         print(json.dumps(report, ensure_ascii=False, indent=2))

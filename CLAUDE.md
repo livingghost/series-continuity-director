@@ -50,7 +50,7 @@ and only the second one binds.
 | Receive or deliver a public protocol artifact | `visual-contracts.md` section 8, `state-and-trust.md` |
 | Write a start frame, boundary frame, or any still | `prompt-composition.md`, `model-facing-artifacts.md`, `morphology-and-species-contracts.md` |
 | Write any text a model will receive | `prompt-composition.md`, `model-facing-artifacts.md`, `scoped-lexicon.md` |
-| Choose a target model, operation, or input mode | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md`, `model-evidence.md` |
+| Choose a target model, operation, settings, or recommended wording | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md`, `model-evidence.md`, `target-guidance.md` |
 | Judge a returned take | `shot-continuity.md`, `post-production.md`, `performance-details.md` |
 | Inspect saved production evidence or define an evidence study | `evidence-review.md` |
 | Register, accept, or replace a produced file | `state-and-trust.md` sections 4 and 5 |

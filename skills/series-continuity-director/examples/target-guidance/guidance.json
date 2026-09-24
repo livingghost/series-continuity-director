@@ -1,0 +1,67 @@
+{
+  "artifact_type": "target-guidance",
+  "id": "synthetic-outline-study",
+  "label": "Synthetic outline and detail choices",
+  "applies_to": {
+    "target_id": "synthetic-study",
+    "service": "synthetic-service",
+    "model_identifier": "synthetic:study",
+    "operation": "draw",
+    "output_kinds": [
+      "text"
+    ],
+    "input_modes": [],
+    "purposes": [
+      "wording-study"
+    ],
+    "visual_language": []
+  },
+  "prompt_structure": [
+    "State the subject, then the observable treatment."
+  ],
+  "entries": [
+    {
+      "reason": "Illustrate an explicit choice in a synthetic wording study.",
+      "conflicts_with": [],
+      "evidence": [
+        {
+          "kind": "author-preference",
+          "reference": "examples/target-guidance/README.md",
+          "scope": "Synthetic example only. No real model recommendation."
+        }
+      ],
+      "limits": [],
+      "id": "detail",
+      "kind": "parameter",
+      "field": "detail_level",
+      "proposed": {
+        "kind": "choices",
+        "values": [
+          "plain",
+          "layered"
+        ]
+      }
+    },
+    {
+      "reason": "Illustrate an explicit choice in a synthetic wording study.",
+      "conflicts_with": [],
+      "evidence": [
+        {
+          "kind": "author-preference",
+          "reference": "examples/target-guidance/README.md",
+          "scope": "Synthetic example only. No real model recommendation."
+        }
+      ],
+      "limits": [],
+      "id": "outline",
+      "kind": "text",
+      "channel": "positive",
+      "text": "Keep a continuous boundary.",
+      "allow_rewording": false,
+      "role": "treatment"
+    }
+  ],
+  "limits": [
+    "These values demonstrate the data contract, not an available model or tested quality."
+  ]
+}

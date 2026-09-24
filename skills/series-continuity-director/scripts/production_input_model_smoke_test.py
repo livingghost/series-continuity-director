@@ -56,6 +56,7 @@ class ModelInputTests(unittest.TestCase):
                      'criteria': [{'id': 'output', 'text': 'Inspect the synthetic output.', 'strength': 'hard', 'evidence': 'text'}],
                      'sequence_plan': None}
         self.task['direction'] = support.direction(self.task, self.spec['text'])
+        self.task['direction']['visual_language'] = support.visual_selection()
         reading_fixtures.task_reading(self.root, self.task)
         reading = c.load(self.root / self.task['route_reading'])
         self.write('task.json', self.task)
@@ -66,7 +67,8 @@ class ModelInputTests(unittest.TestCase):
         self.choices = {'reading': {'snapshot_id': None, 'reading_key': reading['reading_key'], 'applied': reading['applied']},
                         'visual': visual, 'validation': {'mode': 'target-schema', 'submission': 'submission-source.json',
                             'target_profile': 'profile.json', 'service_profiles': 'services.json',
-                            'contract': 'contract.json', 'evidence': 'acquisition.json', 'execution_policy': None},
+                            'contract': 'contract.json', 'evidence': 'acquisition.json', 'execution_policy': None,
+                            'guidance': [], 'execution': support.execution_plan(self.spec)},
                         'source_run': None}
         self.write('choices.json', self.choices)
 
@@ -147,6 +149,58 @@ class ModelInputTests(unittest.TestCase):
         with (patch.object(production_workflow, 'prepare', side_effect=AssertionError('prepare')),
               patch.object(production_workflow, 'authorize', side_effect=AssertionError('authorize'))):
             self.assertTrue(self.build()['ok'])
+
+
+    def advice(self):
+        guide = {'artifact_type': 'target-guidance', 'id': 'synthetic-outline', 'label': 'Synthetic treatment advice',
+                 'applies_to': {'target_id': self.spec['target'], 'service': self.spec['service'],
+                   'model_identifier': self.spec['model'], 'operation': self.spec['operation'],
+                   'output_kinds': ['image'], 'input_modes': [], 'purposes': ['synthetic-test'], 'visual_language': []},
+                 'prompt_structure': ['One observable form.'],
+                 'entries': [{'id': 'treatment', 'kind': 'text', 'channel': 'positive', 'text': self.spec['text'],
+                   'allow_rewording': False, 'role': 'drawing', 'reason': 'Explicit synthetic test advice.',
+                   'conflicts_with': [], 'evidence': [{'kind': 'hypothesis', 'reference': 'synthetic fixture',
+                   'scope': 'A test, not a tested model recommendation.'}], 'limits': []}], 'limits': []}
+        self.write('guidance.json', guide)
+        self.choices['validation']['guidance'] = ['guidance.json']
+        plan = self.choices['validation']['execution']
+        plan['recommendations'] = [{'guidance': 'synthetic-outline', 'entry': 'treatment',
+                                    'decision': 'adopt', 'reason': 'Use this exact test phrase.'}]
+        plan['segments']['positive'][0]['recommendation'] = {'guidance': 'synthetic-outline', 'entry': 'treatment'}
+
+    def test_selected_advice_reaches_normal_build_and_request(self):
+        import request_renderer, transport_runware
+        self.advice(); result = self.build()
+        spec = c.load(self.root/result['inputs']['submission']['path'])
+        service = c.load(self.root/'services.json')['services'][spec['service']]
+        prepared = request_renderer.submission(spec, self.profile, self.profile['offerings'][0], service,
+                                               transport_runware, root=self.root)
+        self.assertEqual(result['target_info'], prepared['target_info'])
+        self.assertEqual(spec['text'], prepared['rendered']['request']['positivePrompt'])
+        span = next(x for x in prepared['rendered']['request_trace'] if x['transform_id'] == 'chosen-recommendation')
+        self.assertEqual(span['source_refs'][0]['source']['path'], 'guidance.json')
+        self.assertEqual(prepared['rendered']['sealed']['context']['visual_language'], spec['visual_language'])
+
+    def test_completed_input_inspection_uses_selected_advice(self):
+        self.advice(); self.build()
+        report = inputs.inspect_inputs(self.root, 'built/production-task.json')
+        self.assertEqual(report['selected_targets'][0]['guidance'][0]['guidance']['id'], 'synthetic-outline')
+
+    def test_visual_input_requires_a_selected_language(self):
+        self.task['direction']['visual_language'] = None
+        self.write('task.json', self.task)
+        with self.assertRaises(ValueError): self.build()
+        self.assertFalse((self.root/'built').exists())
+
+    def test_visual_choice_change_invalidates_input_recheck(self):
+        publish = inputs._publish
+        def mutate(*args, **kwargs):
+            self.task['direction']['visual_language']['anchor'][0]['dimensions']['line_and_edge_behavior'] = 'Broken edges'
+            self.write('task.json', self.task)
+            return publish(*args, **kwargs)
+        with patch.object(inputs, '_publish', side_effect=mutate):
+            with self.assertRaises(ValueError): self.build()
+        self.assertFalse((self.root/'built').exists())
 
 
 class SelectionInputTests(unittest.TestCase):

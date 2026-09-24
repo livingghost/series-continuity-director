@@ -252,7 +252,7 @@ class RenditionTests(unittest.TestCase):
         self.kw.update(bindings=[self.binding],reference_policy=self.policy('native-fields',fields))
         with self.assertRaises(ValueError):mr.compose('rendition',**self.kw)
     def test_12_recommendation_segments_keep_their_origin(self):
-        self.kw['segments']=[{'source_kind':'model-setting','start':0,'end':3,'text':'A, '},{'source_kind':'authored','start':3,'end':4,'text':'B'}]
+        self.kw['segments']=[{'source_kind':'model-setting','start':0,'end':3,'text':'A, ','source_refs':[{'kind':'synthetic-advice','id':'a'}]},{'source_kind':'authored','start':3,'end':4,'text':'B','source_refs':[]}]
         result=mr.compose('A, B',**self.kw);self.assertEqual([x['source_kind'] for x in result['trace']],['model-setting','authored'])
     def test_13_segment_gap_refused(self):
         self.kw['segments']=[{'source_kind':'authored','start':1,'end':4,'text':'ext'}]

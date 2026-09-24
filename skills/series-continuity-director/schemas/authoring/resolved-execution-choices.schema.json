@@ -1,0 +1,349 @@
+{
+  "type": "object",
+  "properties": {
+    "context": {
+      "type": "object",
+      "properties": {
+        "output_kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input_modes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "visual_language": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "output_kind",
+        "input_modes",
+        "purpose",
+        "visual_language"
+      ],
+      "additionalProperties": false
+    },
+    "settings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "enum": [
+              "explicit",
+              "recommended",
+              "offering",
+              "not-applicable",
+              "not-exposed",
+              "provider-managed"
+            ]
+          },
+          "value": {},
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recommendation": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "guidance": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "entry": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "guidance",
+                  "entry"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "field",
+          "state",
+          "value",
+          "reason",
+          "recommendation"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "guidance": {
+            "type": "string",
+            "minLength": 1
+          },
+          "entry": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision": {
+            "enum": [
+              "adopt",
+              "reject"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "guidance",
+          "entry",
+          "decision",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "segments": {
+      "type": "object",
+      "properties": {
+        "positive": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "recommendation": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "guidance": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "entry": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "guidance",
+                      "entry"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "text",
+              "recommendation",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        },
+        "negative": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "recommendation": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "guidance": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "entry": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "guidance",
+                      "entry"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "text",
+              "recommendation",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "positive",
+        "negative"
+      ],
+      "additionalProperties": false
+    },
+    "selection": {
+      "type": "object",
+      "properties": {
+        "profile": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        "service_profiles": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        "guidance": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "profile",
+        "service_profiles",
+        "guidance"
+      ],
+      "additionalProperties": false
+    },
+    "text_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "negative_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "context",
+    "settings",
+    "recommendations",
+    "segments",
+    "selection",
+    "text_sha256",
+    "negative_sha256"
+  ],
+  "additionalProperties": false
+}

@@ -99,7 +99,6 @@ def compile_request(spec: dict, offering: dict, service: dict, media_ids: dict |
     for control in spec.get('_native_reference_controls',[]):
         write(control['field'],control['value'],'reference-binding','native-reference-controls',control['binding_ids'])
         layout['fields'].append({'id':control['id'],'field':control['field'],'kind':'fixed'})
-    writer.defaults((offering.get('constraints') or {}).get('as_written') or {},source)
     if not present(writer.request,['numberResults']):raise ValueError('declare an explicit numberResults before requesting authorization')
     if not any(x['id']=='count' for x in layout['fields']):layout['fields'].append({'id':'count','field':['numberResults'],'kind':'parameter'})
     return {'request':writer.request,'layout':layout,'request_trace':writer.trace}

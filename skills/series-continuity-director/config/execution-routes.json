@@ -230,7 +230,8 @@
       "when": "media production",
       "reads": [
         "references/model-facing-artifacts.md",
-        "references/production-stages.md"
+        "references/production-stages.md",
+        "references/target-guidance.md"
       ],
       "features": [],
       "stages": [

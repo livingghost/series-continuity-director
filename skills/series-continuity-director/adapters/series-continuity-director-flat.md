@@ -97,7 +97,7 @@ Find the action about to be performed and read those files before performing it.
 | Receive or deliver a public protocol artifact | `visual-contracts.md` section 8, `state-and-trust.md` |
 | Write a start frame, boundary frame, or any still | `prompt-composition.md`, `model-facing-artifacts.md`, `morphology-and-species-contracts.md` |
 | Write any text a model will receive | `prompt-composition.md`, `model-facing-artifacts.md`, `scoped-lexicon.md` |
-| Choose a target model, operation, or input mode | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md`, `model-evidence.md` |
+| Choose a target model, operation, settings, or recommended wording | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md`, `model-evidence.md`, `target-guidance.md` |
 | Judge a returned take | `shot-continuity.md`, `post-production.md`, `performance-details.md` |
 | Inspect saved production evidence or define an evidence study | `evidence-review.md` |
 | Register, accept, or replace a produced file | `state-and-trust.md` sections 4 and 5 |
@@ -122,6 +122,19 @@ not from the working directory, which belongs to the project.
 Read [Production Direction](#purpose-portrayal-and-production-choices), [Production Execution](#production-execution-and-bounded-authority), and the selected route's references before building a saved deliverable. A route is a named kind of work, such as `development` or `media`, with the documents it requires. `scripts/execution_routes.py read ROUTE --root PROJECT` outputs those documents in full and ends with a reading key, which later records cite as proof of the reading; author each required application, the passage applied and why.
 
 `scripts/production_workflow.py` connects preparation, handoff, actual candidates, observation review, authorized selection and completion in one run, and its `status`, `resume` and `impact` expose interrupted work. Complete the linked work task only after that run completes. For time-dependent material, read [Timed Production](#time-bearing-realization-and-review); still-image-to-video is not a mandatory method.
+
+## Target and visual choices
+
+For visual output, select scoped visual anchor and register applications in
+`direction.visual_language`; link each to a direction decision, source, actor,
+and observation criteria. Nonvisual output uses null. A style label supplies
+neither anatomy nor a viewpoint. Read [Visual Language](#visual-language-style-continuity-and-quality-direction).
+
+Before request construction, inspect the exact model, offering, operation and
+advice using [Target Guidance](#target-guidance-and-deliberate-execution-choices). Resolve values and
+recommended text through `build-inputs`, then review the sealed request. Advice
+is optional; deliberate choices are not. Use the selected target, not a substitute
+generation tool. A target change returns through preparation and authorization.
 
 ## Commands
 
@@ -1021,6 +1034,17 @@ want/need, a turn or a canonical structure the work leaves unused.
 A repair records exact `targets` beside its human-readable `scope`, so a new
 preparation can be checked against the reviewed proposal; see Production Repair.
 A passed video/audio check cites the measured interval that section 2 requires.
+
+
+## 4. Scoped visual choices
+
+The required `visual_language` field is null for nonvisual production. For images
+and video it binds the selected `visual anchor` and `visual register` to existing
+decisions, applied source IDs, scopes, actors and observable dimensions. The
+linked decision supplies the actual realization, reason and criteria. Preparation
+and final-request construction preserve that application in the ordinary consumer
+and request seal. See [Visual Language](#visual-language-style-continuity-and-quality-direction) section 16 for the
+shape, mixed treatments and source-change behavior.
 
 ---
 
@@ -2936,6 +2960,46 @@ Before submission:
 - primary and negative instructions agree;
 - style continuity has review criteria.
 
+
+## 16. Apply the baseline through production decisions
+
+Use `direction.visual_language` in the production task. It contains `anchor`,
+`register`, and `coordination`. Each anchor/register binding names a `decision`,
+an applied `source` ID or null for a new choice, `scope`, `actor`, and observable
+`dimensions`. The linked decision already owns alternatives, its selected
+realization, reason and observation criteria. Do not create another approval.
+
+Every anchor declares `medium_family` and `dimensional_treatment`. Other axes
+are open named dimensions: line, surface, shadow grouping or detail hierarchy.
+Register dimensions describe presentation, not species or drawing materials.
+Possible starting directions include contours with grouped shadows, painted
+masses, ink and tone, flat graphics, modeled material response, photographic
+response and scoped mixtures. They are examples, not a closed list or defaults.
+The author or delegated agent chooses deliberately and records why.
+
+Two treatments for distinct scopes require `coordination`: their spatial or
+presentation intervals, focal relationship, and how color and light join.
+Conflicting values for the same named scope and dimension must be resolved.
+The validator checks explicit assignments, not whether prose scopes overlap in
+meaning; that remains a rendition-review obligation.
+
+Series definitions stay in one applied source. The production binding records
+their application, not a competing copy of canon. Its instruction comes from
+the linked selected decision. A deliberate departure names the affected scope,
+reason and preserved conditions in `departures`. A different finish in a scene
+does not change a character's enduring material or color.
+
+Image and video outputs require both selections before input construction.
+Text and audio outputs use `visual_language: null` and retain their own direction
+and timing decisions. A visual task still in development may remain unresolved;
+it cannot be declared ready to send as a visual submission.
+
+The compiled selection reaches the production consumer, final-request context,
+and rendition review. Applied source hashes participate in normal freshness and
+impact checks. Inspect actual outputs for line, shading, surface, transitions and
+temporal consistency. Recheck adjacent shots where a change crosses a cut.
+A single frame cannot prove temporal stability or the feasibility of motion.
+
 ---
 
 <!-- Source: references/scoped-lexicon.md -->
@@ -3702,7 +3766,7 @@ What to update when something changes: a service's endpoint, envelope, or pollin
 
 The gate checks a submission's stated `parameters` against the offering's constraints (the duration band first) and reports a video submission that states no duration as unmeasured.
 
-An offering whose service rewrites the text unless told not to declares `as_written`: the request keys and values under which the text reaches the model as sent. `dispatch.py` sets them unless the submission's own parameters set them, so the text travels as written by default, and the gate reports a submission that sets them to anything else.
+An offering whose service rewrites the text unless told not to declares `as_written`: the request keys and values under which the text reaches the model as sent. The input plan explicitly selects each such setting before request construction; the transport supplies none of them implicitly. The gate reports a choice that enables rewriting. The final request carries the selected value and its reason; see [Target Guidance](#target-guidance-and-deliberate-execution-choices).
 
 An offering may point at an **observed parameter schema**: the service's acquired schema for its exact model. The gate validates declared inputs and parameters against those constraints. A submission that names no service is checked against the model alone, and the gate reports every service-level check as unmeasured. Local evidence catalogs retain original responses, source identities, and separate envelope overlays. Use the [model evidence workflow](../references/model-evidence.md) to import schemas, record reference sources, or attach an existing authorized trial. Each request states its validation mode and unmeasured conditions.
 
@@ -5403,6 +5467,18 @@ Plan the carrier with the shot's reference allocation in
 [model-facing-artifacts.md](#model-facing-artifacts-and-requirement-transfer) section 12, because two figures divide one reference
 limit. [contact-scenes.md](#physical-contact-across-viewpoints) section 12 covers figures that merge where they touch.
 
+
+### SUB-19: Prepared execution choices
+
+A draft can be checked for literal locks, scene linkage and visual continuity
+before a service is selected. That verdict does not make a request executable.
+`build-inputs` resolves the exact profile, service data, guidance decisions,
+settings and text spans. A prepared submission carries those choices and their
+hash. The gate rechecks any supplied choices and reports
+`EXECUTION_CHOICES_INVALID` when their sources, text or values differ. The
+request renderer always requires completed choices before preview or send.
+See [Target Guidance](#target-guidance-and-deliberate-execution-choices) for selection and trace requirements.
+
 ---
 
 <!-- Source: references/operational-distinctions.md -->
@@ -5804,6 +5880,15 @@ The gray wolf mechanic keeps the cracked pendant in the right palm, protects the
 
 Internal asset IDs remain in operator-facing sheets and lineage records. Do not paste private IDs into target text unless the target documents that binding syntax.
 
+### Selected guidance at submission time
+
+Resolve target guidance and operation controls before composing the final request.
+The production input selection names the exact profile, service data, optional
+guidance sources, setting decisions and text spans. The renderer carries these
+choices and their source hashes into the existing request seal. It does not add
+recommendations after the author has reviewed the text. See
+[Target Guidance](#target-guidance-and-deliberate-execution-choices) for the input shape and failure conditions.
+
 ## 5. Concise is not generic
 
 A concise prompt can retain:
@@ -6162,6 +6247,189 @@ If two named strategies produce the same files, controls, text, and review, merg
 - unsupported requirements have alternate routes;
 - the adaptation trace is complete;
 - run status remains truthful.
+
+---
+
+<!-- Source: references/target-guidance.md -->
+
+# Target Guidance and Deliberate Execution Choices
+
+A target profile states model facts. An offering states how one service exposes
+that model. Target guidance recommends choices within those facts. It grants no
+capability, authority, or guarantee of artistic quality.
+
+## 1. Inspect the selected target
+
+Read this procedure before choosing a model, operation, settings, or recommended
+wording. Use the same sources throughout input construction and submission.
+
+```bash
+python scripts/target_protocol.py inspect --target TARGET --profiles PROJECT/profiles --guidance PROJECT/guidance.json --service SERVICE --operation OPERATION --output-kind image --purpose key-image --visual-language drawn
+python scripts/target_protocol.py validate-guidance PROJECT/guidance.json
+python scripts/execution_routes.py read media --root PROJECT --target TARGET --profiles PROJECT/profiles --guidance PROJECT/guidance.json --service SERVICE --operation OPERATION --output-kind image --purpose key-image --visual-language drawn
+```
+
+Replace uppercase paths and identifiers with the selected definitions. These
+commands inspect files and print information; they do not send a request.
+`--profiles` and `--guidance` can repeat. Profile directories are searched in
+order. Equal target IDs within one directory are ambiguous and are refused.
+The selected path and its content hash appear in the result. A completed
+submission uses its pinned definition rather than searching the catalog again.
+
+Without explicit guidance files, the resource role `target-guidance` is resolved
+through the declared `SERIES_RESOURCES` configuration and the suite catalog.
+The shipped collection is empty: no observed acceptance is advertised as a
+quality recommendation. External files are read as data, never executed.
+
+A complete card identifies the target, offering, operation, applicability
+context, prompt contract, applicable advice, evidence, and limitations. A card
+without complete context shows available records without claiming applicability.
+`guidance_status: not-registered-for-context` means no matching advice, not an unusable model.
+The profile's input modes and the service's request schema remain authoritative.
+
+`production_workflow.py inspect-inputs` accepts the same target-selection
+arguments. `submission_draft.py new` returns `target_info` for its selected
+model; use `--guidance-purpose` for the purpose and `--guidance` for each file.
+The completed input build and dispatch preview show the pinned card and actual
+setting choices together. Reading a card alone does not authorize sending.
+
+A complete synthetic [example](../examples/target-guidance/README.md) includes a
+model definition, guidance, execution plan and executable inspection commands.
+
+## 2. Author advice with a bounded claim
+
+Use `schemas/authoring/target-guidance.schema.json`. A file contains one record
+or a collection shaped as `{"guidance": [...]}`. Each record declares:
+
+- `artifact_type: target-guidance`, an immutable semantic `id`, and a label;
+- `applies_to`: target ID, optional service/model identifier/operation, output
+  kinds, exact input-mode set when supplied, purposes, and visual selectors;
+- `prompt_structure`: guidance on composition rather than text injected later;
+- `entries`: parameter choices or text fragments, their reasons and evidence;
+- `limits`: untested conditions and the bounds of reuse.
+
+An empty selector list imposes no constraint on that axis. A null service or
+operation is unrestricted. Input modes are different: null is unrestricted,
+whereas an empty list applies to text-only input. Nonempty visual selectors
+must all occur in the explicitly selected context. Purpose and visual selectors
+are authored identifiers, not keywords extracted from a prompt.
+
+A parameter entry declares the exact dotted request `field` and a `proposed`
+set of JSON values or numerical range. It does not choose a midpoint. A text
+entry declares `channel` (`positive` or `negative`), exact `text`, its `role`,
+and whether rewording is permitted. `conflicts_with` names incompatible entries
+within the same record. Distinct applicable records may coexist, but their IDs
+must be unique. Resolve substantive contradictions rather than averaging them.
+
+Each evidence item distinguishes `documented-recommendation`, `observed-result`,
+`author-preference`, and `hypothesis`, with a reference and applicability scope.
+An observation retains the exact target, operation, inputs, settings, wording,
+post-processing and judged property at its source. An accepted API request is
+not evidence for superior drawing, acting, motion, or sound.
+
+## 3. Resolve values and text before constructing the request
+
+The existing `build-inputs` validation selection includes `target_profile`,
+`service_profiles`, `guidance` (a list), and an `execution` plan, alongside its
+schema or bounded-probe evidence. Copy chosen external definitions into the
+project as preserved data before preparing work. Project paths and `@skill/`
+paths become byte snapshots through the ordinary input evidence reader.
+No private installation is searched and no separate approval ledger is created.
+
+The plan follows `schemas/authoring/execution-choices.schema.json`:
+
+```json
+{
+  "context": {"output_kind": "text", "input_modes": [], "purpose": "wording-study", "visual_language": []},
+  "settings": [],
+  "recommendations": [],
+  "segments": {"positive": [], "negative": []}
+}
+```
+
+This is a structure example, not a complete request. Populate the settings for
+the actual service, and cover the complete authored text with contiguous spans.
+The general plan deliberately invents no sampler, resolution, seed, or duration.
+
+Each setting has `field`, `state`, `value`, `reason`, and `recommendation`.
+States have distinct effects:
+
+| State | Request effect |
+|---|---|
+| `explicit` | Send the author's exact JSON value. |
+| `recommended` | Send a chosen permitted value and cite the adopted entry. |
+| `offering` | Send an explicitly chosen `as_written` value from the offering. |
+| `not-applicable` | Send no key; record why this operation does not use it. |
+| `not-exposed` | Send no key; record the unavailable control and its limitation. |
+| `provider-managed` | Intentionally omit the key and state what is delegated. |
+
+Omitted states carry `value: null`, not an API null. Explicit JSON null may be
+sent only if the target schema accepts it. Valid `false`, `0`, and empty arrays
+remain values. Dotted paths cannot duplicate or overlap. Existing authored
+values cannot be silently replaced by the plan.
+
+An execution policy's `controls` array declares important fields, their
+`availability`, whether provider management is allowed, and the evidence reason.
+Each declared control needs a decision. This is operation-specific: still-image
+samplers are not required of text or audio models. Where a service publishes no
+seed or frame-rate control, report that limitation rather than inventing a value.
+Any offering `as_written` field also requires a deliberate choice. The transport
+never supplies an artistic value after these choices have been resolved.
+
+Record adoption or rejection and a reason for every applicable advice entry.
+An adopted parameter must reach a setting. An adopted text fragment must reach
+the named channel. Rejected advice is not injected. Each text span contains
+`start`, `end`, `text`, `recommendation` (null for authored text), and `reason`.
+Offsets are character offsets, not byte offsets. Spans cover their full channel
+without gaps or overlap. An empty channel has no spans. Rewording records the
+selected phrase and its source; it requires the entry's permission. Negative
+text is allowed only when the exact offering exposes that channel. Otherwise
+write any needed exclusion in the authored positive channel and review meaning.
+
+## 4. Keep the selected values in the existing request chain
+
+`execution_choices.py` resolves the plan during `build-inputs`, which stores the
+selected definitions, exact text hashes, settings, and recommendation decisions.
+`request_renderer.py` verifies those choices and attributes the actual request
+fields and text spans to their sources. The existing request seal includes their
+content hash and the scoped visual selection. Unchosen parameter insertion,
+model substitution, changed wording, reordered media, and omitted selected
+values are refused before sending.
+
+The final preview shows the actual request, target card, setting decisions, and
+required rendition review. The reviewer checks meaning and reference influence;
+the returned artifact is inspected for visual, temporal, and audio realization.
+A mechanical pass proves correspondence, not artistic success.
+
+Choose a new model or operation explicitly when a target is unavailable. Do not
+replace it with another tool as an unannounced preview. Changes to definitions,
+advice, settings, text, or visual application return through existing preparation,
+request review, and scoped authorization. No default value is a spending grant.
+
+`draft-variation` preserves the original selected definitions and unchanged
+choices. A changed value becomes an explicit choice with the variation reason.
+Changed text is authored anew, and advice no longer used is recorded as rejected.
+The variation map states all changed fields. Do not describe a comparison as
+one-variable when other inputs or post-processing also changed.
+
+Generation duration, editing duration, audio generation, and presentation timing
+remain different choices. Use the existing timed-production records for intervals,
+adjacent shots and observed endpoints. A visual basis change invalidates dependent
+preparation through source snapshots; it never rewrites accepted media or canon.
+
+## 5. Failures and verification
+
+Missing decisions, unmatched advice, changed source hashes, wrong operation
+controls, undeclared wire fields, incomplete spans, and unresolved visual choices
+stop preparation or rendering with the responsible field named. No advice is a
+valid state. Missing schema evidence still follows the existing bounded-probe
+procedure, never an invented assurance of compatibility.
+
+Run `python scripts/target_guidance_smoke_test.py` for synthetic advice, external
+sources, choice resolution, transport trace, and scoped visual failures. The
+existing input-model, dispatch, request-contract and variation suites exercise
+the connected production path. Tests use synthetic definitions and never a
+personal resource collection. They do not make paid generation calls.
 
 ---
 

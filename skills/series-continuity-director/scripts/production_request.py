@@ -28,6 +28,20 @@ def validate_request(spec: dict, rendered: dict, *, live_root: Path | None = Non
     rc.validate_seal(rendered)
     import input_contracts
     reader, _ = input_contracts.verify_fields(spec, root=live_root, live=live_root is not None)
+    import execution_choices
+    import visual_language
+    from execution_policy import load_policy
+    choices = spec.get('execution_choices')
+    if not isinstance(choices, dict):
+        raise ValueError('request has no resolved execution choices')
+    context = rendered['sealed']['context']
+    if context.get('execution_choices_sha256') != spec.get('execution_choices_sha256') or context.get('visual_language') != spec.get('visual_language'):
+        raise ValueError('sealed request differs from the selected settings or visual language')
+    profile = reader.json(choices['selection']['profile'])
+    service = reader.json(choices['selection']['service_profiles'])['services'][spec['service']]
+    policy, _ = load_policy(spec['request_validation'], reader, rendered['sealed']['target'])
+    execution_choices.require(spec, reader, policy=policy, profile=profile, service=service)
+    visual_language.validate_compiled(spec.get('visual_language'), spec['output_kind'])
     from request_renderer import envelope_fields
     return request_validation.require(spec['request_validation'],
         reader,

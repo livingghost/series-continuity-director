@@ -471,3 +471,33 @@ checks local links and live command signatures without sending to a provider.
 It prints a JSON report, returns nonzero on failure, and does not modify project
 canon or the installed skill. It checks executable instructions, not completeness
 of prose, real-model behavior or artistic quality.
+
+
+## Target guidance and selected execution values
+
+Use `target_protocol.py inspect --target ID --profiles DIRECTORY` to view the
+selected model record. Add `--guidance FILE`, `--service ID`, `--operation NAME`,
+`--output-kind KIND`, `--purpose PURPOSE`, `--input-mode MODE` and
+`--visual-language SELECTOR` to filter advice for a concrete task. Directories,
+guidance files, input modes and visual selectors accept repeated arguments.
+`target_protocol.py validate-guidance FILE` checks an advice record or collection.
+
+The `execution_routes.py read` and `production_workflow.py inspect-inputs` entries
+accept the same selection arguments and show the model card. Submission drafts
+show the card as `target_info`; their purpose flag is `--guidance-purpose`.
+Use `draft-inputs` to obtain unresolved input selections, then complete
+`validation.guidance` and `validation.execution` before `build-inputs`.
+
+`target_guidance.py` validates and filters advice, `execution_choices.py` resolves
+settings and text provenance, and `visual_language.py` binds scoped anchor and
+register applications. They are libraries called by the existing build and
+request pipeline, not independent dispatchers. Read
+[Target Guidance](../references/target-guidance.md) for schemas, full conditions,
+outputs, and examples. `target_guidance_smoke_test.py` exercises their success
+and refusal paths using synthetic definitions. Run it with `python`.
+
+
+The submission-draft example above exercises the preliminary scene and reference
+gate, not an executable service request. Before rendering or sending, resolve
+its service, operation, schema evidence and execution choices with `build-inputs`.
+A draft-gate verdict is neither execution readiness nor authorization.

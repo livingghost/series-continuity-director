@@ -260,11 +260,25 @@ def draft(args: argparse.Namespace) -> dict[str, Any]:
         block = visual_continuity.build_block(submission, choices, root, profile)
         visual_continuity.attach(submission, block)
 
+    import target_protocol
+    selected_info = target_protocol.describe(args.target, profiles, service=args.service,
+        operation=args.operation, context=({'output_kind': args.output_kind, 'purpose': args.guidance_purpose,
+        'input_modes': sorted({i['mode'] for i in submission.get('inputs', []) if isinstance(i, dict) and 'mode' in i}),
+        'visual_language': args.visual_language} if args.output_kind and args.guidance_purpose else None),
+        guidance_paths=args.guidance)
+    if args.operation:
+        submission['operation'] = args.operation
+    if offering:
+        submission['model'] = offering['model_identifier']
+    if args.output_kind:
+        submission['output_kind'] = args.output_kind
     target_path.parent.mkdir(parents=True, exist_ok=True)
     c.atomic(target_path, gate.submission_bytes(submission))
     return {
         "ok": True,
         "written": relative,
+        "execution_preparation": "Resolve execution choices with production_workflow.py build-inputs before rendering or sending.",
+        "target_info": selected_info,
         "placeholders": [field for field, _ in gate.placeholders(submission)],
         "next": f"scripts/submission_gate.py {target_path} --root {root} --json",
     }
@@ -323,6 +337,11 @@ def main(argv: list[str] | None = None) -> int:
     new.add_argument("--character", action="append", metavar="ID", help="A character this submission depicts")
     new.add_argument("--profiles", type=Path, action="append", default=[],
                      help="A target profile directory searched before the suite's; repeatable")
+    new.add_argument('--operation', help='Exact service operation for guidance and execution.')
+    new.add_argument('--output-kind', help='Explicit output kind.')
+    new.add_argument('--guidance-purpose', help='Use purpose for applicable target advice.')
+    new.add_argument('--guidance', type=Path, action='append', default=[], help='Target-guidance data file; repeatable.')
+    new.add_argument('--visual-language', action='append', default=[], help='Visual treatment selector; repeatable.')
     add_reading_arguments(new)
     visual_continuity.add_choice_arguments(new)
 

@@ -31,7 +31,7 @@ RULES = {
     'FIELD_OF_ANOTHER_KIND': 'SUB-15', 'SCENE_PLOT_BEHIND_NARRATIVE': 'SUB-15',
     'NARRATIVE_OUTSIDE_ROOT': 'SUB-16', 'NARRATIVE_INVALID': 'SUB-16', 'CHARACTER_NOT_IN_NARRATIVE': 'SUB-16',
     'PROHIBITED_SURFACE': 'SUB-16', 'DURATION_NOT_INTEGER': 'SUB-09', 'DURATION_OUT_OF_BAND': 'SUB-09',
-    'SCHEMA_REFUSAL': 'SUB-10',
+    'SCHEMA_REFUSAL': 'SUB-10', 'EXECUTION_CHOICES_INVALID': 'SUB-19',
 }
 # A submission carrying no text at all, or a placeholder nobody filled, fails
 # before any numbered rule applies, so it carries no id rather than an empty
@@ -349,16 +349,9 @@ def _profiles(profiles: Path | str | Sequence[Path | str]):
 
 
 def load_profile(target: str, profiles: Path | str | Sequence[Path | str]) -> dict[str, Any] | None:
-    """The first profile for a target, searching the directories in order.
-
-    A project's own profile directory comes before the suite's, so a project
-    that records its own observation of a target reads that one.
-    """
-
-    for path, value in _profiles(profiles):
-        if value.get("target_id") == target or path.stem == target:
-            return value
-    return None
+    from target_protocol import resolve_profile
+    found = resolve_profile(target, profiles)
+    return found[1] if found else None
 
 
 def profile_targets(profiles: Path | str | Sequence[Path | str]) -> list[str]:
@@ -1277,7 +1270,9 @@ def build_instance(text: str, inputs: list[dict], modes: list[str | None], param
     """
 
     shape_ = offering["request_shape"]
-    request: dict[str, Any] = copy.deepcopy(parameters or {})
+    request: dict[str, Any] = {}
+    for key, value in (parameters or {}).items():
+        place(request, key, copy.deepcopy(value), single=True)
     place(request, shape_["model_key"], offering.get("model_identifier"), single=True)
     place(request, shape_["text_key"], text, single=True)
     if negative_text and shape_.get("negative_text_key"):
@@ -1337,14 +1332,17 @@ def check_schema(text: str, inputs: list[dict], modes: list[str | None], paramet
 def check_as_written(parameters: dict[str, Any] | None, offering: dict[str, Any] | None, unmeasured: list[str]) -> None:
     """A submission that turns the service's rewriting back on is reported, not refused.
 
-    The offering's as_written keys are what the dispatcher sets by default so the
-    text reaches the model as sent; a submission that sets one of them to another
-    value has chosen to be rewritten, and the user sees that before sending.
+    The offering's as_written keys document values that retain authored text.
+    The input plan chooses them explicitly; a different choice is reported here
+    before the exact request is reviewed.
     """
 
     defaults = ((offering or {}).get("constraints") or {}).get("as_written") or {}
     if not defaults or not parameters:
         return
+    resolved_parameters = {}
+    for key, value in parameters.items():
+        place(resolved_parameters, key, copy.deepcopy(value), single=True)
 
     def walk(wanted: dict[str, Any], given: Any, path: str) -> None:
         if not isinstance(given, dict):
@@ -1359,7 +1357,7 @@ def check_as_written(parameters: dict[str, Any] | None, offering: dict[str, Any]
                     f"the text; {value!r} sends it as written"
                 )
 
-    walk(defaults, parameters, "")
+    walk(defaults, resolved_parameters, "")
 
 
 def declared_mapping(value: Any, label: str, unmeasured: list[str]) -> dict[str, Any] | None:
@@ -1595,7 +1593,13 @@ def gate(submission: dict[str, Any], profiles_dir: Path | Sequence[Path], root: 
         unmeasured.append(f"target: the submission states {shape(target)} rather than a target id, "
                           "so no target profile was read")
     else:
-        profile = load_profile(target, profiles_dir)
+        from target_protocol import selected_profile
+        try:
+            selected = selected_profile(submission, profiles_dir, root)
+        except (ValueError, OSError, KeyError, TypeError) as exc:
+            errors.append(finding('EXECUTION_CHOICES_INVALID', str(exc), field='execution_choices'))
+            return verdict(submission, None, None, errors, unmeasured)
+        profile = selected[1] if selected else None
         if profile is None:
             unmeasured.append(
                 f"target profile {target!r} was not found in "
@@ -1635,6 +1639,20 @@ def gate(submission: dict[str, Any], profiles_dir: Path | Sequence[Path], root: 
     if not obligations.get("permanent_features"):
         unmeasured.append("permanent features: the submission declares none")
 
+    if isinstance(submission.get('execution_choices'), dict) and profile is not None and offering is not None:
+        try:
+            import copy
+            import runtime_evidence
+            import execution_choices
+            from execution_policy import load_policy
+            witness = runtime_evidence.reader(root, snapshots=copy.deepcopy(submission['input_snapshots']))
+            selected_service = witness.json(submission['execution_choices']['selection']['service_profiles'])['services'][submission['service']]
+            policy, _ = load_policy(submission['request_validation'], witness, submission['request_validation']['target'])
+            execution_choices.require(submission, witness, policy=policy, profile=profile, service=selected_service)
+            import visual_language
+            visual_language.validate_compiled(submission.get('visual_language'), submission['output_kind'])
+        except (ValueError, OSError, TypeError, KeyError) as exc:
+            errors.append(finding('EXECUTION_CHOICES_INVALID', str(exc), field='execution_choices'))
     return verdict(submission, profile, offering, errors, unmeasured)
 
 

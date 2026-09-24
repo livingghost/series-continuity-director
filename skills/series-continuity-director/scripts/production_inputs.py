@@ -80,7 +80,18 @@ def inspect_inputs(root: Path, task_path: str, *, from_run: str | None = None) -
     sources = _sources(root, task, reader)
     import tactic_consultation
     craft = tactic_consultation.navigation(root, task_path, task=task)
-    return {'state': 'inspection', 'task': ref,
+    selected_targets = []
+    for source in sources:
+        if source['present'] and source['path'].endswith('.json'):
+            document = reader.json(source['file'])
+            if isinstance(document, dict) and isinstance(document.get('execution_choices'), dict):
+                import runtime_evidence
+                import execution_choices
+                from execution_policy import load_policy
+                witness = runtime_evidence.reader(root, snapshots=copy.deepcopy(document['input_snapshots']))
+                policy, _ = load_policy(document['request_validation'], witness, document['request_validation']['target'])
+                selected_targets.append(execution_choices.resolve(document['execution_choices'], witness, spec=document, policy=policy)['card'])
+    return {'state': 'inspection', 'task': ref, 'selected_targets': selected_targets,
             'route': {'id': task['route'], 'features': route['features'],
                       'reads': route['reads']},
             'source_run': saved, 'sources': sources,
@@ -249,7 +260,7 @@ def build_inputs(root: Path, task_path: str, choices_path: str, out_dir: str, *,
     from production_workflow import validate_task
     validate_task(copied_task)
     content['production-task.json'] = copied_task
-    adapters.attach_outputs(content, visual, validation, visual_context, reader, out_dir)
+    adapters.attach_outputs(content, visual, validation, {**visual_context, **validation_context}, reader, out_dir)
     validate_task(content['production-task.json'])
     content['input-snapshots.json'] = copy.deepcopy(reader.snapshots)
     encoded = {name: c.encoded(value) for name, value in content.items()}
@@ -259,6 +270,8 @@ def build_inputs(root: Path, task_path: str, choices_path: str, out_dir: str, *,
               'execution_ready': False, 'request_state': 'not-rendered' if validation is not None else None,
               'derived_from': {'task': task_ref, 'choices': choices_ref,
                                'source_run': saved, 'sources': sorted(reader.read_paths)},
+              'target_info': (validation_context.get('resolved_choices') or {}).get('card'),
+              'setting_choices': (validation_context.get('resolved_choices') or {}).get('setting_choices', []),
               'assessment_required': ['Apply the selected quotations to the current rendition and settings.'],
               'next_actions': adapters.next_actions(inputs, task, root, runtime_arguments=runtime_arguments),
               'external_effect': False, 'budget_effect': 'none'}
@@ -268,8 +281,8 @@ def build_inputs(root: Path, task_path: str, choices_path: str, out_dir: str, *,
         # Reuse the domain builders, including current adoption and actual
         # reference checks. A concurrent change cannot publish stale bindings.
         current_visual, _ = adapters.build_visual(choices['visual'], task, reader, root)
-        current_validation, _ = adapters.build_validation(choices['validation'], task, reader, root)
-        if current_visual != visual or current_validation != validation:
+        current_validation, current_selection = adapters.build_validation(choices['validation'], task, reader, root)
+        if current_visual != visual or current_validation != validation or current_selection != validation_context:
             raise ValueError('selected input evidence changed during construction')
     _publish(root, out_dir, encoded, reader=reader, before_publish=recheck)
     return result
@@ -296,8 +309,7 @@ def command(args: argparse.Namespace, parser: argparse.ArgumentParser) -> dict:
     root = args.root.resolve(strict=True)
     if args.command == 'inspect-inputs':
         result = inspect_inputs(root, args.task, from_run=args.from_run)
-        for action in result['craft_lookup']['next_actions']:
-            action['args'].update(runtime_arguments or {})
+        result.update(runtime_arguments or {})
         return result
     if args.command == 'draft-inputs':
         return draft_inputs(root, args.task, args.out_dir, from_run=args.from_run)

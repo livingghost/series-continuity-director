@@ -1,0 +1,359 @@
+{
+  "type": "object",
+  "properties": {
+    "artifact_type": {
+      "const": "target-guidance"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "applies_to": {
+      "type": "object",
+      "properties": {
+        "target_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "service": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "model_identifier": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "operation": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "output_kinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "input_modes": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0
+            }
+          ]
+        },
+        "purposes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "visual_language": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "target_id",
+        "service",
+        "model_identifier",
+        "operation",
+        "output_kinds",
+        "input_modes",
+        "purposes",
+        "visual_language"
+      ],
+      "additionalProperties": false
+    },
+    "prompt_structure": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "conflicts_with": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 0
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "documented-recommendation",
+                        "observed-result",
+                        "author-preference",
+                        "hypothesis"
+                      ]
+                    },
+                    "reference": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "scope": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "reference",
+                    "scope"
+                  ],
+                  "additionalProperties": false
+                },
+                "minItems": 1
+              },
+              "limits": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 0
+              },
+              "kind": {
+                "const": "parameter"
+              },
+              "field": {
+                "type": "string",
+                "minLength": 1
+              },
+              "proposed": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "const": "choices"
+                      },
+                      "values": {
+                        "type": "array",
+                        "items": {},
+                        "minItems": 1
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "values"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "const": "range"
+                      },
+                      "minimum": {
+                        "type": "number"
+                      },
+                      "maximum": {
+                        "type": "number"
+                      },
+                      "integer": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "minimum",
+                      "maximum",
+                      "integer"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "reason",
+              "conflicts_with",
+              "evidence",
+              "limits",
+              "kind",
+              "field",
+              "proposed"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "conflicts_with": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 0
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "documented-recommendation",
+                        "observed-result",
+                        "author-preference",
+                        "hypothesis"
+                      ]
+                    },
+                    "reference": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "scope": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "reference",
+                    "scope"
+                  ],
+                  "additionalProperties": false
+                },
+                "minItems": 1
+              },
+              "limits": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 0
+              },
+              "kind": {
+                "const": "text"
+              },
+              "channel": {
+                "enum": [
+                  "positive",
+                  "negative"
+                ]
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "allow_rewording": {
+                "type": "boolean"
+              },
+              "role": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "id",
+              "reason",
+              "conflicts_with",
+              "evidence",
+              "limits",
+              "kind",
+              "channel",
+              "text",
+              "allow_rewording",
+              "role"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "minItems": 0
+    },
+    "limits": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "artifact_type",
+    "id",
+    "label",
+    "applies_to",
+    "prompt_structure",
+    "entries",
+    "limits"
+  ],
+  "additionalProperties": false
+}

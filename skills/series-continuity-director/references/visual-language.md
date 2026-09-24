@@ -263,3 +263,43 @@ Before submission:
 - generated text is not relied on for exact typography unless approved;
 - primary and negative instructions agree;
 - style continuity has review criteria.
+
+
+## 16. Apply the baseline through production decisions
+
+Use `direction.visual_language` in the production task. It contains `anchor`,
+`register`, and `coordination`. Each anchor/register binding names a `decision`,
+an applied `source` ID or null for a new choice, `scope`, `actor`, and observable
+`dimensions`. The linked decision already owns alternatives, its selected
+realization, reason and observation criteria. Do not create another approval.
+
+Every anchor declares `medium_family` and `dimensional_treatment`. Other axes
+are open named dimensions: line, surface, shadow grouping or detail hierarchy.
+Register dimensions describe presentation, not species or drawing materials.
+Possible starting directions include contours with grouped shadows, painted
+masses, ink and tone, flat graphics, modeled material response, photographic
+response and scoped mixtures. They are examples, not a closed list or defaults.
+The author or delegated agent chooses deliberately and records why.
+
+Two treatments for distinct scopes require `coordination`: their spatial or
+presentation intervals, focal relationship, and how color and light join.
+Conflicting values for the same named scope and dimension must be resolved.
+The validator checks explicit assignments, not whether prose scopes overlap in
+meaning; that remains a rendition-review obligation.
+
+Series definitions stay in one applied source. The production binding records
+their application, not a competing copy of canon. Its instruction comes from
+the linked selected decision. A deliberate departure names the affected scope,
+reason and preserved conditions in `departures`. A different finish in a scene
+does not change a character's enduring material or color.
+
+Image and video outputs require both selections before input construction.
+Text and audio outputs use `visual_language: null` and retain their own direction
+and timing decisions. A visual task still in development may remain unresolved;
+it cannot be declared ready to send as a visual submission.
+
+The compiled selection reaches the production consumer, final-request context,
+and rendition review. Applied source hashes participate in normal freshness and
+impact checks. Inspect actual outputs for line, shading, surface, transitions and
+temporal consistency. Recheck adjacent shots where a change crosses a cut.
+A single frame cannot prove temporal stability or the feasibility of motion.

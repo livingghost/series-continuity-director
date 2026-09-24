@@ -285,7 +285,7 @@ def seal(request:dict,layout:dict,media:list[dict],expected_target:dict,executio
     if layout['output_count'] is None:
         fields['count']={'kind':'fixed','value':output_count(request,layout),'field':None}
     for key,value in sealed['context'].items():
-        if key not in {'subjects','purpose','output_kind'}:raise ValueError('unknown semantic context field')
+        if key not in {'subjects','purpose','output_kind','execution_choices_sha256','visual_language'}:raise ValueError('unknown semantic context field')
         fields[key]={'kind':'fixed','value':copy.deepcopy(value),'field':None}
     fields['reference_bindings']={'kind':'fixed','value':sealed['bindings'],'field':None}
     return {'request':wire,'layout':copy.deepcopy(layout),'media':copy.deepcopy(media),'sealed':sealed,

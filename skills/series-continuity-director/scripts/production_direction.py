@@ -22,7 +22,7 @@ def strings(value: Any, label: str, *, nonempty: bool = False) -> list[str]:
 
 def validate(value: Any, sources: list[dict[str, Any]], criteria: list[dict[str, Any]]) -> None:
     c.exact(value, {'purpose', 'intended_effect', 'basis', 'decisions', 'departures',
-                    'action_context', 'verification_limits'}, 'direction')
+                    'action_context', 'verification_limits', 'visual_language'}, 'direction')
     c.text(value['purpose'], 'purpose')
     c.text(value['intended_effect'], 'intended effect')
     strings(value['verification_limits'], 'verification limits')
@@ -66,6 +66,8 @@ def validate(value: Any, sources: list[dict[str, Any]], criteria: list[dict[str,
         if not set(selected_checks) <= criterion_ids:
             raise ValueError('decision names an unknown verification criterion')
         covered.update(selected_checks)
+    import visual_language
+    visual_language.validate(value['visual_language'], sources, value['decisions'])
     if covered != criterion_ids:
         raise ValueError('every criterion must be connected to a realization decision')
     for departure in value['departures']:
@@ -99,8 +101,10 @@ def compile_direction(value: dict[str, Any], delivery: str, transport: str) -> d
         option = next(x for x in row['options'] if x['id'] == row['selected'])
         instruction = option['realization']
         selected.append({'decision': row['id'], 'instruction': instruction, 'criteria': row['criteria']})
+    import visual_language
     return {'purpose': value['purpose'], 'intended_effect': value['intended_effect'],
-            'selected': selected, 'verification_limits': value['verification_limits']}
+            'selected': selected, 'verification_limits': value['verification_limits'],
+            'visual_language': visual_language.compile_selection(value['visual_language'], value['decisions'])}
 
 
 def validate_repairs(repairs: Any, direction: dict[str, Any], observations: list[Any]) -> None:
@@ -125,6 +129,9 @@ def impact(prepared: dict[str, Any], changed_sources: set[str]) -> dict[str, Any
     task = prepared['task']
     source_ids = {s['id'] for s in task['sources'] if s['path'] in changed_sources}
     basis = {x['source'] for x in task['direction']['basis']}
+    language = task['direction']['visual_language']
+    if language is not None:
+        basis.update(row['source'] for kind in ('anchor', 'register') for row in language[kind] if row['source'] is not None)
     affected = source_ids & basis
     # The association is purpose-level, not a claim of inferred semantic impact.
     return {'changed_source_ids': sorted(source_ids), 'applicable_basis_changed': sorted(affected),

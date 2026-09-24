@@ -5,11 +5,11 @@ approved_through: none
 continuity_status: continuity-unverified
 
 ## Series format
-- default viewpoint profile: external-character-aligned-third-person
-- permitted viewpoint profiles: external-character-aligned-third-person, external-objective-third-person, over-the-shoulder, embodied-first-person
+- selected viewpoint profile: undecided (choose for the current medium and intended effect)
+- permitted viewpoint profiles: undecided (declare the allowed scope and transitions)
 - delivery aspect and edit convention: undecided
 - visual style anchor: undecided
-- visual register: undecided (coverage scale and the one establishing master per scene, camera behaviour, light and colour, pacing, finish; see visual-language.md section 1)
+- visual register: undecided (coverage scale, camera behaviour, light and colour, pacing, finish; see visual-language.md section 1)
 - dialogue and subtitle policy: subtitles off unless requested
 
 ## Approved canon

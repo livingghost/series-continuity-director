@@ -11,7 +11,7 @@ def source(root,directory,prepared,rows,claim,reader):
     return manifest['rendered'],{**manifest['spec'],'_manifest':manifest}
 
 
-def inputs(root,out,prepared,spec,rendered,proposed,difference,reader):
+def inputs(root,out,prepared,spec,rendered,proposed,difference,reader,*,reason):
     task=copy.deepcopy(prepared['task']);choices=production_inputs.draft_choices(task);files={};issues=[]
     copied=copy.deepcopy(spec);manifest=copied.pop('_manifest');visual=copied['visual_continuity'];validation=copied['request_validation']
     for change in difference:
@@ -27,17 +27,29 @@ def inputs(root,out,prepared,spec,rendered,proposed,difference,reader):
             entry=next(item for item in rendered['layout']['media'] if item['field']==path)
             copied['inputs'][entry['index']]['path']=change['after']['path']
             issues.append({'field':'visual.reference_activation','code':'rebind-selected-media'})
-    profiles=[]
-    for item in prepared['dependencies']:
-        if not item['path'].endswith('.json'):continue
-        import production_workflow as w
-        raw=c.object_read(w.run_dir(root,prepared['run_id']),item['sha256'])
-        try:value=c.decode(raw)
-        except (ValueError,UnicodeError):continue
-        if isinstance(value,dict) and value.get('artifact_type')=='target-profile' and value.get('target_id')==copied['target']:
-            profiles.append(('@skill/' if item['space']=='skill' else '')+item['path'])
-    profile=profiles[0] if len(profiles)==1 else None
-    if profile is None:issues.append({'field':'validation.target_profile','code':'select-current-target-profile'})
+    import execution_choices
+    pinned = copied['execution_choices']['selection']
+    profile = pinned['profile']['path']
+    plan = {key: copy.deepcopy(copied['execution_choices'][key]) for key in execution_choices.PLAN_FIELDS}
+    for change in difference:
+        field = rendered['fields'][change['field']]['field']
+        if change['kind'] == 'parameter':
+            name = '.'.join(field)
+            row = next((r for r in plan['settings'] if r['field'] == name), None)
+            if row is None:
+                raise ValueError('variation parameter has no original setting choice')
+            row.update(state='explicit', value=change['after'], recommendation=None, reason=reason)
+        elif change['kind'] == 'content':
+            channel = 'positive' if field == rendered['layout']['primary_text'] else 'negative'
+            text = change['after']
+            plan['segments'][channel] = [{'start': 0, 'end': len(text), 'text': text,
+                                          'recommendation': None, 'reason': reason}]
+    used = {execution_choices.entry_key(row['recommendation']) for row in plan['settings'] if row['recommendation'] is not None}
+    used.update(execution_choices.entry_key(row['recommendation']) for rows in plan['segments'].values() for row in rows if row['recommendation'] is not None)
+    for decision in plan['recommendations']:
+        if decision['decision'] == 'adopt' and (decision['guidance'], decision['entry']) not in used:
+            decision.update(decision='reject', reason=reason)
+    plan['context']['input_modes'] = sorted({i['mode'] for i in copied['inputs'] if 'mode' in i})
     subjects={}
     for ident,item in visual['subjects'].items():
         selectors=[]
@@ -59,11 +71,12 @@ def inputs(root,out,prepared,spec,rendered,proposed,difference,reader):
         'shot_camera':selection(visual['shot_camera']),'shot_request':selection(visual['shot_request']),
         'reference_activation':selection(visual['reference_activation']),'submission':out+'/submission-source.json'}
     choices['validation']={'mode':validation['mode'],'submission':out+'/submission-source.json','target_profile':profile,
-        'service_profiles':manifest['service_path'],'contract':validation['contract']['path'],
+        'service_profiles':pinned['service_profiles']['path'], 'guidance': [ref['path'] for ref in pinned['guidance']],
+        'execution': plan, 'contract':validation['contract']['path'],
         'evidence':validation['evidence']['path'],'execution_policy':validation['execution_policy']['path'] if validation['execution_policy'] else None}
     # The ordinary builder reattaches current records; old hashes are never approvals.
     for key in ('request_validation','request_validation_sha256','input_snapshots','input_snapshots_sha256',
-                'visual_continuity','visual_continuity_sha256','route_reading'):copied.pop(key,None)
+                'visual_continuity','visual_continuity_sha256','route_reading','execution_choices','execution_choices_sha256','visual_language'):copied.pop(key,None)
     files['submission-source.json']=c.encoded(copied);files['delivery.txt']=copied['text'].encode('utf-8')
     delivery=task['delivery']['path'];task['delivery']['path']=out+'/delivery.txt'
     for item in task['sources']:

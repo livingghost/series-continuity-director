@@ -112,3 +112,14 @@ want/need, a turn or a canonical structure the work leaves unused.
 A repair records exact `targets` beside its human-readable `scope`, so a new
 preparation can be checked against the reviewed proposal; see Production Repair.
 A passed video/audio check cites the measured interval that section 2 requires.
+
+
+## 4. Scoped visual choices
+
+The required `visual_language` field is null for nonvisual production. For images
+and video it binds the selected `visual anchor` and `visual register` to existing
+decisions, applied source IDs, scopes, actors and observable dimensions. The
+linked decision supplies the actual realization, reason and criteria. Preparation
+and final-request construction preserve that application in the ordinary consumer
+and request seal. See [Visual Language](visual-language.md) section 16 for the
+shape, mixed treatments and source-change behavior.

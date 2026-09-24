@@ -57,7 +57,8 @@
     "action_context": null,
     "verification_limits": [
       "Replace with what this artifact cannot establish."
-    ]
+    ],
+    "visual_language": null
   },
   "sequence_plan": null
 }

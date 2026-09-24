@@ -75,42 +75,9 @@ def api_key(service: dict[str, Any]) -> str:
 
 
 def gate_submission(spec: dict[str, Any]) -> dict[str, Any]:
-    """Hand the gate the submission the spec declares, not a subset of it.
-
-    Every field below is one `submission_gate.gate` reads. A field dropped here
-    is decided as though the spec had left it out, and the gate then refuses on
-    the omission rather than on the request: dropping `kind` refused every
-    dispatch before anything else was looked at.
-    """
-    submission: dict[str, Any] = {
-        "route_reading": spec.get("route_reading"),
-        "visual_continuity": spec.get("visual_continuity"),
-        "visual_continuity_sha256": spec.get("visual_continuity_sha256"),
-        "output_kind": spec.get("output_kind"),
-        "submission_id": spec.get("submission_id"),
-        "kind": spec.get("kind"),
-        "target": spec.get("target"),
-        "service": spec.get("service"),
-        "text": spec.get("text"),
-        "text_form": spec.get("text_form"),
-        "negative_text": spec.get("negative_text"),
-        "inputs": [
-            {"role": item.get("role"), "request_key": item.get("request_key"), "path": item.get("path"),
-             **({"mode": item["mode"]} if "mode" in item else {})}
-            for item in spec.get("inputs") or []
-        ],
-        "parameters": spec.get("parameters") or {},
-        "obligations": spec.get("obligations") or {},
-    }
-    # A shot, a page or a passage carries these and an asset carries none of them,
-    # so they travel only where the spec declares them. The gate refuses an asset
-    # that names a scene, and writing the key in here would be this script
-    # deciding that instead.
-    for name in ("dialogue", "narrative", "scene_plot", "scene_id", "shot_id", "page_id", "panel",
-                 "passage_id", "characters"):
-        if name in spec:
-            submission[name] = spec[name]
-    return submission
+    """Validate the complete declaration, including its pinned execution choices."""
+    import copy
+    return copy.deepcopy(spec)
 
 
 def service_models(spec: dict[str, Any], profiles: Path) -> list[str]:
@@ -162,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--poll", action="store_true", help="Wait for a task the service accepted but has not finished.")
     parser.add_argument("--poll-seconds", type=int, default=20)
     parser.add_argument("--poll-limit", type=int, default=60)
-    parser.add_argument("--profiles", type=Path, default=DEFAULT_PROFILES)
+    parser.add_argument("--profiles", type=Path, action="append", default=[], help="Profile directory in priority order; repeatable.")
     parser.add_argument("--service-profiles", help="Explicit service-profile data file")
     parser.add_argument("--root", type=Path, default=None)
     parser.add_argument('--production-run',help='Prepared production run required for a send')
@@ -199,6 +166,8 @@ def claimed_root(args: argparse.Namespace) -> Path | None:
 
 def run(args: argparse.Namespace) -> int:
     spec = json.loads(args.spec.read_text(encoding="utf-8"))
+    from target_protocol import profile_directories, selected_profile
+    args.profiles = profile_directories(args.profiles) + [DEFAULT_PROFILES]
     root = (args.root or args.spec.resolve().parent).resolve()
 
     report = submission_gate.gate(gate_submission(spec), args.profiles, root)
@@ -214,8 +183,19 @@ def run(args: argparse.Namespace) -> int:
     service_id = str(spec.get("service") or report.get("service") or "")
     if not service_id:
         raise ValueError("the spec names no service, and the target profile does not supply one")
-    service, service_path = service_profile.load_service(service_id, args.service_profiles,
-                                                         flag="--service-profiles")
+    import runtime_evidence
+    import copy
+    reader = runtime_evidence.reader(root, snapshots=copy.deepcopy(spec.get('input_snapshots', {})))
+    if not isinstance(spec.get('execution_choices'), dict):
+        raise ValueError('build-inputs must resolve execution choices before dispatch')
+    service_ref = spec['execution_choices']['selection']['service_profiles']
+    selected_data = reader.json(service_ref)
+    service_path = reader.resolve(service_ref['path'])
+    service = selected_data['services'][service_id]
+    if args.service_profiles:
+        supplied, _ = service_profile.load_service(service_id, args.service_profiles, flag='--service-profiles')
+        if supplied != service:
+            raise ValueError('service override differs from the pinned selection')
     transport = transport_contract.load(service)
     dispatch_fields(spec, service, args.profiles)
 
@@ -225,12 +205,16 @@ def run(args: argparse.Namespace) -> int:
     consumer = None
     if args.production_run is not None:
         consumer = production_workflow.assert_current(root, args.production_run)[2]
-    offering = offering_for(spec, args.profiles)
+    selected = selected_profile(spec, args.profiles, root)
+    if selected is None:
+        raise ValueError('selected model definition is missing')
+    offering = next(x for x in selected[1]['offerings'] if x['service'] == spec['service'] and x['model_identifier'] == spec['model'])
     built, report, validation = production_dispatch.render(root, spec, service, offering, transport, args.profiles, consumer=consumer)
     rendered = built['rendered']
     print(json.dumps({'request': rendered['request'], 'request_sha256': rendered['request_sha256'],
                      'request_trace': rendered['request_trace'], 'validation': validation,
-                     'review_requirements': built['review_requirements']}, ensure_ascii=False, indent=2))
+                     'review_requirements': built['review_requirements'], 'target_info': built['target_info'],
+                     'setting_choices': built['setting_choices']}, ensure_ascii=False, indent=2))
     observed = service.get("observed_at")
     print(f"service {service_id} through transport {service.get('transport')} at {(service.get('endpoint') or {}).get('base_url')} "
           f"(record observed {observed}, read from {service_path})")
@@ -253,7 +237,8 @@ def run(args: argparse.Namespace) -> int:
         decision = production_request.draft_decision(rendered, actor=args.actor, conditions=grant['stop_conditions'])
     if args.preview_out:
         c.atomic(args.preview_out, c.encoded({'request_contract': rendered, 'validation': validation,
-            'review_requirements': built['review_requirements'], 'execution_ready': False,
+            'review_requirements': built['review_requirements'], 'target_info': built['target_info'],
+            'setting_choices': built['setting_choices'], 'execution_ready': False,
             'external_effect': False, 'budget_effect': 'none'}))
     if args.decision_out:
         c.atomic(args.decision_out, c.encoded(decision))
@@ -268,9 +253,10 @@ def run(args: argparse.Namespace) -> int:
     key = api_key(service)
     # External target profiles must also have been included as pinned task sources.
     directory,prepared,_,_=production_workflow.assert_current(root,args.production_run)
-    if args.profiles.resolve()!=DEFAULT_PROFILES.resolve():
-        for profile_file in args.profiles.rglob('*.json'):
-            production_dispatch.pinned(root,directory,prepared,profile_file)
+    from target_protocol import selected_profile
+    selected_path, _ = selected_profile(spec, args.profiles, root)
+    if not selected_path.is_relative_to(ROOT):
+        production_dispatch.pinned(root, directory, prepared, selected_path)
     result=production_dispatch.execute(root,args.production_run,args.spec.resolve(),spec,service_path,
         service,offering,report,transport,key,authorization=args.authorization,actor=args.actor,
         outputs=args.outputs,cost=args.cost_bound,currency=args.currency,profiles=args.profiles,decision=c.load(args.request_decision),rendered=rendered,poll=args.poll,

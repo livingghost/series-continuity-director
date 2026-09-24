@@ -1,0 +1,44 @@
+{
+  "artifact_type": "target-profile",
+  "target_id": "synthetic-study",
+  "label": "Synthetic wording study",
+  "model": {
+    "maker": "synthetic",
+    "name": "synthetic:study"
+  },
+  "media_kind": [
+    "text"
+  ],
+  "evidence": {
+    "checked_on": "2000-01-01",
+    "sources": [
+      {
+        "kind": "user-supplied",
+        "reference": "Synthetic data for the target guidance example. Not a real generation service."
+      }
+    ]
+  },
+  "prompt_contract": {
+    "layers": [
+      "subject",
+      "observable treatment"
+    ]
+  },
+  "offerings": [
+    {
+      "service": "synthetic-service",
+      "model_identifier": "synthetic:study",
+      "request_keys": {},
+      "request_shape": {
+        "model_key": "engine",
+        "text_key": "prompt",
+        "negative_text_key": "avoid",
+        "media_reference": "uuid",
+        "single_value_keys": []
+      },
+      "constraints": {},
+      "observed_at": "2000-01-01"
+    }
+  ],
+  "profile_sha256": "de78ba05051dd8e6517eb7e69948c8d4d6595e7c2cf7a539eb856b1133268ebb"
+}

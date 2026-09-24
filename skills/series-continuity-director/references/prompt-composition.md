@@ -449,3 +449,15 @@ target offers them:
 Plan the carrier with the shot's reference allocation in
 [model-facing-artifacts.md](model-facing-artifacts.md) section 12, because two figures divide one reference
 limit. [contact-scenes.md](contact-scenes.md) section 12 covers figures that merge where they touch.
+
+
+### SUB-19: Prepared execution choices
+
+A draft can be checked for literal locks, scene linkage and visual continuity
+before a service is selected. That verdict does not make a request executable.
+`build-inputs` resolves the exact profile, service data, guidance decisions,
+settings and text spans. A prepared submission carries those choices and their
+hash. The gate rechecks any supplied choices and reports
+`EXECUTION_CHOICES_INVALID` when their sources, text or values differ. The
+request renderer always requires completed choices before preview or send.
+See [Target Guidance](target-guidance.md) for selection and trace requirements.

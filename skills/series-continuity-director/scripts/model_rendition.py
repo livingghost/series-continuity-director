@@ -129,12 +129,12 @@ def compose(original:str,*,segments:list[dict]|None,authored_source:dict,binding
     else:
         end=0
         for segment in segments:
-            c.exact(segment,{'source_kind','start','end','text'},'rendition segment')
+            c.exact(segment,{'source_kind','start','end','text','source_refs'},'rendition segment')
             if segment['source_kind'] not in {'authored','model-setting'}:raise ValueError('unknown rendition segment source')
             if type(segment['start']) is not int or type(segment['end']) is not int or segment['start']!=end or segment['end']<end:
                 raise ValueError('rendition segments have a gap or overlap')
             if original[segment['start']:segment['end']]!=segment['text']:raise ValueError('rendition segment differs from the assembled text')
-            append(segment['text'],segment['source_kind'],[authored_source],'authored-rendition' if segment['source_kind']=='authored' else 'chosen-recommendation')
+            append(segment['text'],segment['source_kind'],segment['source_refs'] or [authored_source],'authored-rendition' if segment['source_kind']=='authored' else 'chosen-recommendation')
             end=segment['end']
         if end!=len(original):raise ValueError('rendition segments do not cover the complete text')
     return {'text':''.join(parts),'trace':trace,'native_reference_controls':controls,'review_requirements':requirements}

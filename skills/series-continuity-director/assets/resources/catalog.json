@@ -1,5 +1,6 @@
 {
   "resources": {
-    "prompt-vocabulary": "assets/resources/prompt-vocabulary.json"
+    "prompt-vocabulary": "assets/resources/prompt-vocabulary.json",
+    "target-guidance": "assets/resources/target-guidance.json"
   }
 }

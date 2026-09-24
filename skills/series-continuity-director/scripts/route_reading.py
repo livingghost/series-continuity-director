@@ -466,12 +466,17 @@ def add_read_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--feature', action='append', default=[])
     parser.add_argument('--root', type=Path, help='Project or studio root for the reading ledger')
     parser.add_argument('--page-bytes', type=int)
+    from target_protocol import add_selection_arguments
+    add_selection_arguments(parser)
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--continue', dest='cursor')
     group.add_argument('--replay', dest='replay')
 
 
 def read_command(args: argparse.Namespace, parser: argparse.ArgumentParser) -> dict:
+    if getattr(args, 'target', None):
+        from target_protocol import description_from_args
+        print('target-guidance: ' + json.dumps(description_from_args(args), ensure_ascii=False, indent=2))
     if args.cursor or args.replay or args.page_bytes is not None:
         return read_page(route=args.route, features=args.feature, cursor=args.cursor or args.replay,
                          replay=bool(args.replay), page_bytes=16384 if args.page_bytes is None else args.page_bytes,

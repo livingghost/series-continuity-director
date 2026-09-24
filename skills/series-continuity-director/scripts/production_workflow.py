@@ -112,6 +112,25 @@ def snapshot(root: Path, task_path: str) -> tuple[dict[str,Any],dict[str,Any],li
     for source in task['sources']:
         raw=add(root,source['path'],'project')
         if source['disposition']!='applied': continue
+        if source['role'] == 'configuration' and source['path'].endswith('.json'):
+            document = c.decode(raw)
+            if isinstance(document, dict) and isinstance(document.get('execution_choices'), dict):
+                import runtime_evidence
+                from input_contracts import verify_fields
+                reader, _ = verify_fields(document, root=root)
+                import visual_language
+                expected_language = visual_language.compile_selection(task['direction']['visual_language'], task['direction']['decisions'])
+                visual_language.require_for_output(expected_language, document['output_kind'])
+                if document.get('visual_language') != expected_language:
+                    raise ValueError('submission visual language differs from the production direction')
+                for path, witness in document['input_snapshots'].items():
+                    actual = reader.read({'path': path, 'sha256': witness['sha256']})
+                    if path.startswith('@skill/'):
+                        captured = add(ROOT, path[len('@skill/'):], 'skill')
+                    else:
+                        captured = add(root, path, 'project')
+                    if actual != captured:
+                        raise ValueError('selected input changed during preparation')
         if source['role']=='narrative':
             from narrative import validate_narrative
             report=validate_narrative(c.decode(raw))

@@ -86,3 +86,14 @@ those directories before the suite's.
 `scripts/target_protocol.py` validates and seals a profile. `validate-catalog`
 refuses a repeated `target_id`, and a service that names one model identifier in
 two profiles.
+
+
+## Selection and recommendations
+
+`target_protocol.py inspect` displays the selected definition and optional target
+guidance with its applicability and evidence. Ordered `--profiles` directories
+support explicitly supplied definitions. A duplicate target ID inside one
+directory is ambiguous. Guidance is separate data, not an addition to the model's
+capability schema. Completed submissions pin one profile, service data and advice
+sources; preview and execution use those same byte witnesses. See
+[Target Guidance](../../references/target-guidance.md).

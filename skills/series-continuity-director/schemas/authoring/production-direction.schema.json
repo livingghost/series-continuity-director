@@ -205,6 +205,131 @@
         "minLength": 1
       },
       "minItems": 0
+    },
+    "visual_language": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "anchor": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "source": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    ]
+                  },
+                  "scope": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "actor": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "dimensions": {
+                    "type": "object",
+                    "minProperties": 1,
+                    "additionalProperties": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": [
+                  "decision",
+                  "source",
+                  "scope",
+                  "actor",
+                  "dimensions"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1
+            },
+            "register": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "source": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    ]
+                  },
+                  "scope": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "actor": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "dimensions": {
+                    "type": "object",
+                    "minProperties": 1,
+                    "additionalProperties": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": [
+                  "decision",
+                  "source",
+                  "scope",
+                  "actor",
+                  "dimensions"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1
+            },
+            "coordination": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            }
+          },
+          "required": [
+            "anchor",
+            "register",
+            "coordination"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   },
   "required": [
@@ -214,7 +339,8 @@
     "decisions",
     "departures",
     "action_context",
-    "verification_limits"
+    "verification_limits",
+    "visual_language"
   ],
   "additionalProperties": false
 }

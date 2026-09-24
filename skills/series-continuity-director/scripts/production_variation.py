@@ -58,7 +58,7 @@ def draft(root: Path, run: str, changes_path: str, out_dir: str, *, runtime_argu
     proposed,difference=apply_changes(rendered,requested['changes'],root,reader)
     current=report(root,run)
     if not current['integrity']['ok']:raise ValueError('source run integrity changed during input inspection')
-    files,choices,task,actions,unresolved=adapter.inputs(root,out_dir,prepared,source,rendered,proposed,difference,reader)
+    files,choices,task,actions,unresolved=adapter.inputs(root,out_dir,prepared,source,rendered,proposed,difference,reader,reason=requested['reason'])
     choices['source_run']=run
     reading=source.get('route_reading',prepared['route_reading'])
     choices['reading']={'snapshot_id':None,'reading_key':reading['reading_key'],'applied':copy.deepcopy(reading['applied'])}

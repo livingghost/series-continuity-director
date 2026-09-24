@@ -110,6 +110,15 @@ The gray wolf mechanic keeps the cracked pendant in the right palm, protects the
 
 Internal asset IDs remain in operator-facing sheets and lineage records. Do not paste private IDs into target text unless the target documents that binding syntax.
 
+### Selected guidance at submission time
+
+Resolve target guidance and operation controls before composing the final request.
+The production input selection names the exact profile, service data, optional
+guidance sources, setting decisions and text spans. The renderer carries these
+choices and their source hashes into the existing request seal. It does not add
+recommendations after the author has reviewed the text. See
+[Target Guidance](target-guidance.md) for the input shape and failure conditions.
+
 ## 5. Concise is not generic
 
 A concise prompt can retain:

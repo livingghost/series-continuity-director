@@ -330,7 +330,8 @@
             "minLength": 1
           },
           "minItems": 0
-        }
+        },
+        "visual_language": null
       },
       "required": [
         "purpose",

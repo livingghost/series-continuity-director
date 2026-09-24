@@ -69,6 +69,22 @@ def pinned(root: Path, directory: Path, prepared: dict, path: Path) -> tuple[str
     return rel,raw
 
 
+def pinned_definition(root: Path, directory: Path, prepared: dict, path: Path) -> tuple[str, bytes]:
+    """Read a selected project or installed definition from its prepared witness."""
+    path = path.absolute()
+    if not path.is_relative_to(w.ROOT):
+        return pinned(root, directory, prepared, path)
+    relative_path = path.relative_to(w.ROOT).as_posix()
+    matches = [item for item in prepared['dependencies']
+               if item['space'] == 'skill' and item['path'] == relative_path]
+    if len(matches) != 1:
+        raise ValueError('selected installed definition is not a prepared source: ' + relative_path)
+    raw = c.read(path)
+    if c.digest(raw) != matches[0]['sha256'] or c.object_read(directory, matches[0]['sha256']) != raw:
+        raise ValueError('selected installed definition changed')
+    return '@skill/' + relative_path, raw
+
+
 def safe_output(root: Path, spec: dict) -> tuple[str,str,str]:
     out=spec.get('output') or {}
     directory=out.get('dir','outputs')
@@ -116,7 +132,9 @@ def render(root: Path, spec: dict, service: dict, offering: dict, transport: Any
     report = submission_gate.gate(spec, profiles, root)
     if report['status'] != 'admitted':
         raise ValueError('submission gate: ' + '; '.join(item['code'] + ': ' + item['message'] for item in report['errors']))
-    profile = submission_gate.load_profile(str(spec['target']), profiles)
+    from target_protocol import selected_profile
+    selected = selected_profile(spec, profiles, root)
+    profile = selected[1] if selected else None
     if profile is None:
         raise ValueError('model execution requires the explicitly selected target profile')
     import target_protocol
@@ -154,18 +172,16 @@ def begin(root: Path, run: str, spec_path: Path, spec: dict, service_path: Path,
             raise ValueError('submission changed after the gate')
         if spec.get('text') != consumer['instructions']:
             raise ValueError('submission primary text differs from the prepared rendition')
-        service_rel, service_raw = pinned(root, directory, p, service_path)
+        service_rel, service_raw = pinned_definition(root, directory, p, service_path)
         import service_profile
         actual, _ = service_profile.load_service(str(spec['service']), str(service_path))
         if actual != service:
             raise ValueError('service differs from the prepared record')
         # Imported profiles are project sources. Built-in profiles are captured
         # in the prepared skill dependencies by the ordinary preparation path.
-        if profiles.resolve() != (w.ROOT / 'protocols/target/profiles').resolve():
-            for file in profiles.glob('*.json'):
-                value = c.load(file)
-                if value.get('target_id') == spec['target']:
-                    pinned(root, directory, p, file)
+        from target_protocol import selected_profile
+        selected_path, _ = selected_profile(spec, profiles, root)
+        pinned_definition(root, directory, p, selected_path)
         current, fresh_report, _ = render(root, spec, service, offering, transport, profiles, consumer=consumer)
         if rc.receipt_projection(current['rendered']) != rc.receipt_projection(rendered):
             raise ValueError('request changed after preview and before its claim')

@@ -9,7 +9,7 @@ def direction(task, instructions):
       'decisions':[{'id':'realization','question':'How is this fixture realized?','compare':False,
         'options':[{'id':'specified','realization':instructions,'consequence':'A measured fixture, not proof of artistic merit.'}],
         'selected':'specified','reason':'Explicit fixture requirement.', 'criteria':[x['id'] for x in task['criteria']]}],
-      'departures':[],'action_context':None,'verification_limits':['Synthetic tests do not demonstrate acting or audience response.']}
+      'departures':[],'action_context':None,'visual_language':None,'verification_limits':['Synthetic tests do not demonstrate acting or audience response.']}
 
 def grant(workflow, root, run, actor='synthetic selector', operations=('select',), outputs=0, calls=10, cost='0',currency='none',stop_conditions=None):
     name='grant-'+c.new_run_id()
@@ -32,7 +32,7 @@ SYNTHETIC_TRANSPORT = 'synthetic'
 
 
 def model_inputs(root, spec, service):
-    """Capture an explicit synthetic interface for real offline dispatcher tests.
+    """Capture an explicit synthetic interface for dispatcher tests against a synthetic interface.
 
     The execution hashes bind the transport the service record names, or the
     suite's synthetic test transport when the record names none.
@@ -51,7 +51,7 @@ def model_inputs(root, spec, service):
                 'constraints': {}, 'observed_at': '2000-01-01'}
     profile = target_protocol.finalize_profile({
         'artifact_type': 'target-profile', 'target_id': spec['target'],
-        'label': 'Synthetic offline text return through an image request envelope',
+        'label': 'Synthetic text return through an image request envelope',
         'model': {'maker': 'synthetic', 'name': spec['model']}, 'media_kind': ['text'],
         'evidence': {'checked_on': '2000-01-01', 'sources': [
             {'kind': 'user-supplied', 'reference': 'Synthetic test interface. No live provider claim.'}]},
@@ -71,7 +71,7 @@ def model_inputs(root, spec, service):
         return {'path': name, 'sha256': c.digest(raw)}
     response = save('interface-response.json', {'schema': schema, 'synthetic': True})
     save('interface-acquisition.json', {'artifact_type': 'schema-acquisition', 'target': target,
-        'source': {'kind': 'document', 'identifier': 'Synthetic offline interface', 'locator': 'schema'},
+        'source': {'kind': 'document', 'identifier': 'Synthetic interface', 'locator': 'schema'},
         'acquired_at': '2000-01-01T00:00:00Z', 'response': response,
         'status': {'document_status': 'schema-provided'}})
     save('interface-contract.json', {'artifact_type': 'model-schema-contract', 'target': target,
@@ -81,6 +81,7 @@ def model_inputs(root, spec, service):
     record = rv.build_record({'mode': 'target-schema', 'contract': 'interface-contract.json',
         'evidence': 'interface-acquisition.json', 'execution_policy': None}, reader,
         expected_target=target, execution=execution)
+    bind_execution(root, spec, reader, profile_path='profiles/fixture.json', service=service)
     input_contracts.attach(spec, record, reader)
     return profile, offering, profiles
 
@@ -99,3 +100,36 @@ def model_decision(workflow, root, run, authorization, rendered):
     for assessment in decision['stop_assessments']:
         assessment.update(clear=True, reason='Explicit synthetic test condition; no real approval.')
     return decision
+
+
+def execution_plan(spec):
+    """Explicit synthetic choices; no production inference or provider defaults."""
+    import execution_choices as choices
+    parameters = choices.leaves(spec.get('parameters') or {})
+    parameters.update(choices.leaves(spec.get('options') or {}))
+    def spans(text):
+        return ([{'start': 0, 'end': len(text), 'text': text, 'recommendation': None,
+                  'reason': 'Synthetic authored test input.'}] if text else [])
+    return {'context': {'output_kind': spec['output_kind'], 'input_modes': sorted({x['mode'] for x in spec.get('inputs', []) if 'mode' in x}),
+                        'purpose': 'synthetic-test', 'visual_language': []},
+            'settings': [{'field': k, 'state': 'explicit', 'value': v, 'reason': 'Explicit synthetic test value.', 'recommendation': None} for k, v in parameters.items()],
+            'recommendations': [], 'segments': {'positive': spans(spec['text']), 'negative': spans(spec.get('negative_text', ''))}}
+
+
+def bind_execution(root, spec, reader, *, profile_path, service, policy=None):
+    import execution_choices as choices
+    name = 'selected-test-services.json'
+    (root/name).write_bytes(c.encoded({'services': {spec['service']: service}}))
+    record = choices.build(execution_plan(spec), reader, spec=spec, profile_ref=reader.select(profile_path),
+                           service_ref=reader.select(name), guidance_refs=[], policy=policy or {})
+    choices.attach(spec, record, choices.resolve(record, reader, spec=spec, policy=policy or {}))
+    spec['visual_language'] = None
+
+
+def visual_selection(decision='realization'):
+    """A neutral flat study, unrelated to any user's characters or personal data."""
+    return {'anchor': [{'decision': decision, 'source': None, 'scope': 'whole image', 'actor': 'synthetic author',
+                        'dimensions': {'medium_family': 'drawn', 'dimensional_treatment': 'flat', 'line_and_edge_behavior': 'continuous boundary'}}],
+            'register': [{'decision': decision, 'source': None, 'scope': 'whole image', 'actor': 'synthetic author',
+                          'dimensions': {'coverage_scale': 'one isolated form', 'camera_behavior': 'fixed'}}],
+            'coordination': None}

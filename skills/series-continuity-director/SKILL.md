@@ -97,7 +97,7 @@ Find the action about to be performed and read those files before performing it.
 | Receive or deliver a public protocol artifact | `visual-contracts.md` section 8, `state-and-trust.md` |
 | Write a start frame, boundary frame, or any still | `prompt-composition.md`, `model-facing-artifacts.md`, `morphology-and-species-contracts.md` |
 | Write any text a model will receive | `prompt-composition.md`, `model-facing-artifacts.md`, `scoped-lexicon.md` |
-| Choose a target model, operation, or input mode | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md`, `model-evidence.md` |
+| Choose a target model, operation, settings, or recommended wording | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md`, `model-evidence.md`, `target-guidance.md` |
 | Judge a returned take | `shot-continuity.md`, `post-production.md`, `performance-details.md` |
 | Inspect saved production evidence or define an evidence study | `evidence-review.md` |
 | Register, accept, or replace a produced file | `state-and-trust.md` sections 4 and 5 |
@@ -122,6 +122,19 @@ not from the working directory, which belongs to the project.
 Read [Production Direction](references/production-direction.md), [Production Execution](references/production-execution.md), and the selected route's references before building a saved deliverable. A route is a named kind of work, such as `development` or `media`, with the documents it requires. `scripts/execution_routes.py read ROUTE --root PROJECT` outputs those documents in full and ends with a reading key, which later records cite as proof of the reading; author each required application, the passage applied and why.
 
 `scripts/production_workflow.py` connects preparation, handoff, actual candidates, observation review, authorized selection and completion in one run, and its `status`, `resume` and `impact` expose interrupted work. Complete the linked work task only after that run completes. For time-dependent material, read [Timed Production](references/timed-production.md); still-image-to-video is not a mandatory method.
+
+## Target and visual choices
+
+For visual output, select scoped visual anchor and register applications in
+`direction.visual_language`; link each to a direction decision, source, actor,
+and observation criteria. Nonvisual output uses null. A style label supplies
+neither anatomy nor a viewpoint. Read [Visual Language](references/visual-language.md).
+
+Before request construction, inspect the exact model, offering, operation and
+advice using [Target Guidance](references/target-guidance.md). Resolve values and
+recommended text through `build-inputs`, then review the sealed request. Advice
+is optional; deliberate choices are not. Use the selected target, not a substitute
+generation tool. A target change returns through preparation and authorization.
 
 ## Commands
 

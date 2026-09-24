@@ -24,7 +24,8 @@ def build():
         root=Path(directory)
         import production_test_support as fixture
         target={'service':'synthetic','model_identifier':'synthetic:one','operation':'generate'}
-        spec={'target':'fixture','service':target['service'],'model':target['model_identifier'],'operation':target['operation']}
+        spec={'target':'fixture','service':target['service'],'model':target['model_identifier'],'operation':target['operation'],
+              'text':'Synthetic schema-acquisition study.','inputs':[],'parameters':{'count':1}}
         profile,_,_=fixture.model_inputs(root,spec,{'operations':{'generate':{}}})
         (root/'profile.json').write_bytes(c.encoded(profile));before=c.read(root/'profile.json')
         schema={'type':'object','properties':{'seed':{'type':'integer'}}}

@@ -1,0 +1,63 @@
+{
+  "context": {
+    "output_kind": "text",
+    "input_modes": [],
+    "purpose": "wording-study",
+    "visual_language": []
+  },
+  "settings": [
+    {
+      "field": "count",
+      "state": "explicit",
+      "value": 1,
+      "reason": "Produce one synthetic wording result.",
+      "recommendation": null
+    },
+    {
+      "field": "detail_level",
+      "state": "recommended",
+      "value": "plain",
+      "reason": "Choose the plain option for this study.",
+      "recommendation": {
+        "guidance": "synthetic-outline-study",
+        "entry": "detail"
+      }
+    }
+  ],
+  "recommendations": [
+    {
+      "guidance": "synthetic-outline-study",
+      "entry": "detail",
+      "decision": "adopt",
+      "reason": "Use the example selection."
+    },
+    {
+      "guidance": "synthetic-outline-study",
+      "entry": "outline",
+      "decision": "adopt",
+      "reason": "Use the example selection."
+    }
+  ],
+  "segments": {
+    "positive": [
+      {
+        "start": 0,
+        "end": 20,
+        "text": "One geometric form. ",
+        "recommendation": null,
+        "reason": "Authored subject."
+      },
+      {
+        "start": 20,
+        "end": 47,
+        "text": "Keep a continuous boundary.",
+        "recommendation": {
+          "guidance": "synthetic-outline-study",
+          "entry": "outline"
+        },
+        "reason": "Retain the selected phrase exactly."
+      }
+    ],
+    "negative": []
+  }
+}

@@ -93,7 +93,7 @@ def build_validation(choices: dict, task: dict, reader, root: Path) -> tuple[dic
     if _not_applicable(choices, task, 'validation'):
         return None, {}
     c.exact(choices, {'mode', 'submission', 'target_profile', 'service_profiles',
-                      'contract', 'evidence', 'execution_policy'}, 'validation input choices')
+                      'contract', 'evidence', 'execution_policy', 'guidance', 'execution'}, 'validation input choices')
     submission_ref = reader.select(choices['submission'])
     spec = reader.json(submission_ref)
     target = request_contract.target({key: spec.get(field) for key, field in
@@ -131,7 +131,13 @@ def build_validation(choices: dict, task: dict, reader, root: Path) -> tuple[dic
     execution = request_contract.execution_hashes(service, offering, Path(transport.__file__), model=profile, policy=policy)
     selected = {key: choices[key] for key in ('mode', 'contract', 'evidence', 'execution_policy')}
     value = request_validation.build_record(selected, reader, expected_target=target, execution=execution)
-    return value, {'submission': submission_ref, 'target_profile': profile_ref, 'service_profiles': service_ref}
+    import execution_choices
+    guidance_refs = [reader.select(path) for path in choices['guidance']]
+    chosen = execution_choices.build(choices['execution'], reader, spec=spec, profile_ref=profile_ref,
+                                     service_ref=service_ref, guidance_refs=guidance_refs, policy=policy)
+    resolved = execution_choices.resolve(chosen, reader, spec=spec, policy=policy)
+    return value, {'submission': submission_ref, 'target_profile': profile_ref, 'service_profiles': service_ref,
+                   'execution_choices': chosen, 'resolved_choices': resolved}
 
 
 def cross_check(visual: dict, validation: dict) -> None:
@@ -146,6 +152,13 @@ def attach_outputs(content: dict, visual, validation, context: dict, reader, out
         raise ValueError('a model submission needs both visual and validation choices')
     import input_contracts
     spec = copy.deepcopy(context['spec'])
+    import execution_choices
+    import production_direction
+    import visual_language
+    task = content['production-task.json']
+    visual_language.require_for_output(task['direction']['visual_language'], spec['output_kind'])
+    spec['visual_language'] = visual_language.compile_selection(task['direction']['visual_language'], task['direction']['decisions'])
+    execution_choices.attach(spec, context['execution_choices'], context['resolved_choices'])
     spec['route_reading'] = content['route-reading.json']
     spec['visual_continuity'] = visual
     spec['visual_continuity_sha256'] = c.content_id(visual)
@@ -164,11 +177,15 @@ def next_actions(inputs: dict, task: dict, root: Path, *, runtime_arguments: dic
 
 
 def add_runtime_arguments(parser) -> None:
-    return None
+    from target_protocol import add_selection_arguments
+    add_selection_arguments(parser)
 
 
 def configure_runtime(args, parser) -> dict | None:
-    return None
+    if not getattr(args, 'target', None):
+        return None
+    from target_protocol import description_from_args
+    return {'target_info': description_from_args(args)}
 
 
 def visual_template(task: dict) -> dict | None:
@@ -182,7 +199,7 @@ def validation_template(task: dict) -> dict | None:
     if task.get('route') != 'media':
         return None
     return {'mode': None, 'submission': None, 'target_profile': None, 'service_profiles': None,
-            'contract': None, 'evidence': None, 'execution_policy': None}
+            'contract': None, 'evidence': None, 'execution_policy': None, 'guidance': [], 'execution': None}
 
 
 OPTIONAL_FIELDS = {'visual': {'basis', 'shot_camera', 'shot_request', 'reference_activation'},

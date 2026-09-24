@@ -1,5 +1,19 @@
 # Changelog
 
+## [2026.09.24.1] - 2026-09-24
+
+- Bind scoped drawing and presentation choices to production decisions, source
+  snapshots, final requests, rendition review and dependency impact.
+- Show selected target guidance during reading, inspection, input construction
+  and request preview, including explicitly supplied model definitions.
+- Record adopted or rejected advice and exact setting choices before request
+  construction. Preserve text spans and setting provenance in the sealed request.
+- Keep model, service, operation and advice sources pinned through dispatch and
+  variation. Refuse unchosen request values and unannounced target changes.
+- Leave nonvisual production free of visual requirements and retain separate
+  generation, editing and presentation timing.
+
+
 ## [2026.09.23.10] - 2026-09-23
 
 - Keep one CHANGELOG entry per release, newest first, with every earlier entry as it was written. The release contract checks each entry's heading, date, order and notes.
