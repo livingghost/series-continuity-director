@@ -69,4 +69,7 @@ class UpgradeTests(unittest.TestCase):
         logs=list((self.root/'logs/operations').rglob('operation.json'));self.assertEqual(len(logs),1)
         data=json.loads(logs[0].read_text(encoding='utf-8'));self.assertEqual(data['command'],'generation_schedule.check')
 
-if __name__=='__main__':unittest.main(verbosity=2)
+if __name__=='__main__':
+    import stdio_utf8
+    stdio_utf8.configure()
+    unittest.main(verbosity=2)
