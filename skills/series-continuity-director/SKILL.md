@@ -99,7 +99,7 @@ Find the action about to be performed and read those files before performing it.
 | Write any text a model will receive | `prompt-composition.md`, `model-facing-artifacts.md`, `scoped-lexicon.md` |
 | Choose a target model, operation, settings, or recommended wording | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md`, `model-evidence.md`, `target-guidance.md` |
 | Judge a returned take | `shot-continuity.md`, `post-production.md`, `performance-details.md` |
-| Inspect saved production evidence or define an evidence study | `evidence-review.md` |
+| Inspect saved production evidence or define an evidence study or comparison | `evidence-review.md` |
 | Register, accept, or replace a produced file | `state-and-trust.md` sections 4 and 5 |
 | Continue from an accepted endpoint | `continuity-core.md`, `shot-continuity.md` |
 | Resolve a character's state at a story time | `temporal-state.md` |
@@ -112,6 +112,10 @@ Find the action about to be performed and read those files before performing it.
 | Observe a real host execution and retain evaluation evidence | `agent-evaluation.md` |
 | Choose resource budgets, read complete material or export full review evidence | `resource-handling.md` |
 | Analyze repeated failures from actual production reviews | `repair-analysis.md` |
+| Plan a purpose-specific workflow, its stage dependencies, or a board | `production-recipes.md`, `production-graph.md`, `board-layout.md` |
+| Check timed generation or an accepted boundary and temporal review | `generation-planning.md`, `temporal-review.md` |
+| Preserve audio, create requested captions, or verify delivery | `audio-master.md`, `caption-delivery.md` |
+| Inspect operation diagnostics or safe log exports | `operation-logging.md` |
 
 Every file those rows name is in `references/`. A path in this suite resolves from
 the directory that holds `SKILL.md`, which is wherever the suite is installed, and
@@ -122,6 +126,7 @@ not from the working directory, which belongs to the project.
 Read [Production Direction](references/production-direction.md), [Production Execution](references/production-execution.md), and the selected route's references before building a saved deliverable. A route is a named kind of work, such as `development` or `media`, with the documents it requires. `scripts/execution_routes.py read ROUTE --root PROJECT` outputs those documents in full and ends with a reading key, which later records cite as proof of the reading; author each required application, the passage applied and why.
 
 `scripts/production_workflow.py` connects preparation, handoff, actual candidates, observation review, authorized selection and completion in one run, and its `status`, `resume` and `impact` expose interrupted work. Complete the linked work task only after that run completes. For time-dependent material, read [Timed Production](references/timed-production.md); still-image-to-video is not a mandatory method.
+
 
 ## Target and visual choices
 

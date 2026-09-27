@@ -111,3 +111,7 @@ duration, beyond container duration alone. The built-in executor selects the
 first video/audio stream of the requested kind; for review, identify its actual
 numeric stream index and interval explicitly. A missing duration remains
 unmeasured rather than silently widening to a broader range.
+
+## 5. Pre-generation feasibility and temporal coverage
+
+When a remote generator constrains duration, reference roles or input mode, check a `generation-schedule` before submission. Generation duration and edit duration are separate. The schedule may prove that a requested trim is structurally possible, but it cannot prove the performance appears inside the usable span. After real media exists, use temporal review coverage and accepted-boundary checks on the actual finished bytes. A sampled review never certifies unobserved intervals.

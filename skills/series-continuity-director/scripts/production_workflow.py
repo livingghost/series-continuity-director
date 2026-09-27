@@ -21,6 +21,8 @@ import execution_routes
 import production_direction
 import production_authority
 import media_evidence
+import operation_log
+import project_layout
 from execution_contract import new_run_id as generate_uuid7
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -716,42 +718,48 @@ def main() -> int:
         if name=='release-reservation':p.add_argument('--request',required=True)
     a=parser.parse_args(); root=a.root.absolute()
     try:
-        # Every command works in an existing project, and none of them creates one.
-        if not root.is_dir(): raise ValueError(f'project root is not an existing directory: {root}')
-        if a.command in tactic_consultation.COMMANDS: result=tactic_consultation.command(a,parser)
-        elif a.command == 'draft-variation': result=production_variation.command(a,parser)
-        elif a.command in production_inputs.COMMANDS: result=production_inputs.command(a,parser)
-        elif a.command=='release-reservation':result=lifecycle.release(root,a.run,a.request)
-        elif a.command=='draft-release':
-            result=lifecycle.draft_release(root,a.run,a.reservation)
-            c.atomic(c.local(root,a.out,exists=False),c.encoded(result))
-        elif a.command=='prepare': result=prepare(root,a.task)
-        elif a.command=='revision-intent':
-            from production_revision import revision_intent
-            result=revision_intent(root,a.run,a.task,a.candidate,a.repair_index)
-        elif a.command=='revise':
-            from production_revision import revise
-            result=revise(root,a.run,a.task,a.candidate,a.repair_index,a.authorization,a.actor)
-        elif a.command=='recover-recording': result=recover_recording(root,a.run)
-        elif a.command=='recover-action':
-            from production_recovery import recover
-            result=recover(root,a.run,a.reservation)
-        elif a.command=='handoff': result=handoff(root,a.run,a.recipient,a.method)
-        elif a.command=='capture': result=capture(root,a.run,a.artifact,a.note,a.limitation)
-        elif a.command in {'draft-review','draft-selection'}:
-            fn=draft_review if a.command=='draft-review' else draft_selection
-            result=fn(root,a.run,a.candidate); c.atomic(c.local(root,a.out,exists=False),c.encoded(result))
-        elif a.command=='draft-authorization':
-            result=draft_authorization(root,a.run); c.atomic(c.local(root,a.out,exists=False),c.encoded(result))
-        elif a.command=='authorize': result=authorize(root,a.run,a.file)
-        elif a.command=='revoke': result=revoke(root,a.run,a.authorization,a.reason)
-        elif a.command=='record-choice': result=record_choice(root,a.run,a.file)
-        elif a.command=='impact': result=impact(root,a.run)
-        elif a.command=='review': result=review(root,a.run,a.file)
-        elif a.command=='select': result=select(root,a.run,a.file)
-        elif a.command=='complete': result=complete(root,a.run)
-        else: result=status(root,a.run)
-        print(json.dumps(result,ensure_ascii=False,indent=2)); return 0 if result.get('ok',True) else 1
+        try:
+            log_root = project_layout.require_project(root)
+        except ValueError:
+            log_root = None
+        with operation_log.operation('production_workflow.'+a.command, root=log_root, arguments=vars(a), related={'run':getattr(a,'run',None) or ''}) as op_log:
+            # Every command works in an existing project, and none of them creates one.
+            if not root.is_dir(): raise ValueError(f'project root is not an existing directory: {root}')
+            if a.command in tactic_consultation.COMMANDS: result=tactic_consultation.command(a,parser)
+            elif a.command == 'draft-variation': result=production_variation.command(a,parser)
+            elif a.command in production_inputs.COMMANDS: result=production_inputs.command(a,parser)
+            elif a.command=='release-reservation':result=lifecycle.release(root,a.run,a.request)
+            elif a.command=='draft-release':
+                result=lifecycle.draft_release(root,a.run,a.reservation)
+                c.atomic(c.local(root,a.out,exists=False),c.encoded(result))
+            elif a.command=='prepare': result=prepare(root,a.task)
+            elif a.command=='revision-intent':
+                from production_revision import revision_intent
+                result=revision_intent(root,a.run,a.task,a.candidate,a.repair_index)
+            elif a.command=='revise':
+                from production_revision import revise
+                result=revise(root,a.run,a.task,a.candidate,a.repair_index,a.authorization,a.actor)
+            elif a.command=='recover-recording': result=recover_recording(root,a.run)
+            elif a.command=='recover-action':
+                from production_recovery import recover
+                result=recover(root,a.run,a.reservation)
+            elif a.command=='handoff': result=handoff(root,a.run,a.recipient,a.method)
+            elif a.command=='capture': result=capture(root,a.run,a.artifact,a.note,a.limitation)
+            elif a.command in {'draft-review','draft-selection'}:
+                fn=draft_review if a.command=='draft-review' else draft_selection
+                result=fn(root,a.run,a.candidate); c.atomic(c.local(root,a.out,exists=False),c.encoded(result))
+            elif a.command=='draft-authorization':
+                result=draft_authorization(root,a.run); c.atomic(c.local(root,a.out,exists=False),c.encoded(result))
+            elif a.command=='authorize': result=authorize(root,a.run,a.file)
+            elif a.command=='revoke': result=revoke(root,a.run,a.authorization,a.reason)
+            elif a.command=='record-choice': result=record_choice(root,a.run,a.file)
+            elif a.command=='impact': result=impact(root,a.run)
+            elif a.command=='review': result=review(root,a.run,a.file)
+            elif a.command=='select': result=select(root,a.run,a.file)
+            elif a.command=='complete': result=complete(root,a.run)
+            else: result=status(root,a.run)
+            op_log.event('command_result', ok=result.get('ok',True), result_keys=sorted(result) if isinstance(result,dict) else [])
+            print(json.dumps(result,ensure_ascii=False,indent=2)); return 0 if result.get('ok',True) else 1
     except c.EXPECTED_ERRORS as exc:
         print(json.dumps(c.failure(exc))); return 1
 if __name__=='__main__':

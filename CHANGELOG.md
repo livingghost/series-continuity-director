@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.09.27.1] - 2026-09-27
+
+- Add pre-generation lane and duration feasibility so provider minima, edit spans, reference modes, handles and unresolved performance evidence are separated before execution.
+- Add accepted-boundary, temporal review, audio-master, caption and delivery verification over actual media, with exact stream and timing evidence rather than codec-name or contact-sheet proxies.
+- Add purpose recipes, typed production dependency graphs, deterministic board and blocking previews, conservative music-cue analysis, and local operation diagnostics without creating a second authority or canon ledger.
+- Route the new capabilities from the Skill, preserve the existing Production receipt chain, and keep release identity limited to the product CalVer and independently released package metadata.
+
 ## [2026.09.24.1] - 2026-09-24
 
 - Bind scoped drawing and presentation choices to production decisions, source

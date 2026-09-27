@@ -1,0 +1,45 @@
+{
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "object",
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "stream_index": {"type": "integer", "minimum": 0}
+      },
+      "required": ["path", "sha256", "stream_index"],
+      "additionalProperties": false
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "stream_index": {"type": "integer", "minimum": 0}
+      },
+      "required": ["path", "sha256", "stream_index"],
+      "additionalProperties": false
+    },
+    "preservation": {"enum": ["encoded-stream-preserve", "decoded-samples-preserve", "single-encode-from-master", "approved-mix"]},
+    "allowed_operations": {"type": "array", "items": {"enum": ["remux", "trim", "gain", "mix", "retime", "resample", "encode"]}},
+    "processing_graph": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "operation": {"type": "string", "minLength": 1},
+          "input": {"type": "string", "minLength": 1},
+          "output": {"type": "string", "minLength": 1},
+          "lossy_encode": {"type": "boolean"}
+        },
+        "required": ["id", "operation", "input", "output", "lossy_encode"],
+        "additionalProperties": false
+      }
+    },
+    "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  },
+  "required": ["source", "output", "preservation", "allowed_operations", "processing_graph", "limitations"],
+  "additionalProperties": false
+}

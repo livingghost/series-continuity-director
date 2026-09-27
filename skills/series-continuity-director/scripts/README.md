@@ -501,3 +501,25 @@ The submission-draft example above exercises the preliminary scene and reference
 gate, not an executable service request. Before rendering or sending, resolve
 its service, operation, schema evidence and execution choices with `build-inputs`.
 A draft-gate verdict is neither execution readiness nor authorization.
+
+## Scenario-derived production extensions
+
+These commands extend the existing SCD Production model. They do not create a second authority, canon, candidate ledger, or cost ledger.
+
+- `production_recipe.py plan --root PROJECT --recipe FILE` expands an explicit purpose into useful optional stages.
+- `generation_schedule.py check --root PROJECT --plan FILE` checks generation duration, edit duration, input modes, reference limits and source handles before generation.
+- `production_graph.py check --root PROJECT --plan FILE` checks typed stage dependencies, external-effect authority scopes and cost state without executing nodes.
+- `board_layout.py check|build-svg` keeps planning, model-facing and delivery board roles distinct.
+- `blocking_preview.py check|build-svg` builds a bounded declared/assumed/unknown 2D geometry proxy.
+- `music_cues.py analyze` measures conservative onset and tempo candidates; it never edits the sequence or adopts cues.
+- `audio_master.py check` verifies the declared audio preservation policy against actual streams and the SCD-controlled processing graph.
+- `caption_track.py check|compile|burn-in` pins exact timed caption text to a finished master.
+- `delivery_conform.py check` verifies actual finished streams and required sidecars.
+- `review_coverage.py check` reports which temporal review requirements are actually covered.
+- `comparison_plan.py check|build-study` validates independent comparison conditions and emits the existing `evaluation_evidence.py` study shape.
+- `boundary_conform.py check|extract` verifies that a continuation boundary comes from an accepted registry asset.
+- `operation_log.py` is a shared local diagnostic logger used by production and timed commands; logs are not approval or canon evidence.
+
+Every JSON input is a file under the project root. New structural records use IDs, hashes and meaningful timestamps where needed; they do not carry independent format-version fields.
+
+The aggregate validation runs `scripts/competitive_upgrade_smoke_test.py` to exercise generation planning, audio evidence, captions, delivery, temporal review, accepted boundaries, recipes, graphs, boards, previews, and operation logs using synthetic local media.

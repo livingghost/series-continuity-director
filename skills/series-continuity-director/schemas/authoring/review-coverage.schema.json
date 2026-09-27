@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "artifact": {"type": "object", "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}, "required": ["path", "sha256"], "additionalProperties": false},
+    "requirements": {"type": "array", "items": {"type": "object", "properties": {"id": {"type": "string", "minLength": 1}, "kind": {"enum": ["full-playback", "interval", "point", "caption-cue", "audio-cue"]}, "start": {"type": "number"}, "end": {"type": "number"}, "criterion": {"type": "string", "minLength": 1}}, "required": ["id", "kind", "start", "end", "criterion"], "additionalProperties": false}},
+    "observations": {"type": "array", "items": {"type": "object", "properties": {"id": {"type": "string", "minLength": 1}, "start": {"type": "number"}, "end": {"type": "number"}, "method": {"enum": ["frame-extraction", "audio-playback", "full-playback", "machine-check", "agent-observation", "human-observation"]}, "result": {"enum": ["pass", "fail", "not-assessed", "not-applicable", "indeterminate"]}, "note": {"type": "string", "minLength": 1}}, "required": ["id", "start", "end", "method", "result", "note"], "additionalProperties": false}},
+    "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  },
+  "required": ["artifact", "requirements", "observations", "limitations"],
+  "additionalProperties": false
+}

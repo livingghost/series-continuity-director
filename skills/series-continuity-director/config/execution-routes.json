@@ -171,6 +171,90 @@
         "references/tactic-consultation.md"
       ],
       "source_roles": []
+    },
+    "production-recipe": {
+      "when": "Select a purpose-specific production recipe.",
+      "reads": [
+        "references/production-recipes.md"
+      ],
+      "source_roles": []
+    },
+    "generation-planning": {
+      "when": "Generation duration, edit duration, input modes, references or chaining need preflight.",
+      "reads": [
+        "references/generation-planning.md"
+      ],
+      "source_roles": []
+    },
+    "board-layout": {
+      "when": "A planning board, model-facing board or delivery page is required.",
+      "reads": [
+        "references/board-layout.md"
+      ],
+      "source_roles": []
+    },
+    "boundary-conform": {
+      "when": "A following unit depends on an accepted finished endpoint.",
+      "reads": [
+        "references/temporal-review.md"
+      ],
+      "source_roles": []
+    },
+    "audio-master": {
+      "when": "Music or audio preservation, mixing or encode lineage is load-bearing.",
+      "reads": [
+        "references/audio-master.md"
+      ],
+      "source_roles": []
+    },
+    "caption-track": {
+      "when": "Requested subtitles or timed exact dialogue are produced.",
+      "reads": [
+        "references/caption-delivery.md"
+      ],
+      "source_roles": []
+    },
+    "delivery-conform": {
+      "when": "A finished master or sidecars must satisfy a delivery profile.",
+      "reads": [
+        "references/caption-delivery.md"
+      ],
+      "source_roles": []
+    },
+    "review-coverage": {
+      "when": "Time-dependent review coverage must be explicit.",
+      "reads": [
+        "references/temporal-review.md"
+      ],
+      "source_roles": []
+    },
+    "operation-logging": {
+      "when": "Operation diagnostics or shareable logs are needed.",
+      "reads": [
+        "references/operation-logging.md"
+      ],
+      "source_roles": []
+    },
+    "production-graph": {
+      "when": "Several production stages have explicit dependencies, external effects or cost conditions.",
+      "reads": [
+        "references/production-graph.md"
+      ],
+      "source_roles": []
+    },
+    "blocking-preview": {
+      "when": "A shot needs bounded proxy geometry for blocking, scale, overlap or camera reasoning.",
+      "reads": [
+        "references/blocking-and-coverage.md"
+      ],
+      "source_roles": []
+    },
+    "comparison-plan": {
+      "when": "Comparing conditions, lanes, targets or end-to-end production evidence.",
+      "reads": [
+        "references/evidence-review.md"
+      ],
+      "source_roles": []
     }
   },
   "routes": {

@@ -20,6 +20,7 @@ from typing import Any
 import execution_contract as c
 from io_budget import optional_seconds, environment_seconds
 import media_evidence
+import operation_log
 from production_direction import strings
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -377,10 +378,12 @@ def main() -> int:
     render.add_argument('--timeout',type=float);ex.add_argument('--timeout',type=float)
     a=p.parse_args();root=a.root.absolute()
     try:
-        if a.command=='inspect':result=validate_plan(root,c.load(c.local(root,a.plan)))
-        elif a.command=='render':result=execute(root,a.run,a.out,a.authorization,a.actor,timeout=a.timeout)
-        else:result=extract(root,a.source,a.sha256,a.out,start=a.start,end=a.end,timeout=a.timeout)
-        print(json.dumps(result,ensure_ascii=False,indent=2));return 0
+        with operation_log.operation('timed_sequence.'+a.command,root=root if root.is_dir() else None,arguments=vars(a),related={'run':getattr(a,'run',None) or ''}) as op_log:
+            if a.command=='inspect':result=validate_plan(root,c.load(c.local(root,a.plan)))
+            elif a.command=='render':result=execute(root,a.run,a.out,a.authorization,a.actor,timeout=a.timeout)
+            else:result=extract(root,a.source,a.sha256,a.out,start=a.start,end=a.end,timeout=a.timeout)
+            op_log.event('command_result', result_keys=sorted(result) if isinstance(result,dict) else [])
+            print(json.dumps(result,ensure_ascii=False,indent=2));return 0
     except (ValueError,OSError,UnicodeError,KeyError,subprocess.TimeoutExpired) as exc:
         print(json.dumps({'ok':False,'error':str(exc)}));return 1
 if __name__=='__main__':

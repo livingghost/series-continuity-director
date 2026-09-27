@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "properties": {
+    "purpose": {"type": "string", "minLength": 1},
+    "nodes": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "operation": {"type": "string", "minLength": 1},
+          "depends_on": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "effect": {"enum": ["local", "external-read", "external-write"]},
+          "authority_scopes": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "cost": {"type": "object", "properties": {"status": {"enum": ["exact", "bounded", "unknown", "not-applicable"]}, "amount": {"type": ["number", "null"]}, "currency": {"type": ["string", "null"]}}, "required": ["status", "amount", "currency"], "additionalProperties": false},
+          "state": {"enum": ["planned", "prepared", "complete", "blocked"]}
+        },
+        "required": ["id", "operation", "depends_on", "effect", "authority_scopes", "cost", "state"],
+        "additionalProperties": false
+      }
+    },
+    "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  },
+  "required": ["purpose", "nodes", "limitations"],
+  "additionalProperties": false
+}

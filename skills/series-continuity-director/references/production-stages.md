@@ -46,3 +46,7 @@ Use only from actual outputs or a concrete operator report.
 7. Extract a finished terminal frame when a physically continuous seam needs it. Omission, a new place, a flashback, or a nonvisual transition does not automatically inherit it.
 8. Write accepted story events, asset lineage, run observations, and scoped tactics back to project state.
 9. For physically continuous work, continue from the accepted observed endpoint, not the planned one. Preserve the declared relation for noncontinuous transitions.
+
+## 4. Purpose recipes and dependency graphs
+
+A purpose recipe may suggest useful stages without inventing story content. For multi-stage work, a production graph may describe dependencies, external effect classes, authority scopes and cost state. Both are planning views over the ordinary Production lifecycle. They do not own approvals, reservations, candidates, selections or canon, and a graph node that performs an external action still uses the existing authority and dispatch path.

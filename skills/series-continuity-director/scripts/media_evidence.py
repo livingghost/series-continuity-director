@@ -40,7 +40,9 @@ def probe(path: Path) -> dict[str, Any]:
     for s in result.get('streams', []):
         if s.get('codec_type') in {'video', 'audio'}:
             entry = {k: s[k] for k in ('index', 'codec_type', 'codec_name', 'width', 'height',
-                       'avg_frame_rate', 'nb_frames', 'sample_rate', 'channels', 'duration', 'start_time') if k in s}
+                       'avg_frame_rate', 'r_frame_rate', 'nb_frames', 'pix_fmt', 'sample_rate', 'sample_fmt',
+                       'channels', 'channel_layout', 'duration', 'start_time', 'color_range', 'color_space',
+                       'color_transfer', 'color_primaries') if k in s}
             streams.append(entry)
     if not streams:
         raise ValueError('no inspectable audio or video stream')

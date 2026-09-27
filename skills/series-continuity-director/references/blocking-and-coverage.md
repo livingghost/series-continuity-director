@@ -239,3 +239,7 @@ A target's demonstrated strengths and failures constrain that operation, not all
 Before committing a composition, identify which declared structures, surfaces, markings, text, contacts, or relations the frame makes important. Choose their treatment from the purpose and known operation capabilities. Do not assume a universal list of difficult body parts or that a small feature is incapable of visible error.
 
 Inspect the actual result at the intended viewing size and, where needed, at a recorded region or time span. Compare against the relevant design and geometry. A mismatch is an observation; its hidden generation cause is not known merely from its appearance. Preserve meaningful detail when changing framing, references, local edits, compositing, or generation method to repair it.
+
+## 21. Bounded blocking preview
+
+When geometry needs a simple visual proxy, `blocking_preview.py` can render declared rectangles or ellipses and label each object as declared, assumed or unknown. The proxy is not reconstructed world geometry and does not establish unobserved anatomy. Use it only where projected position, overlap, scale or camera reasoning materially benefits from the carrier.

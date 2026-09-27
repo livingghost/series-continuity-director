@@ -27,6 +27,8 @@ from pathlib import Path
 from typing import Any
 
 import execution_contract as c
+import operation_log
+import project_layout
 import production_workflow as w
 import service_profile
 import transport_contract
@@ -471,10 +473,17 @@ def main() -> int:
     parser.add_argument('--root',type=Path,required=True);parser.add_argument('--run',required=True)
     parser.add_argument('--poll',action='store_true');parser.add_argument('--poll-seconds',type=float,default=20)
     parser.add_argument('--poll-limit',type=int,default=60);args=parser.parse_args()
+    root=args.root.absolute()
     try:
-        if args.poll_seconds<0 or args.poll_limit<0:raise ValueError('poll limits must be nonnegative')
-        result=recover(args.root.absolute(),args.run,poll=args.poll,poll_seconds=args.poll_seconds,poll_limit=args.poll_limit)
-        print(json.dumps(result,ensure_ascii=False,indent=2));return 0
+        try:
+            log_root = project_layout.require_project(root)
+        except ValueError:
+            log_root = None
+        with operation_log.operation('production_dispatch.recover',root=log_root,arguments=vars(args),related={'run':args.run}) as op_log:
+            if args.poll_seconds<0 or args.poll_limit<0:raise ValueError('poll limits must be nonnegative')
+            result=recover(root,args.run,poll=args.poll,poll_seconds=args.poll_seconds,poll_limit=args.poll_limit)
+            op_log.event('dispatch_recovery_checked', result_keys=sorted(result) if isinstance(result,dict) else [])
+            print(json.dumps(result,ensure_ascii=False,indent=2));return 0
     except (ValueError,OSError,KeyError,TypeError,UnicodeError) as exc:
         print(json.dumps({'ok':False,'error':str(exc),'resubmitted':False},ensure_ascii=False));return 1
 

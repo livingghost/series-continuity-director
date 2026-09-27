@@ -52,7 +52,7 @@ and only the second one binds.
 | Write any text a model will receive | `prompt-composition.md`, `model-facing-artifacts.md`, `scoped-lexicon.md` |
 | Choose a target model, operation, settings, or recommended wording | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md`, `model-evidence.md`, `target-guidance.md` |
 | Judge a returned take | `shot-continuity.md`, `post-production.md`, `performance-details.md` |
-| Inspect saved production evidence or define an evidence study | `evidence-review.md` |
+| Inspect saved production evidence or define an evidence study or comparison | `evidence-review.md` |
 | Register, accept, or replace a produced file | `state-and-trust.md` sections 4 and 5 |
 | Continue from an accepted endpoint | `continuity-core.md`, `shot-continuity.md` |
 | Resolve a character's state at a story time | `temporal-state.md` |
@@ -65,6 +65,10 @@ and only the second one binds.
 | Observe a real host execution and retain evaluation evidence | `agent-evaluation.md` |
 | Choose resource budgets, read complete material or export full review evidence | `resource-handling.md` |
 | Analyze repeated failures from actual production reviews | `repair-analysis.md` |
+| Plan a purpose-specific workflow, its stage dependencies, or a board | `production-recipes.md`, `production-graph.md`, `board-layout.md` |
+| Check timed generation or an accepted boundary and temporal review | `generation-planning.md`, `temporal-review.md` |
+| Preserve audio, create requested captions, or verify delivery | `audio-master.md`, `caption-delivery.md` |
+| Inspect operation diagnostics or safe log exports | `operation-logging.md` |
 
 Everything the table names is under `skills/series-continuity-director/references/`.
 

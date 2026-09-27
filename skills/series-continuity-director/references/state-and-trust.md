@@ -200,3 +200,7 @@ Before returning updated state:
 - every produced file has a record, every record has a role and a status, and no role carries two accepted assets;
 - every asset downstream of a changed upstream asset is marked `stale` or has been inspected and cleared;
 - the next scene begins from the accepted endpoint and current resolved state.
+
+## 9. Derived delivery variants
+
+A locale, delivery profile, captioned master, crop, or finish is a derived asset role, not a new character identity or a canon event. Record its upstream accepted asset and the transformation that produced it. When an upstream changes, review only the dependent variants whose actual content or timing can be affected; preserve unrelated historical candidates and selections. File names and remote collection names never replace registry IDs and content hashes.

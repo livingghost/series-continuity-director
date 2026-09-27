@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "source_master": {"type": "object", "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}, "required": ["path", "sha256"], "additionalProperties": false},
+    "language": {"type": "string", "minLength": 1},
+    "direction": {"enum": ["ltr", "rtl", "vertical"]},
+    "purpose": {"enum": ["exact-spoken-dialogue", "translation", "accessibility"]},
+    "clock": {"type": "object", "properties": {"unit": {"enum": ["seconds", "frames"]}, "rate": {"anyOf": [{"type": "null"}, {"type": "object", "properties": {"numerator": {"type": "integer", "minimum": 1}, "denominator": {"type": "integer", "minimum": 1}}, "required": ["numerator", "denominator"], "additionalProperties": false}]}}, "required": ["unit", "rate"], "additionalProperties": false},
+    "cues": {"type": "array", "items": {"type": "object", "properties": {"id": {"type": "string", "minLength": 1}, "start": {"type": "number"}, "end": {"type": "number"}, "speaker": {"type": ["string", "null"]}, "text": {"type": "string", "minLength": 1}, "source_line": {"type": "object", "properties": {"document": {"type": "string", "minLength": 1}, "id": {"type": "string", "minLength": 1}}, "required": ["document", "id"], "additionalProperties": false}, "word_timing": {"type": ["array", "null"], "items": {"type": "object", "properties": {"text": {"type": "string", "minLength": 1}, "start": {"type": "number"}, "end": {"type": "number"}}, "required": ["text", "start", "end"], "additionalProperties": false}}}, "required": ["id", "start", "end", "speaker", "text", "source_line", "word_timing"], "additionalProperties": false}},
+    "style": {"type": "object", "properties": {"font": {"type": ["string", "null"]}, "size": {"type": ["integer", "null"], "minimum": 1}, "margin_x": {"type": "integer", "minimum": 0}, "margin_y": {"type": "integer", "minimum": 0}, "max_lines": {"type": "integer", "minimum": 1}}, "required": ["font", "size", "margin_x", "margin_y", "max_lines"], "additionalProperties": false},
+    "delivery_modes": {"type": "array", "items": {"enum": ["sidecar", "burn-in", "soft-track"]}, "minItems": 1},
+    "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  },
+  "required": ["source_master", "language", "direction", "purpose", "clock", "cues", "style", "delivery_modes", "limitations"],
+  "additionalProperties": false
+}

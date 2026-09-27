@@ -87,6 +87,10 @@ When the asset holding a role is replaced or marked `stale`, every record whose 
 - status: candidate
 - file:
 - SHA-256:
+- derived variant purpose:
+- locale:
+- delivery profile:
+- finish role:
 - duration, frame rate, dimensions, and aspect as inspected:
 - track presence and audio layout:
 - visible action and camera:

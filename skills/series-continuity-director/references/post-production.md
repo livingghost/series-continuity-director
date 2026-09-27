@@ -257,3 +257,7 @@ Completion requires:
 - final master passes machine checks;
 - terminal evidence comes from the finished master;
 - asset registry and production state point to accepted outputs.
+
+**Delivery conform.**
+
+A finished delivery is checked per profile on its actual bytes. Verify dimensions, rational frame rate, frame count or duration, stream presence, audio properties and required sidecars. One successful aspect ratio or locale does not certify another. A clean master, captioned master and locale-specific derivative remain distinct asset roles with explicit upstream lineage.

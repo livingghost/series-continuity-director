@@ -99,7 +99,7 @@ Find the action about to be performed and read those files before performing it.
 | Write any text a model will receive | `prompt-composition.md`, `model-facing-artifacts.md`, `scoped-lexicon.md` |
 | Choose a target model, operation, settings, or recommended wording | `runtime-capabilities.md`, `target-adaptation.md`, `operational-distinctions.md`, `model-evidence.md`, `target-guidance.md` |
 | Judge a returned take | `shot-continuity.md`, `post-production.md`, `performance-details.md` |
-| Inspect saved production evidence or define an evidence study | `evidence-review.md` |
+| Inspect saved production evidence or define an evidence study or comparison | `evidence-review.md` |
 | Register, accept, or replace a produced file | `state-and-trust.md` sections 4 and 5 |
 | Continue from an accepted endpoint | `continuity-core.md`, `shot-continuity.md` |
 | Resolve a character's state at a story time | `temporal-state.md` |
@@ -112,6 +112,10 @@ Find the action about to be performed and read those files before performing it.
 | Observe a real host execution and retain evaluation evidence | `agent-evaluation.md` |
 | Choose resource budgets, read complete material or export full review evidence | `resource-handling.md` |
 | Analyze repeated failures from actual production reviews | `repair-analysis.md` |
+| Plan a purpose-specific workflow, its stage dependencies, or a board | `production-recipes.md`, `production-graph.md`, `board-layout.md` |
+| Check timed generation or an accepted boundary and temporal review | `generation-planning.md`, `temporal-review.md` |
+| Preserve audio, create requested captions, or verify delivery | `audio-master.md`, `caption-delivery.md` |
+| Inspect operation diagnostics or safe log exports | `operation-logging.md` |
 
 Every file those rows name is in `references/`. A path in this suite resolves from
 the directory that holds `SKILL.md`, which is wherever the suite is installed, and
@@ -122,6 +126,7 @@ not from the working directory, which belongs to the project.
 Read [Production Direction](#purpose-portrayal-and-production-choices), [Production Execution](#production-execution-and-bounded-authority), and the selected route's references before building a saved deliverable. A route is a named kind of work, such as `development` or `media`, with the documents it requires. `scripts/execution_routes.py read ROUTE --root PROJECT` outputs those documents in full and ends with a reading key, which later records cite as proof of the reading; author each required application, the passage applied and why.
 
 `scripts/production_workflow.py` connects preparation, handoff, actual candidates, observation review, authorized selection and completion in one run, and its `status`, `resume` and `impact` expose interrupted work. Complete the linked work task only after that run completes. For time-dependent material, read [Timed Production](#time-bearing-realization-and-review); still-image-to-video is not a mandatory method.
+
 
 ## Target and visual choices
 
@@ -916,6 +921,10 @@ Run `python scripts/evidence_tools_smoke_test.py` for constructed integration te
 
 Actual host measurements: [Agent Evaluation](#evidence-from-actual-agent-execution). A count lacking retained telemetry remains unknown, and constructed smoke tests are evidence of handling rather than of model quality.
 
+## 7. Comparison planning
+
+Use `comparison_plan.py` before building an evidence study when conditions differ by target adaptation, generation lane or end-to-end finishing. It prevents one run from being counted as independent repeated trials, pins optional temporal/audio/delivery evidence, and emits the existing `evaluation_evidence.py` study shape. The study remains descriptive evidence; it does not automatically rank models, choose a candidate or update canon.
+
 ---
 
 <!-- Source: references/production-direction.md -->
@@ -1383,6 +1392,10 @@ Use only from actual outputs or a concrete operator report.
 8. Write accepted story events, asset lineage, run observations, and scoped tactics back to project state.
 9. For physically continuous work, continue from the accepted observed endpoint, not the planned one. Preserve the declared relation for noncontinuous transitions.
 
+## 4. Purpose recipes and dependency graphs
+
+A purpose recipe may suggest useful stages without inventing story content. For multi-stage work, a production graph may describe dependencies, external effect classes, authority scopes and cost state. Both are planning views over the ordinary Production lifecycle. They do not own approvals, reservations, candidates, selections or canon, and a graph node that performs an external action still uses the existing authority and dispatch path.
+
 ---
 
 <!-- Source: references/tactic-consultation.md -->
@@ -1677,6 +1690,127 @@ first video/audio stream of the requested kind; for review, identify its actual
 numeric stream index and interval explicitly. A missing duration remains
 unmeasured rather than silently widening to a broader range.
 
+## 5. Pre-generation feasibility and temporal coverage
+
+When a remote generator constrains duration, reference roles or input mode, check a `generation-schedule` before submission. Generation duration and edit duration are separate. The schedule may prove that a requested trim is structurally possible, but it cannot prove the performance appears inside the usable span. After real media exists, use temporal review coverage and accepted-boundary checks on the actual finished bytes. A sampled review never certifies unobserved intervals.
+
+---
+
+<!-- Source: references/production-recipes.md -->
+
+# Production Recipes
+
+Recipes make common production purposes concrete without inventing story structure. They select useful SCD stages; they do not create a cast, dramatic turn, approval, canon event, or paid action.
+
+Available purposes include dialogue scenes, continuous performance, music-led sequences, comic pages, product films, and custom work. Optional stages remain optional when the medium does not need them.
+
+Run:
+
+```sh
+python scripts/production_recipe.py plan --root PROJECT --recipe path/to/recipe.json
+```
+
+The result is routing guidance only. Resolve the actual scene, sources, target, authority, and deliverables through the ordinary Production workflow.
+
+---
+
+<!-- Source: references/generation-planning.md -->
+
+# Generation Planning
+
+Use generation planning before paid or remote generation when duration, input mode, reference count, or chaining can make the requested edit structurally impossible.
+
+`generation_schedule.py` distinguishes generation duration from edit duration. A four-second provider minimum does not make a two-second edit impossible if a usable two-second source span can be trimmed from that generation. It also does not prove the required performance occurs in that span.
+
+Choose one lane explicitly: `single-generated-sequence`, `independent-shots`, `endpoint-conditioned-chain`, or `edit-existing-media`. The lane is a production choice, not a quality ranking.
+
+Run:
+
+```sh
+python scripts/generation_schedule.py check --root PROJECT --plan path/to/generation-plan.json
+```
+
+A `structurally-feasible` result means the declared timing and interface constraints are internally compatible. It is not permission to submit, proof of performance, or evidence that planned media exists.
+
+---
+
+<!-- Source: references/board-layout.md -->
+
+# Board Layout
+
+Keep planning boards, model-facing reference carriers, and delivery pages distinct. Similar-looking artifacts may have different authority and different risks.
+
+`board_layout.py` validates panel bounds, source hashes, and annotation scope. A missing source is `planned-not-observed`; it is not a generated panel. For model-facing boards, annotations must be intentionally included rather than assumed harmless.
+
+The SVG builder is deterministic and preserves source relationships. It is a carrier and review artifact, not proof that a model consumed any referenced image.
+
+---
+
+<!-- Source: references/audio-master.md -->
+
+# Audio Master
+
+Treat source integrity, encoded-stream preservation, decoded-sample preservation, a single controlled lossy encode, and an approved mix as different claims.
+
+Use `audio_master.py check` on actual source and output bytes. `encoded-stream-preserve` allows remux only and compares encoded essence. `decoded-samples-preserve` compares the decoded sample sequence. `single-encode-from-master` checks the SCD-controlled processing graph and never infers encode history before the declared source. `approved-mix` records that the output is intentionally different.
+
+A codec name alone never proves that audio was encoded once or that it is unchanged. An unchanged source-file hash does not prove the final output audio is unchanged.
+
+---
+
+<!-- Source: references/caption-delivery.md -->
+
+# Captions and Delivery
+
+Captions are off unless requested. Keep authoritative dialogue, translation decisions, observed speech, and caption rendering separate.
+
+A caption track pins the finished master, declares the final edit clock, exact text, source-line reference, speaker, timing, and delivery mode. Sentence timing does not become word timing by interpolation. ASR output is evidence, not authoritative dialogue.
+
+Use:
+
+```sh
+python scripts/caption_track.py check --root PROJECT --plan captions/track.json
+python scripts/caption_track.py compile --root PROJECT --plan captions/track.json --format srt --out captions/track.srt
+```
+
+Use `delivery_conform.py check` on every final profile. One successful aspect ratio, language, sidecar set, or container does not certify another. Check actual streams, frame rate, frame count, dimensions, audio, and required sidecars.
+
+---
+
+<!-- Source: references/temporal-review.md -->
+
+# Temporal Review Coverage
+
+A contact sheet or a few frames cannot certify an entire clip. Record what time ranges were actually inspected and by which method.
+
+Use `review_coverage.py check` to compare required review intervals with actual observations. Full-playback criteria require a playback or observation that covers the declared interval. Sampling may make review efficient but never turns unobserved time into a pass.
+
+Use `boundary_conform.py` when a following unit depends on an accepted finished endpoint. The source must be the exact accepted registry asset. A planned endpoint or an unselected candidate is not continuity evidence.
+
+---
+
+<!-- Source: references/operation-logging.md -->
+
+# Operation Logging
+
+Operation logs record local CLI attempts and diagnostics. They are not approval, canon, selection, dispatch evidence, or a substitute for the Production receipt chain.
+
+Project operations write under `logs/operations/<UTC-date>/<operation-id>/`. Operations without a project use the user-local SCD log directory. Logs record safe arguments, stages, related IDs, outcomes, and artifact references. Known credentials are redacted before writing.
+
+Do not place logs inside production input hashes. Deleting diagnostic logs must not delete production evidence. A failed auxiliary log write does not erase an already preserved candidate, while inability to write required Production evidence must block an irreversible external action.
+
+---
+
+<!-- Source: references/production-graph.md -->
+
+# Production Graph
+
+A production graph is a planning view over existing SCD tasks and runs. It does not own approvals, reservations, candidates, selection, or canon.
+
+Use it when several stages depend on one another. Each node declares its operation, dependencies, external effect class, required authority scopes, and cost status. External-write nodes without explicit authority scopes are blocked. Unknown cost remains unknown rather than becoming zero.
+
+`production_graph.py check` reports currently ready nodes from the declared states. Starting or recovering a real remote operation still goes through Production authority and dispatch.
+
 ---
 
 <!-- Source: references/state-and-trust.md -->
@@ -1883,6 +2017,10 @@ Before returning updated state:
 - every produced file has a record, every record has a role and a status, and no role carries two accepted assets;
 - every asset downstream of a changed upstream asset is marked `stale` or has been inspected and cleared;
 - the next scene begins from the accepted endpoint and current resolved state.
+
+## 9. Derived delivery variants
+
+A locale, delivery profile, captioned master, crop, or finish is a derived asset role, not a new character identity or a canon event. Record its upstream accepted asset and the transformation that produced it. When an upstream changes, review only the dependent variants whose actual content or timing can be affected; preserve unrelated historical candidates and selections. File names and remote collection names never replace registry IDs and content hashes.
 
 ---
 
@@ -4606,6 +4744,10 @@ A target's demonstrated strengths and failures constrain that operation, not all
 Before committing a composition, identify which declared structures, surfaces, markings, text, contacts, or relations the frame makes important. Choose their treatment from the purpose and known operation capabilities. Do not assume a universal list of difficult body parts or that a small feature is incapable of visible error.
 
 Inspect the actual result at the intended viewing size and, where needed, at a recorded region or time span. Compare against the relevant design and geometry. A mismatch is an observation; its hidden generation cause is not known merely from its appearance. Preserve meaningful detail when changing framing, references, local edits, compositing, or generation method to repair it.
+
+## 21. Bounded blocking preview
+
+When geometry needs a simple visual proxy, `blocking_preview.py` can render declared rectangles or ellipses and label each object as declared, assumed or unknown. The proxy is not reconstructed world geometry and does not establish unobserved anatomy. Use it only where projected position, overlap, scale or camera reasoning materially benefits from the carrier.
 
 ---
 
@@ -7439,6 +7581,12 @@ bed was laid to cover. Measure the programme once and apply a fixed gain.
 - generated and post-produced authority is recorded;
 - no ungenerated audio result is claimed.
 
+**Audio master and caption evidence.**
+
+When preservation of a selected score, dialogue master or other audio source is load-bearing, declare the preservation claim and verify it with `audio_master.py`. Encoded essence, decoded samples, a controlled lossy encode and an approved mix are different claims. A codec label is not evidence of encode lineage.
+
+Captions remain off unless requested. A caption track pins the finished master and the exact authoritative text, source line, speaker and final edit timing. ASR is an observation source, not the dialogue authority. Compile sidecars or burn-in from the same track and verify the actual delivery rather than assuming a successful remote job consumed the text.
+
 ---
 
 <!-- Source: references/post-production.md -->
@@ -7702,6 +7850,10 @@ Completion requires:
 - final master passes machine checks;
 - terminal evidence comes from the finished master;
 - asset registry and production state point to accepted outputs.
+
+**Delivery conform.**
+
+A finished delivery is checked per profile on its actual bytes. Verify dimensions, rational frame rate, frame count or duration, stream presence, audio properties and required sidecars. One successful aspect ratio or locale does not certify another. A clean master, captioned master and locale-specific derivative remain distinct asset roles with explicit upstream lineage.
 
 ---
 

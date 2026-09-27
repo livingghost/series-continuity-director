@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "registry": {"type": "string", "minLength": 1},
+    "asset_id": {"type": "string", "minLength": 1},
+    "source": {"type": "object", "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}, "required": ["path", "sha256"], "additionalProperties": false},
+    "boundary": {"enum": ["entry", "exit"]},
+    "time_seconds": {"type": "number", "minimum": 0},
+    "window_seconds": {"type": "number", "minimum": 0},
+    "purpose": {"type": "string", "minLength": 1},
+    "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  },
+  "required": ["registry", "asset_id", "source", "boundary", "time_seconds", "window_seconds", "purpose", "limitations"],
+  "additionalProperties": false
+}

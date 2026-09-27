@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "width": {"type": "integer", "minimum": 64},
+    "height": {"type": "integer", "minimum": 64},
+    "camera": {"type": "object", "properties": {"label": {"type": "string", "minLength": 1}, "notes": {"type": "array", "items": {"type": "string", "minLength": 1}}}, "required": ["label", "notes"], "additionalProperties": false},
+    "objects": {"type": "array", "items": {"type": "object", "properties": {"id": {"type": "string", "minLength": 1}, "shape": {"enum": ["rect", "ellipse"]}, "x": {"type": "number"}, "y": {"type": "number"}, "width": {"type": "number", "exclusiveMinimum": 0}, "height": {"type": "number", "exclusiveMinimum": 0}, "knowledge": {"enum": ["declared", "assumed", "unknown"]}, "label": {"type": "string", "minLength": 1}}, "required": ["id", "shape", "x", "y", "width", "height", "knowledge", "label"], "additionalProperties": false}},
+    "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  },
+  "required": ["width", "height", "camera", "objects", "limitations"],
+  "additionalProperties": false
+}

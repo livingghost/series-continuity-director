@@ -112,3 +112,7 @@ A current-source change is reported in reviews; an evidence study that claims th
 Run `python scripts/evidence_tools_smoke_test.py` for constructed integration tests. A pass demonstrates evidence handling rather than improved generated-image, video or writing quality.
 
 Actual host measurements: [Agent Evaluation](agent-evaluation.md). A count lacking retained telemetry remains unknown, and constructed smoke tests are evidence of handling rather than of model quality.
+
+## 7. Comparison planning
+
+Use `comparison_plan.py` before building an evidence study when conditions differ by target adaptation, generation lane or end-to-end finishing. It prevents one run from being counted as independent repeated trials, pins optional temporal/audio/delivery evidence, and emits the existing `evaluation_evidence.py` study shape. The study remains descriptive evidence; it does not automatically rank models, choose a candidate or update canon.

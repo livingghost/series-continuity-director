@@ -311,3 +311,9 @@ bed was laid to cover. Measure the programme once and apply a fixed gain.
 - audio bridges and tails support continuity;
 - generated and post-produced authority is recorded;
 - no ungenerated audio result is claimed.
+
+**Audio master and caption evidence.**
+
+When preservation of a selected score, dialogue master or other audio source is load-bearing, declare the preservation claim and verify it with `audio_master.py`. Encoded essence, decoded samples, a controlled lossy encode and an approved mix are different claims. A codec label is not evidence of encode lineage.
+
+Captions remain off unless requested. A caption track pins the finished master and the exact authoritative text, source line, speaker and final edit timing. ASR is an observation source, not the dialogue authority. Compile sidecars or burn-in from the same track and verify the actual delivery rather than assuming a successful remote job consumed the text.

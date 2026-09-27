@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "purpose": {"enum": ["dialogue-scene", "continuous-performance", "music-led-sequence", "comic-page", "product-film", "custom"]},
+    "medium": {"enum": ["text", "image", "comic", "video", "mixed"]},
+    "requirements": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "optional_stages": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "decisions": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "deliverables": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  },
+  "required": ["purpose", "medium", "requirements", "optional_stages", "decisions", "deliverables"],
+  "additionalProperties": false
+}

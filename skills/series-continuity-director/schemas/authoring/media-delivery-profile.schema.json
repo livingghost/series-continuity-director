@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "properties": {
+    "purpose": {"type": "string", "minLength": 1},
+    "source": {"type": "object", "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}, "required": ["path", "sha256"], "additionalProperties": false},
+    "video": {"type": "object", "properties": {"width": {"type": ["integer", "null"], "minimum": 1}, "height": {"type": ["integer", "null"], "minimum": 1}, "fps": {"type": ["object", "null"], "properties": {"numerator": {"type": "integer", "minimum": 1}, "denominator": {"type": "integer", "minimum": 1}}, "required": ["numerator", "denominator"], "additionalProperties": false}, "codec": {"type": ["string", "null"]}, "pixel_format": {"type": ["string", "null"]}}, "required": ["width", "height", "fps", "codec", "pixel_format"], "additionalProperties": false},
+    "duration": {"type": "object", "properties": {"minimum": {"type": ["number", "null"]}, "maximum": {"type": ["number", "null"]}, "exact_frames": {"type": ["integer", "null"], "minimum": 1}}, "required": ["minimum", "maximum", "exact_frames"], "additionalProperties": false},
+    "audio": {"type": "object", "properties": {"required": {"type": "boolean"}, "codec": {"type": ["string", "null"]}, "sample_rate": {"type": ["integer", "null"], "minimum": 1}, "channels": {"type": ["integer", "null"], "minimum": 1}}, "required": ["required", "codec", "sample_rate", "channels"], "additionalProperties": false},
+    "sidecars": {"type": "array", "items": {"type": "object", "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}, "required": ["path", "sha256"], "additionalProperties": false}},
+    "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  },
+  "required": ["purpose", "source", "video", "duration", "audio", "sidecars", "limitations"],
+  "additionalProperties": false
+}
