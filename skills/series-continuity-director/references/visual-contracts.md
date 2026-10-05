@@ -67,7 +67,7 @@ Validate the exact request and its referenced files with `scripts/shot_request.p
 
 ### The narrative contract
 
-[The narrative protocol](../protocols/narrative/README.md) describes what the series is about. The author controls the narrative; the agent can propose and edit it under that direction. `scripts/narrative.py`, persona records and `scripts/scene_plot.py` read the production's narrative and scene evidence. Screen scenes are realized as shots, comics as pages and panels, and prose as passages. Derive each shot's purpose and permitted disclosure from its approved scene plot.
+[The narrative protocol](narrative-protocol.md) describes what the series is about. The author controls the narrative; the agent can propose and edit it under that direction. `scripts/narrative.py`, persona records and `scripts/scene_plot.py` read the production's narrative and scene evidence. Screen scenes are realized as shots, comics as pages and panels, and prose as passages. Derive each shot's purpose and permitted disclosure from its approved scene plot.
 
 ### Where the shot came from
 
@@ -110,7 +110,7 @@ Preserve the candidate and the observation. Present returned work before reviewi
 
 ## 8. Public artifact delivery
 
-When the request includes artifact exchange, select the artifact type, required features and exact referenced content. Use `scripts/protocol_exchange.py` to inspect or export the artifact with its schema contract, and to verify a received bundle. `protocols/contract-manifest.json` lists the public types and `config/protocol-layout.json` resolves their schemas.
+When the request includes artifact exchange, select the artifact type, required features and exact referenced content. Use `scripts/protocol_exchange.py` to inspect or export the artifact with its schema contract, and to verify a received bundle. `protocols/contract-manifest.json` lists the public types and their schemas.
 
 For profile-aware exchange, `scripts/build_interchange_envelope.py` writes `artifact.json`, `declaration.json` and `envelope.json`. Validation checks the profile, identifiers, required features and content commitments. Preserve unknown optional features as uninterpreted evidence; stop if a required feature cannot be interpreted.
 

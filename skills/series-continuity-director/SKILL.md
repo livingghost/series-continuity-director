@@ -85,7 +85,7 @@ Find the action about to be performed and read those files before performing it.
 | Build, inspect or revise timed material and an assembled interval | `timed-production.md`, `production-execution.md` |
 | Create or rename a full persona, world or intent record | `narrative-authoring.md`, `story-structure.md` |
 | Add a person to the cast, or decide how much of a persona a scene needs | `story-structure.md` section 6, `scene-persona.md` |
-| Settle or revise what the series is about, its arcs, chapters, characters, promises, questions, or who knows what | `story-structure.md` section 6, `continuity-core.md` |
+| Settle or revise what the series is about, its arcs, chapters, characters, promises, questions, or who knows what | `story-structure.md` section 6, `narrative-protocol.md`, `continuity-core.md` |
 | Plan or revise a scene or episode | `story-structure.md` sections 6 and 7, `continuity-core.md`, `blocking-and-coverage.md` |
 | Break a scene into shots, pages or passages and choose coverage | `viewpoint-profiles.md`, `blocking-and-coverage.md`, `shot-continuity.md` |
 | Choose whose viewpoint a scene or shot takes, or switch it between shots | `viewpoint-profiles.md`, `viewpoint-transitions.md` |

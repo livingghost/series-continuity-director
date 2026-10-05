@@ -444,7 +444,7 @@ def read_text(path: Path, errors: list[str]) -> str:
 
 
 SUITE_PATH_SPAN = re.compile(
-    r"`((?:references|scripts|protocols|config|assets|examples|adapters|agents)/[A-Za-z0-9._/-]+\.[A-Za-z0-9]+)`"
+    r"`((?:references|scripts|protocols|targets|config|assets|examples|adapters|agents)/[A-Za-z0-9._/-]+\.[A-Za-z0-9]+)`"
 )
 
 
@@ -575,14 +575,29 @@ def static_checks(repo: Path, manifest: dict) -> tuple[list[str], list[str], dic
     for key in ("interface:", "policy:"):
         if key not in agent:
             errors.append(f"agents/openai.yaml must declare {key.rstrip(':')}")
-    capability_path = ROOT / "protocols" / "interchange" / "integration-capabilities.json"
+    capability_path = ROOT / "config" / "integration-capabilities.json"
     try:
         capabilities = json.loads(capability_path.read_text(encoding="utf-8"))
     except Exception as exc:
-        errors.append(f"protocols/interchange/integration-capabilities.json: {exc}")
+        errors.append(f"config/integration-capabilities.json: {exc}")
     else:
         from integration_contract import validate_capabilities
         errors.extend(validate_capabilities(capabilities)["errors"])
+    # The envelope is not a registered artifact, so no template loop reaches its
+    # template; it is checked against its schema here, with placeholder hashes.
+    envelope_relative = "protocols/interchange/templates/interchange-envelope.template.json"
+    try:
+        envelope = json.loads((ROOT / envelope_relative).read_text(encoding="utf-8"))
+        envelope_schema = json.loads(
+            (ROOT / "protocols/interchange/schemas/interchange-envelope.schema.json").read_text(encoding="utf-8"))
+    except Exception as exc:
+        errors.append(f"{envelope_relative}: {exc}")
+    else:
+        from protocol_contract import validate_against_schema
+        from validate_state_protocol import real_hashes
+        errors.extend(f"{envelope_relative}: {message}" for message in validate_against_schema(envelope, envelope_schema))
+        errors.extend(f"{envelope_relative}: a template carries the all-zero placeholder for every hash, found {found}"
+                      for found in real_hashes(envelope))
 
     changelog_path = repo / "CHANGELOG.md"
     if not changelog_path.is_file():
@@ -1070,6 +1085,7 @@ def static_checks(repo: Path, manifest: dict) -> tuple[list[str], list[str], dic
             read_text(path, errors)
             for path in sorted((ROOT / "references").rglob("*.md"))
             + sorted((ROOT / "protocols").rglob("*.md"))
+            + sorted((ROOT / "targets").rglob("*.md"))
             + [ROOT / "scripts" / "README.md"]
         ]
     )
@@ -1145,10 +1161,10 @@ def static_checks(repo: Path, manifest: dict) -> tuple[list[str], list[str], dic
                 "and the reader does not accept them"
             )
 
-    check_carried_implementation(ROOT, "protocols/narrative/README.md", errors)
+    check_carried_implementation(ROOT, "references/narrative-protocol.md", errors)
     # From where the check itself scans, which in a checkout is the repository
     # and in a distributed skill is the skill.
-    check_contract_document(ROOT, "protocols/narrative/README.md", errors)
+    check_contract_document(ROOT, "references/narrative-protocol.md", errors)
     # Every refusal a carried reader can make is named by a case in the suite
     # that exercises it, so deleting the refusal turns that case red.
     refusal_coverage.check(ROOT, [
@@ -1176,6 +1192,7 @@ def static_checks(repo: Path, manifest: dict) -> tuple[list[str], list[str], dic
         read_text(path, errors)
         for path in sorted((ROOT / "references").rglob("*.md"))
         + sorted((ROOT / "protocols").rglob("*.md"))
+        + sorted((ROOT / "targets").rglob("*.md"))
     )
     declared_enumerations = {
         "refusal code": sorted(RULES),
@@ -1201,10 +1218,6 @@ def static_checks(repo: Path, manifest: dict) -> tuple[list[str], list[str], dic
     state_readme_dirs = re.findall(r"^- `([^`]+?)/`", state_readme, re.MULTILINE)
     if state_readme_dirs != canonical_state_dirs:
         errors.append(f"assets/project-templates/state/README.md: state directories must equal {canonical_state_dirs}, found {state_readme_dirs}")
-    protocol_readme = read_text(ROOT / "protocols/shared-state/README.md", errors)
-    protocol_dirs = re.findall(r"^  ([a-z][a-z0-9-]*)/$", protocol_readme, re.MULTILINE)
-    if protocol_dirs != canonical_state_dirs:
-        errors.append(f"protocols/shared-state/README.md: state directories must equal {canonical_state_dirs}, found {protocol_dirs}")
     temporal = read_text(ROOT / "references/temporal-state.md", errors)
     temporal_dirs = re.findall(r"^state/([a-z][a-z0-9-]*)/", temporal, re.MULTILINE)
     if temporal_dirs != canonical_state_dirs:

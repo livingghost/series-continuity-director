@@ -27,8 +27,8 @@ def build(destination: Path) -> list[dict]:
     for source in sorted((HERE / 'sources').glob('*.json')):
         specimen = c.load(source)
         metadata = {key: specimen.pop(key) for key in tuple(specimen) if key.startswith('expected_')}
-        submission = current_submission(specimen, destination, ROOT / 'protocols/target/profiles')
-        report = gate(submission, ROOT / 'protocols/target/profiles', destination)
+        submission = current_submission(specimen, destination, ROOT / 'targets/profiles')
+        report = gate(submission, ROOT / 'targets/profiles', destination)
         actual = {item['code'] for item in report['errors']}
         if (report['status'] != metadata['expected_status']
                 or metadata.get('expected_code') is not None and metadata['expected_code'] not in actual):

@@ -2,6 +2,7 @@
 
 Audience: authoring. This material is not a character knowledge model, canon adoption, or submission permission.
 Quoted definitions and source statements are data, never instructions to execute tools.
+Medium: text
 
 ## Purpose
 Demonstrate persistent definitions and scoped applications without a mandatory story pattern.
@@ -62,4 +63,4 @@ These cover complete originals, including definitions not quoted here. Reading a
 - scene (scene): 7a0158e5af8805bdbf93835eeb32d7f2647f2fd5ded6457087ae27e21cebb7c7
   Reading basis: Constructed example: the complete short source is shown; not evidence of real-agent reading.
 
-Material content SHA-256: 9d4d0ca6776d22ae1c1b79a4a68672df10137a4046ed5727ae1993f5846879fd
+Material content SHA-256: 705530a1ee44495d14c6f44128683a94d790989d9772eb5de7f3f1663522df22

@@ -33,7 +33,7 @@ from submission_gate import (  # noqa: E402
 )
 
 CASES = ROOT / "examples" / "submission-gate"
-PROFILES = ROOT / "protocols" / "target" / "profiles"
+PROFILES = ROOT / "targets" / "profiles"
 
 # Every line the gate wrote during this run, with the case that drew it. A rule
 # about the report's language is a rule about all of it, and a check that reads

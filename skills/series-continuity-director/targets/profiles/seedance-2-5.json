@@ -267,7 +267,7 @@
         "geometry_evidence": "Every pair above, including the 1080p tier, is in the service's parameter schema for this model."
       },
       "observed_at": "2026-09-13",
-      "schema_snapshot": "protocols/target/observed-schemas/seedance-2-5.runware.json",
+      "schema_snapshot": "targets/observed-schemas/seedance-2-5.runware.json",
       "sources": [
         {
           "kind": "surface-control",
@@ -276,5 +276,5 @@
       ]
     }
   ],
-  "profile_sha256": "1795c2c342ba93651a90981ae3163fe2a3c576a263b39d50528e55729e30a0fc"
+  "profile_sha256": "20ca87c1e77f6d0020cecc9de2f516e1690e01519b260090cdd24e84b639d253"
 }

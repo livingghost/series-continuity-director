@@ -32,7 +32,7 @@ def create(root: Path) -> dict:
         return {'source_id':identifier,'path':path,'role':role,'subject_ids':subjects,
                 'sha256':m.digest((root/path).read_bytes()),
                 'reading_basis':'Constructed example: the complete short source is shown; not evidence of real-agent reading.'}
-    plan={'material_id':'prepared-activity','scene_id':'activity','scene_source_id':'scene',
+    plan={'material_id':'prepared-activity','scene_id':'activity','scene_source_id':'scene','medium':'text',
           'purpose':'Demonstrate persistent definitions and scoped applications without a mandatory story pattern.',
           'conditions':['Only the stated activity and currently supplied recipient information are in scope.'],
           'subjects':[{'subject_id':'subject','model':'functional','source_ids':['model'],

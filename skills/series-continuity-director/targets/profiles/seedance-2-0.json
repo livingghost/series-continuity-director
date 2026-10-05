@@ -235,7 +235,7 @@
         "geometry_evidence": "Every pair above, including the 4k tier, is in the service's parameter schema for this model."
       },
       "observed_at": "2026-09-13",
-      "schema_snapshot": "protocols/target/observed-schemas/seedance-2-0.runware.json",
+      "schema_snapshot": "targets/observed-schemas/seedance-2-0.runware.json",
       "sources": [
         {
           "kind": "surface-control",
@@ -244,5 +244,5 @@
       ]
     }
   ],
-  "profile_sha256": "61b5fcc55dd2bc432044ad4604bf3327695fce80a1063eef91c71e03ea5ade3c"
+  "profile_sha256": "002aac1e2909ceb88cf824f3b0887820f28a65416a87b4a9781f1ae171c85657"
 }

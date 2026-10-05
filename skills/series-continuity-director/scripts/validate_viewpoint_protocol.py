@@ -18,13 +18,14 @@ EXAMPLE = ROOT / "examples" / "mixed-viewpoint-workshop"
 GENERATED = EXAMPLE / "generated"
 
 sys.path.insert(0, str(ROOT / "scripts"))
+from validate_state_protocol import real_hashes  # noqa: E402
 from viewpoint_protocol import finalize_artifact, load_json, validate_artifact  # noqa: E402
 
 
 def main() -> int:
     errors: list[str] = []
     manifest = load_json(PROTOCOL / "protocol-manifest.json")
-    from protocol_exchange import check_installed
+    from protocol_contract import check_installed
     try:
         check_installed()
     except (ValueError, OSError) as exc:
@@ -58,6 +59,8 @@ def main() -> int:
     for path in sorted(TEMPLATES.glob("*.json")):
         template_count += 1
         value = load_json(path)
+        errors.extend(f"{path.relative_to(ROOT)}: a template carries the all-zero placeholder for every hash, "
+                      f"found {found}" for found in real_hashes(value))
         report = validate_artifact(value, allow_placeholder_hashes=True)
         if not report.get("ok"):
             errors.extend(f"{path.relative_to(ROOT)}: {message}" for message in report.get("errors", []))

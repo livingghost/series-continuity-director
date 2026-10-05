@@ -79,6 +79,7 @@ class LayerBoundaries(unittest.TestCase):
         self.assertIsNotNone(profile)
         return interchange.finalize({
             'artifact_type': 'interchange-envelope', 'envelope_id': 'IE-fixture',
+            'contract_set_sha256': interchange.installed_contract_set_sha256(),
             'contract_profile': profile['profile'], 'profile_sha256': profile['profile_sha256'],
             'origin': {'capability_manifest_sha256': self.caps['manifest_sha256']},
             'payload': {'artifact_type': data['artifact_type'],

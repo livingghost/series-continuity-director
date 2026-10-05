@@ -45,6 +45,7 @@
   ],
   "interactions": [],
   "material_id": "prepared-activity",
+  "medium": "text",
   "purpose": "Demonstrate persistent definitions and scoped applications without a mandatory story pattern.",
   "reopen_when": [
     "The recipient, information, purpose or original model changes."

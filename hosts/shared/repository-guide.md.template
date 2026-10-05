@@ -11,7 +11,7 @@ Generated file. Edit `hosts/shared/repository-guide.md.template`.
   hosts/                                        templates and hook sources
   .github/
   {suite_root}/
-      SKILL.md references/ scripts/ protocols/ config/ assets/ examples/ adapters/ agents/
+      SKILL.md references/ scripts/ protocols/ targets/ config/ assets/ examples/ adapters/ agents/
 ```
 
 `{suite_root}/` is the skill, and the only copy of it.
@@ -58,7 +58,7 @@ It reports facts that the selected contracts cannot establish as unmeasured.
 The designated reviewer evaluates wording, depicted features, and artistic quality.
 
 It knows no provider. The submission names a target, and its profile under
-`{suite_root}/protocols/target/profiles/` names the model's input modes and which
+`{suite_root}/targets/profiles/` names the model's input modes and which
 exclude each other. A submission that names a service adds that service's offering:
 its request keys and request shape. The gate compares the two. A surface it has never seen is supported by adding a
 profile, not by editing the gate.

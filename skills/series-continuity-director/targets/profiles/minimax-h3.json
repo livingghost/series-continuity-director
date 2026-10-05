@@ -279,7 +279,7 @@
         "inputs_envelope": "media keys sit inside an inputs object (inputs.referenceImages, inputs.frameImages, inputs.referenceVideos, inputs.referenceAudios)"
       },
       "observed_at": "2026-09-13",
-      "schema_snapshot": "protocols/target/observed-schemas/minimax-h3.runware.json",
+      "schema_snapshot": "targets/observed-schemas/minimax-h3.runware.json",
       "sources": [
         {
           "kind": "surface-control",
@@ -288,5 +288,5 @@
       ]
     }
   ],
-  "profile_sha256": "e7c8ac848055643e2f856c07f516bb2d59440382416dda6fd41b4cbb13eb57ea"
+  "profile_sha256": "010d624c69dab03ed26500ef44eaba0e6b2626d152dc6349d746465512cdcc30"
 }

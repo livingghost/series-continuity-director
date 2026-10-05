@@ -29,41 +29,6 @@ def schema(value: dict, name: str) -> None:
         raise ValueError(name + ': ' + '; '.join(errors))
 
 
-def public_errors(value: dict) -> list[str]:
-    errors = []
-    try:
-        if value['artifact_type'] == 'source-material-index':
-            docs = m.indexed(value['documents'], 'source_id', 'documents')
-            m.indexed(value['segments'], 'segment_id', 'segments')
-            for row in value['segments']:
-                source = docs.get(row['source_id'])
-                if not source:
-                    errors.append('segment names an absent document')
-                elif row['source_sha256'] != source['sha256']:
-                    errors.append('segment source commitment differs')
-                elif not 1 <= row['start_line'] <= row['end_line'] <= source['line_count']:
-                    errors.append('segment lies outside its document')
-        else:
-            docs = m.indexed(value['documents'], 'source_id', 'documents')
-            claims = m.indexed(value['claims'], 'claim_id', 'claims')
-            for claim in claims.values():
-                if set(claim['conflicts_with']) - claims.keys():
-                    errors.append('claim names an absent conflict')
-                if claim['claim_id'] in claim['conflicts_with']:
-                    errors.append('claim cannot conflict with itself')
-                for evidence in claim['evidence']:
-                    doc = docs.get(evidence['source_id'])
-                    if not doc or doc['sha256'] != evidence['source_sha256']:
-                        errors.append('claim evidence source is not committed')
-                    elif not 1 <= evidence['start_line'] <= evidence['end_line'] <= doc['line_count']:
-                        errors.append('claim evidence lies outside its source')
-                    if m.digest(evidence['quote'].encode('utf-8')) != evidence['quote_sha256']:
-                        errors.append('claim quote hash mismatch')
-    except (KeyError, ValueError, TypeError) as exc:
-        errors.append(str(exc))
-    return errors
-
-
 def compile_index(root: Path, plan: dict) -> tuple[dict, dict[str, bytes]]:
     schema(plan, 'source-import-plan')
     m.indexed(plan['documents'], 'source_id', 'documents')

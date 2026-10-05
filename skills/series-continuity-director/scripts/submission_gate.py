@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PROFILES = ROOT / "protocols" / "target" / "profiles"
+DEFAULT_PROFILES = ROOT / "targets" / "profiles"
 
 RULES = {
     'ROUTE_READING_INVALID': 'SUB-17', 'VISUAL_CONTINUITY_INVALID': 'SUB-18',

@@ -57,7 +57,7 @@ A trimmed shipped profile (`profiles/xai-grok-imagine-2.json`):
       "request_keys": {"reference-images": ["inputs.referenceImages"]},
       "request_shape": {"model_key": "model", "text_key": "positivePrompt", "media_reference": "uuid", "single_value_keys": []},
       "observed_at": "2026-09-13",
-      "schema_snapshot": "protocols/target/observed-schemas/xai-grok-imagine-2.runware.json",
+      "schema_snapshot": "targets/observed-schemas/xai-grok-imagine-2.runware.json",
       "sources": [{"kind": "surface-control", "reference": "Runware model schema for xai:grok-imagine@image-2.0"}]
     }
   ]
@@ -96,4 +96,4 @@ support explicitly supplied definitions. A duplicate target ID inside one
 directory is ambiguous. Guidance is separate data, not an addition to the model's
 capability schema. Completed submissions pin one profile, service data and advice
 sources; preview and execution use those same byte witnesses. See
-[Target Guidance](../../references/target-guidance.md).
+[Target Guidance](../references/target-guidance.md).

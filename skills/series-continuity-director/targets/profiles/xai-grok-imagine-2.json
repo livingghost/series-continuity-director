@@ -89,7 +89,7 @@
         "seed": "unsupported: the service refuses the seed parameter for this model (Unsupported use of 'seed' parameter), so a composition cannot be reproduced or varied one word at a time"
       },
       "observed_at": "2026-09-13",
-      "schema_snapshot": "protocols/target/observed-schemas/xai-grok-imagine-2.runware.json",
+      "schema_snapshot": "targets/observed-schemas/xai-grok-imagine-2.runware.json",
       "sources": [
         {
           "kind": "surface-control",
@@ -98,5 +98,5 @@
       ]
     }
   ],
-  "profile_sha256": "067e1023ac138b10d07781f51303ee9fa91ccb689a9848234d5fd5b4d876d17a"
+  "profile_sha256": "f1248a2c771424ac93603634a4c939432f1ef1af1d0d7058d72bda01def020f4"
 }

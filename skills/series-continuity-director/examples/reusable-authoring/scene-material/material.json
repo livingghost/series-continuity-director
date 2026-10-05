@@ -21,7 +21,7 @@
   "constraints": [
     "Do not infer a human voice or body from this functional model."
   ],
-  "content_sha256": "9d4d0ca6776d22ae1c1b79a4a68672df10137a4046ed5727ae1993f5846879fd",
+  "content_sha256": "705530a1ee44495d14c6f44128683a94d790989d9772eb5de7f3f1663522df22",
   "definitions": [
     {
       "anchor": "Controlling definition",
@@ -58,8 +58,10 @@
       "text_sha256": "03cac6ab015afb20387d79c0b5c64d1a3be0013fd05ed6835503e5c4dfc1d28d"
     }
   ],
+  "identities": [],
   "interactions": [],
   "material_id": "prepared-activity",
+  "medium": "text",
   "purpose": "Demonstrate persistent definitions and scoped applications without a mandatory story pattern.",
   "reopen_when": [
     "The recipient, information, purpose or original model changes."

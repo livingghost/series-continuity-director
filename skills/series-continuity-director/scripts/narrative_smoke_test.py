@@ -6,7 +6,7 @@ and declares what has to come back. A case that declares an error names the
 fragment the message has to carry, so a rule that stops firing is caught by the
 case that was written for it rather than by a count that still adds up.
 
-The contract is published in `protocols/narrative/README.md`, and every rule
+The contract is published in `references/narrative-protocol.md`, and every rule
 it states has a case here, so a rule that stops firing is caught by the case
 written for it rather than by a count that still adds up.
 """

@@ -9,7 +9,7 @@ wardrobe and environment at a story point and nothing above them.
 Two artifacts sit here. Both are authored by whoever owns the series, and both are read rather
 than written by whatever implements this contract.
 
-## Ownership
+## 1. Ownership
 
 - The author owns the narrative and every scene plot. An implementation reads them; it does not
   write them.
@@ -21,7 +21,7 @@ than written by whatever implements this contract.
   snapshot says what a character knows at story order 400. They meet through `timeline_id` and the
   story orders each chapter declares. A work with no story clock uses a null `timeline_id` and no chapter story coordinates; chapter presentation order is not converted to time.
 
-## Scope without a prescribed story model
+## 2. Scope without a prescribed story model
 
 The contract records declared intent; it does not select a protagonist, headcount, genre, theme,
 moral position or dramatic structure. Work may be world-led, agent-led, observational, episodic,
@@ -48,7 +48,7 @@ interactive graph or a requirement that all creative work be serialized. Local d
 may hold unsupported structure. Do not add undocumented JSON fields or invent events to force it
 through this reader. Linked world and design prose is not semantically validated here.
 
-## `narrative`
+## 3. `narrative`
 
 ```text
 artifact_type   "narrative"
@@ -90,7 +90,7 @@ knowledge       id, fact, known_by, learned_in, and an optional note; who learne
 approved        by, at as an RFC3339 UTC time, content_sha256, and an optional note
 ```
 
-## `scene-plot`
+## 4. `scene-plot`
 
 ```text
 artifact_type   "scene-plot"
@@ -134,7 +134,7 @@ a frame. The one exception is `free`, which is what the scene leaves open.
 A whole string value `<fill: ...>` is an undecided field. The reader refuses it as
 `placeholder not filled: <field>`, so a drafted plot cannot pass as a settled one.
 
-## The closed lists
+## 5. The closed lists
 
 Closed operational values and open authored text are distinguished below. Example vocabulary never becomes a compulsory dramatic or performance taxonomy.
 
@@ -171,7 +171,7 @@ first, `gives-ground` is who yielded, `carries-the-object` is who holds the shar
 `public-distance` against `private-distance` is how close each is allowed in company and
 alone.
 
-## Optional comparison and organization
+## 6. Optional comparison and organization
 
 A scene can observe a place, sustain an atmosphere, repeat a process or hold a condition without
 changing a relationship or ending differently. Omit `turn` when no comparison is declared. When
@@ -188,7 +188,7 @@ Coverage checks declared threads and chronology, not a compulsory trigger and pa
 complete chapter or a minimum of two scenes per resolved arc. A one-scene completion and a
 non-dramatic chapter are not gaps merely because of their form.
 
-## What a scene becomes
+## 7. What a scene becomes
 
 `realization` is the scene in the parts its medium actually has, and the narrative's `medium` says
 which kind a scene of this series takes.
@@ -210,7 +210,7 @@ The declared realization determines the unit type. Prose does not need an invent
 pages do not need to masquerade as shots. A submission surface requiring shot IDs must select
 an actual shot realization rather than silently converting another medium.
 
-## How a scene is told
+## 8. How a scene is told
 
 `focalization` is Genette's, because that is the vocabulary narratology settled on. Zero focalization
 knows more than anyone in the scene. Internal focalization is restricted to one character, who
@@ -222,7 +222,7 @@ This is not the camera. A shot's viewpoint profile says where the lens is; focal
 knowledge the telling is limited to, which is why it sits beside the narrative's knowledge entries
 and not beside the camera.
 
-## The hash an approval carries
+## 9. The hash an approval carries
 
 `content_sha256` is the sha256 of the document with its `approved` block removed, over canonical
 JSON: keys sorted, no ASCII escaping, no spaces after the separators. An approval that names only a
@@ -233,7 +233,7 @@ This differs from the Shared State Protocol's `artifact_hash`, which removes the
 self-hash field instead. The difference is not a style: an approval is a claim about the content
 that was approved, and a self-hash is a claim about the document that carries it.
 
-## The implementation that answers this contract
+## 10. The implementation that answers this contract
 
 Most of what these contracts refuse cannot be written as a schema. Chapter numbers running from 1
 without gaps, a payoff that arrives before its plant, an answer before its question, a statement
@@ -250,7 +250,7 @@ itself. What it can do is compare its own against the hash published here, of th
 endings normalised:
 
 ```text
-scripts/narrative.py           f1e928c456353daf5ed810582750ee629759bbd1898470e72ee4f318750c0655
+scripts/narrative.py           4c4e02469a5e327979680e4e7b03720712c1d83109c2c1c378eb062fa94a7e69
 scripts/scene_plot.py          0800f853d227a0352c098f6200c901c813f5fc7535b4b0b035ee2743f7100e2a
 scripts/narrative_corpus.json  f6991daea87e2c310df679c6c1e06c8b6ab8f0680045cadce72a5911767f979e
 ```
@@ -264,7 +264,7 @@ against, each with the verdict this contract requires of it, so that an implemen
 elsewhere is checked by whether it reaches every verdict there and not by whether it resembles the
 readers.
 
-## Reading one
+## 11. Reading one
 
 ```bash
 python scripts/narrative.py <narrative>

@@ -51,6 +51,26 @@ class ProductionTests(unittest.TestCase):
         self.task['features'] = ['scene-persona']
         self.task['scene_materials'] = [{'plan': 'plan.json', 'bundle': 'scene-material'}]
         pass
+    def plotted(self):
+        """Name the fixture scene plot, which realizes its scene as shots, as an applied source."""
+        import shutil
+        shutil.copy(SCRIPTS.parent/'examples/submission-gate/fixtures/scene-plot.json', self.root/'scene-plot.json')
+        self.task['sources'].append({'id':'plot','path':'scene-plot.json','role':'scene-plot','disposition':'applied','locator':'whole','reason':'Test'})
+        self.task['direction']=support.direction(self.task,'Hold the declared condition.')
+    def test_a_scene_realized_as_shots_refuses_a_text_material(self):
+        self.scene_task(); self.plotted()
+        with self.assertRaisesRegex(ValueError, 'M was prepared for text, and a scene realized as shots depicts it'):
+            self.prepare()
+    def test_a_scene_realized_as_shots_accepts_an_image_material(self):
+        import material_support as m
+        import scene_persona
+        self.scene_task(); self.plotted()
+        plan = m.load(self.root, 'plan.json'); plan['medium'] = 'image'
+        (self.root/'image-plan.json').write_bytes(m.encoded(plan))
+        scene_persona.build(self.root, 'image-plan.json', 'image-material')
+        self.task['scene_materials'] = [{'plan': 'image-plan.json', 'bundle': 'image-material'}]
+        consumer = w.load_run(self.root, self.prepare())[2]
+        self.assertIn('Medium: image', consumer['authoring_materials'][0]['document'])
     def test_scene_material_is_pinned_and_self_contained_in_actual_run(self):
         self.scene_task(); run = self.prepare()
         _, prepared, consumer, _ = w.load_run(self.root, run)
@@ -165,13 +185,19 @@ class InitializedProjectTests(unittest.TestCase):
         code,out,err=cli(*args);self.assertEqual((code,err),(0,''),out);return out
     def fill(self,name,**fields):
         value=c.load(self.root/name);value.update(fields);(self.root/name).write_bytes(c.encoded(value))
-    def selection(self,artifact,operations):
+    def selection(self,artifact,operations,*,character=None):
+        """Prepare, hand off, capture and review one artifact; a character names the single subject an identity review assesses."""
         root=['--root',self.root]
         run=self.ok('prepare',*root,'--task','production/production-task.json')['run'];at=[*root,'--run',run]
         self.ok('handoff',*at,'--recipient','synthetic operator','--method','manual')
         candidate=self.ok('capture',*at,'--artifact',artifact,'--note','Synthetic acquired artifact.')['sha256']
         self.ok('draft-review',*at,'--candidate',candidate,'--out','review.json')
-        (self.root/'review.json').write_bytes(c.encoded(support.observed(c.load(self.root/'review.json'))))
+        review=c.load(self.root/'review.json')
+        if character is None: review=support.observed(review)
+        else:
+            review=support.observed(review,'The synthetic image was inspected.','visual-inspection')
+            review['visual_assessment']={'subjects':{character:{'character_id':character,'continuity':'recurring'}},'observation_indices':[0]}
+        (self.root/'review.json').write_bytes(c.encoded(review))
         self.ok('review',*at,'--file','review.json')
         self.ok('draft-authorization',*at,'--out','grant.json')
         (self.root/'grant-evidence.txt').write_text('SYNTHETIC AUTHORITY FIXTURE. NOT A HUMAN APPROVAL.\n',encoding='utf-8')
@@ -196,13 +222,28 @@ class InitializedProjectTests(unittest.TestCase):
         record=record.replace('- files and views:\n','- files and views:\n  - `media/c01-identity.png` (front view)\n',1)
         record=record.replace('- SHA-256 per file:\n','- SHA-256 per file:\n  - `media/c01-identity.png`: '+digest+'\n',1)
         (self.root/'asset-registry.md').write_text(record+'### S01-SCENE'+rest,encoding='utf-8')
-    def adopting(self):
+    def adopting(self,*,identity=False):
         from PIL import Image
         Image.new('RGB',(8,8),(40,40,40)).save(self.root/'media/c01-identity.png')
-        at,candidate=self.selection('media/c01-identity.png',('select','adopt'))
+        at,candidate=self.selection('media/c01-identity.png',('select','adopt'),character='C01' if identity else None)
         self.fill('selection.json',scope='registry-adoption',
-                  adoption={'owner_path':'asset-registry.md','asset_id':'C01-IDENTITY','role':'C01/identity'})
+                  adoption={'owner_path':'asset-registry.md','asset_id':'C01-IDENTITY','role':'C01/identity'},
+                  **({'influence':'identity'} if identity else {}))
         return at,c.digest((self.root/'media/c01-identity.png').read_bytes())
+    def test_an_adopted_identity_image_is_listed_for_its_character_by_path_and_hash(self):
+        import scene_persona
+        at,digest=self.adopting(identity=True);self.registry(digest)
+        self.ok('select',*at,'--file','selection.json')
+        row={'subject_id':'C01','path':'media/c01-identity.png','image_sha256':digest}
+        self.assertEqual(scene_persona.adopted_identities(self.root,'C01'),[row])
+        self.assertEqual(scene_persona.adopted_identities(self.root,'C02'),[])
+        self.assertEqual(scene_persona.identity_problems(self.root,{'identities':[row]}),[])
+        changed={**row,'image_sha256':'1'*64}
+        self.assertEqual(scene_persona.identity_problems(self.root,{'identities':[changed]}),
+                         ['C01: the identity image media/c01-identity.png with SHA-256 '+'1'*64+' is not accepted and bound now'])
+        registry=self.root/'asset-registry.md'
+        registry.write_text(registry.read_text(encoding='utf-8').replace('- status: accepted\n','- status: stale\n',1),encoding='utf-8')
+        self.assertEqual(scene_persona.adopted_identities(self.root,'C01'),[])
     def test_template_registry_record_adopts_the_candidate(self):
         at,digest=self.adopting();self.registry(digest.upper())
         selected=self.ok('select',*at,'--file','selection.json')

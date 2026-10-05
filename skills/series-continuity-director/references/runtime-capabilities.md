@@ -194,9 +194,9 @@ Media transport is part of the binding. A control that names a file by identifie
 
 Surface facts researched for one project are worth keeping. A target profile is the durable half of the evidence: what the surface accepts and how it wants to be addressed, separate from what any one project decided to send it.
 
-Profiles live in the suite as data, one file per exact model under `protocols/target/profiles/`, validated by
+Profiles live in the suite as data, one file per exact model under `targets/profiles/`, validated by
 [`scripts/target_protocol.py`](../scripts/target_protocol.py) against
-[the target-profile schema](../protocols/target/schemas/target-profile.schema.json). Read the profile for the selected
+[the target-profile schema](../targets/schemas/target-profile.schema.json). Read the profile for the selected
 model before writing a director package or an exact submission; write project decisions into the project's
 production state, not into the profile. A project keeps profiles of its own, such as the one `observe_schema.py`
 writes, in a directory such as `target-profiles/`, which `--profiles` reads before the suite's. A profile carries:
@@ -307,7 +307,7 @@ A package is ready when:
 Three records, because three things change at different times.
 
 - A **service record** says how a service is called: endpoint, authentication shape, request envelope, operations, asynchronous delivery and polling, error shape, limits. It lives once, in the `service-profiles` pack resource, and is read from there rather than transcribed (`scripts/service_profile.py`). The record carries one `observed_at` and one `source`: it is refreshed as a whole from the service's documentation, not fact by fact. The operator adds `http_timeout_seconds`, the seconds each network wait may take; it is an operator budget rather than a documented service fact.
-- A **model profile** (`protocols/target/profiles/`) says how a model behaves: prompt contract, camera vocabulary, the meaning of each input mode and which modes exclude each other, anti-patterns, observations. Nothing in it names an endpoint or a service's identifier for the model.
+- A **model profile** (`targets/profiles/`) says how a model behaves: prompt contract, camera vocabulary, the meaning of each input mode and which modes exclude each other, anti-patterns, observations. Nothing in it names an endpoint or a service's identifier for the model.
 - An **offering** inside the model profile says how that model is exposed on one service. It records the service's identifier for the model, the request keys each input mode occupies, and the request shape: where the model identifier, the text and each media reference go. It also records the limits the service enforces for the model (a duration band, a reference count, a geometry rule), with its own `observed_at` and evidence. The same model on another service is a second offering in the same profile, and a submission names the service it will use when the profile lists more than one.
 
 What to update when something changes: a service's endpoint, envelope, or polling behaviour changes the service record; a discovery about how a model reads text or references changes the model profile; a limit a service enforces on a model changes that offering. A new service is one entry in the service record, an offering on every profile it exposes, and a transport: the record's `"transport": "<name>"` selects `scripts/transport_<name>.py`, which implements `scripts/transport_contract.py`, and several records may share one; a model already profiled that a recorded service also exposes is one more offering. A record that fails at the service is refreshed from the documentation and its date updated. Scripts that send read the service record and the offering rather than carrying endpoints, identifiers, or limits of their own, and print the record's observation date beside what they send.

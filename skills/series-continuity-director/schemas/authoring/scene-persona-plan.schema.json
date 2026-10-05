@@ -15,6 +15,12 @@
       "type": "string",
       "minLength": 1
     },
+    "medium": {
+      "enum": [
+        "text",
+        "image"
+      ]
+    },
     "purpose": {
       "type": "string",
       "minLength": 1
@@ -377,6 +383,7 @@
     "material_id",
     "scene_id",
     "scene_source_id",
+    "medium",
     "purpose",
     "conditions",
     "subjects",

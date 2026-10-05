@@ -26,7 +26,7 @@ def fixture(root: Path, *, empty: bool = False, functional: bool = False) -> dic
         source_specs.append({'source_id':'P','path':'persona.md','role':'functional' if functional else 'persona',
                              'subject_ids':['A'],'sha256':m.digest((root/'persona.md').read_bytes()),
                              'reading_basis':'Constructed test: complete applicable model read, including the unquoted context.'})
-    plan = {'material_id':'M','scene_id':'S','scene_source_id':'S','purpose':'Render the stated activity without inventing an obligatory arc.',
+    plan = {'material_id':'M','scene_id':'S','scene_source_id':'S','medium':'text','purpose':'Render the stated activity without inventing an obligatory arc.',
             'conditions':['Only the declared participants and information are in scope.'], 'subjects':subjects,
             'sources':source_specs,'excerpts':[] if empty else [
                 {'excerpt_id':'core','source_id':'P','anchor':'Portrayal','subject_ids':['A'],'depends_on':[],
@@ -128,12 +128,31 @@ class SceneMaterialTests(unittest.TestCase):
     def test_no_persona_model_invented_for_absent_cast(self):
         self.plan=fixture(self.root,empty=True);self.build()
         v=m.decode((self.root/'material/material.json').read_bytes());self.assertEqual(v['subjects'],[])
+    def test_a_scene_realized_as_shots_or_pages_refuses_a_text_material(self):
+        self.build();selector=[{'plan':'plan.json','bundle':'material'}]
+        with self.assertRaisesRegex(ValueError,'M was prepared for text, and a scene realized as shots depicts it'):
+            scene.consume(self.root,selector,self.add,('shots',))
+        self.assertEqual(len(scene.consume(self.root,selector,self.add,('passages',))),1)
+        v=m.decode((self.root/'material/material.json').read_bytes());(self.root/'incoming.json').write_bytes(m.encoded(v))
+        public=[{'artifact':'incoming.json','accepted_content_sha256':v['content_sha256'],
+                 'accepted_by':'fixture-reviewer','acceptance_basis':'Snapshot limitations explicitly accepted.'}]
+        with self.assertRaisesRegex(ValueError,'prepared for text, and a scene realized as pages depicts it'):
+            scene.consume(self.root,public,self.add,('passages','pages'))
+    def test_only_an_image_material_records_an_identity_of_a_persona_subject(self):
+        self.build();v=m.decode((self.root/'material/material.json').read_bytes())
+        v['identities']=[{'subject_id':'A','path':'media/a.png','image_sha256':'1'*64}]
+        self.assertIn('only an image material records an identity image',protocol_contract.validate_artifact(m.sealed(v))['errors'])
+        v['medium']='image';v['identities'][0]['subject_id']='B'
+        self.assertIn('an identity image names no Persona subject: B',protocol_contract.validate_artifact(m.sealed(v))['errors'])
+        v['identities'][0]['subject_id']='A'
+        self.assertTrue(protocol_contract.validate_artifact(m.sealed(v))['ok'])
 
 
 FIXTURES = Path(__file__).resolve().parents[1] / 'examples' / 'submission-gate' / 'fixtures'
 
 
-def form_persona(title: str, *, speech: str = 'plain first person, short sentences', core: bool = True) -> str:
+def form_persona(title: str, *, speech: str = 'plain first person, short sentences', core: bool = True,
+                 appearance: str = 'tall, ink on both cuffs') -> str:
     """A persona in the installed form's shape, cut to the headings a scene reads."""
     answer = (lambda text: ' ' + text) if core else (lambda text: '')
     return (f'---\nkind: persona\nid: x\n---\n# {title}\n\n'
@@ -142,6 +161,8 @@ def form_persona(title: str, *, speech: str = 'plain first person, short sentenc
             '  <!-- Evidence legitimately available in this phase. -->\n\n'
             '## 2. PORTRAYAL IDENTITY\n\n### Established Identity Facts\n\n'
             f'- **identity_core**:{answer("keeps a promise to the letter")}\n\n'
+            '## 4. PHYSICAL\n\n### Appearance & Body\n\n'
+            f'- **appearance**:{" " + appearance if appearance else ""}\n\n'
             '## 7. SPEECH\n\n### Speech Patterns\n\n'
             f'- **first_person**:{answer(speech)}\n\n'
             '## 9. KNOWLEDGE\n\n### Expertise\n\n- **field**: bench repair\n- **hobby**:\n\n'
@@ -178,16 +199,21 @@ class FormPersonaTests(unittest.TestCase):
     def write(self, relative: str, raw: bytes) -> None:
         (self.root / relative).write_bytes(raw)
 
-    def plot(self, chapter: str) -> None:
+    def plot(self, chapter: str, kind: str = 'shots') -> None:
+        """The fixture plot, which realizes its scene as shots, or the same scene as prose passages."""
         from scene_plot import content_sha256
         plot = json.loads((FIXTURES / 'scene-plot.json').read_text(encoding='utf-8'))
         plot.pop('approved')
         plot.update(scene_id='SC01', chapter=chapter, characters=['C01', 'C02'])
+        if kind == 'passages':
+            plot['realization'] = {'kind': 'passages', 'units': [
+                {'id': unit['id'], 'focal_beat': unit['focal_beat'], 'covers': unit['shows'], 'mode': 'scene'}
+                for unit in plot['realization']['units']]}
         plot['approved'] = {'by': 'fixture author', 'at': '2026-09-23T00:00:00Z', 'content_sha256': content_sha256(plot)}
         self.write('narrative/scenes/SC01-plot.json', m.encoded(plot))
 
-    def drafted(self, name: str = 'plan.json') -> dict:
-        result = scene.draft(self.root, 'narrative/scenes/SC01-plot.json', name)
+    def drafted(self, name: str = 'plan.json', medium: str = 'image') -> dict:
+        result = scene.draft(self.root, 'narrative/scenes/SC01-plot.json', name, medium)
         self.assertTrue(result['ok'])
         plan = m.load(self.root, name)
         for source in plan['sources']:
@@ -214,8 +240,46 @@ class FormPersonaTests(unittest.TestCase):
         self.assertEqual(plan['sources'][1]['path'], 'narrative/personas/c01.md')
         self.assertTrue(scene.build(self.root, 'plan.json', 'material')['ok'])
 
+    def test_an_image_carries_the_appearance(self):
+        plan = self.drafted('image.json')
+        anchors = {row['excerpt_id']: row['anchor'] for row in plan['excerpts']}
+        self.assertEqual(anchors['C01-appearance-1'], '4. PHYSICAL > Appearance & Body')
+        built = scene.build(self.root, 'image.json', 'image')
+        self.assertEqual((built['medium'], built['identities']), ('image', []))
+        self.assertIn('Medium: image', (self.root / 'image/persona.md').read_text(encoding='utf-8'))
+        plan['excerpts'] = [row for row in plan['excerpts'] if row['excerpt_id'] != 'C02-appearance-1']
+        (self.root / 'image.json').write_bytes(m.encoded(plan))
+        with self.assertRaisesRegex(ValueError, 'C02: the material leaves out .* of the appearance an image depicts'):
+            scene.build(self.root, 'image.json', 'missing')
+        self.write('narrative/personas/c02.md', form_persona('C02', appearance='').encode('utf-8'))
+        self.drafted('blank.json')
+        with self.assertRaisesRegex(ValueError, "C02: the appearance an image depicts '4. PHYSICAL > Appearance & Body' .* is blank"):
+            scene.build(self.root, 'blank.json', 'blank')
+
+    def test_a_text_material_names_no_appearance(self):
+        self.plot('ch1', kind='passages')
+        plan = self.drafted('text.json', medium='text')
+        self.assertNotIn('4. PHYSICAL > Appearance & Body', {row['anchor'] for row in plan['excerpts']})
+        built = scene.build(self.root, 'text.json', 'text')
+        self.assertEqual((built['medium'], built['identities']), ('text', []))
+        self.assertIn('Medium: text', (self.root / 'text/persona.md').read_text(encoding='utf-8'))
+
+    def test_the_scene_plot_decides_the_medium(self):
+        with self.assertRaisesRegex(ValueError, 'realizes SC01 as shots, which is image; draft its material with --medium image'):
+            scene.draft(self.root, 'narrative/scenes/SC01-plot.json', 'text.json', 'text')
+        self.drafted()
+        self.plot('ch1', kind='passages')
+        plan = m.load(self.root, 'plan.json')
+        plan['sources'][0]['sha256'] = m.digest((self.root / 'narrative/scenes/SC01-plot.json').read_bytes())
+        (self.root / 'plan.json').write_bytes(m.encoded(plan))
+        with self.assertRaisesRegex(ValueError, 'SC01-persona is prepared for image, and the scene plot realizes SC01 '
+                                                'as passages, which is text'):
+            scene.build(self.root, 'plan.json', 'material')
+        with self.assertRaisesRegex(ValueError, 'realizes SC01 as passages, which is text'):
+            scene.draft(self.root, 'narrative/scenes/SC01-plot.json', 'image.json', 'image')
+
     def test_an_unfilled_draft_is_refused(self):
-        scene.draft(self.root, 'narrative/scenes/SC01-plot.json', 'raw.json')
+        scene.draft(self.root, 'narrative/scenes/SC01-plot.json', 'raw.json', 'image')
         with self.assertRaisesRegex(ValueError, 'placeholder not filled: .*purpose'):
             scene.build(self.root, 'raw.json', 'material')
 

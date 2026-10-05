@@ -320,7 +320,7 @@ python scripts/viewpoint_protocol.py build-ledger --scene-plan PROJECT/shots/sce
 
 ## Target commands
 
-`target_protocol.py` reads the durable per-model surface facts under `protocols/target/profiles`. The top level of a profile records what one model accepts on any service; each offering records one service's identifier, request keys, request shape and limits. [`protocols/target/README.md`](../protocols/target/README.md) gives the shape.
+`target_protocol.py` reads the durable per-model surface facts under `targets/profiles`. The top level of a profile records what one model accepts on any service; each offering records one service's identifier, request keys, request shape and limits. [`targets/README.md`](../targets/README.md) gives the shape.
 
 | Subcommand | Inputs | Output and side effects | Failure boundary |
 |---|---|---|---|
@@ -333,7 +333,7 @@ python scripts/viewpoint_protocol.py build-ledger --scene-plan PROJECT/shots/sce
 Example:
 
 ```text
-python scripts/target_protocol.py seal protocols/target/profiles/minimax-h3.json
+python scripts/target_protocol.py seal targets/profiles/minimax-h3.json
 python scripts/validate_target_protocol.py
 ```
 
@@ -387,7 +387,7 @@ python scripts/reference_activation_gate.py PROJECT/handoff/SH04.activation.json
 | `validate_viewpoint_protocol.py` | Read-only protocol and fixture validation. |
 | `validate_integration.py` | Read-only bundled declarations and explicitly supplied public payload validation. |
 | `refusal_coverage.py <reader> <suite>...` | Read-only. Lists every refusal a reader can make that no case in the named suites asserts a fragment of. A refusal nothing names can be deleted with every suite still green, which is the one failure a suite cannot report about itself. `validate_skill.py` runs it over `narrative.py` and `scene_plot.py`. |
-| `seal_contract.py [--check]` | Seals `protocols/narrative/README.md` against the files it publishes: writes the digest of the prose into `narrative.py`, then republishes the hash of every file the contract's block lists. Also rewrites `protocols/contract-manifest.json` with the byte hash of each registered schema and of the semantics document, and the digest of the set. Run it after editing the contract, a published reader, the corpus or a public schema; `--check` says whether sealing would move anything and writes nothing. |
+| `seal_contract.py [--check]` | Seals `references/narrative-protocol.md` against the files it publishes: writes the digest of the prose into `narrative.py`, then republishes the hash of every file the contract's block lists. Also rewrites `protocols/contract-manifest.json` with the byte hash of each listed schema, template and document, of the semantics document and of the validator `protocol_contract.py`, and the digest of the set. Run it after editing the contract, a published reader, the corpus or a public schema; `--check` says whether sealing would move anything and writes nothing. |
 | `narrative_corpus.py [--check]` | Writes `narrative_corpus.json`: the documents in the case tables of the narrative and scene plot suites, each with the verdict the contract requires of it, so that an implementation elsewhere is checked against the verdicts and not against a resemblance to the readers. `--check` refuses a corpus that is not what those tables write, or a verdict in it the readers here do not reach. `validate_skill.py` runs the check. |
 | `validate_test_cases.py` | Executes and classifies the numbered regression catalog. |
 | `validate_knowledge_integrity.py` | Read-only knowledge and template integrity validation. |
@@ -449,7 +449,7 @@ These checks are run by `validate_skill.py`.
 
 ## Reusable authoring and observed execution
 
-- `scene_persona.py`: draft a plan from a scene plot, prepare exact scene definitions by heading and field, verify whole originals, and list the scenes a Persona change reaches; output JSON and Markdown.
+- `scene_persona.py`: draft a plan from a scene plot for a text or an image material, prepare exact scene definitions by heading and field, record the adopted identity image an image depicts, verify whole originals, and list the scenes a Persona change reaches; output JSON and Markdown.
 - `persona_units.py FILE [--anchor A]`: list every heading and field of a Markdown definition with whether it carries an answer, or print the text an anchor names.
 - `source_material.py`: retain original bytes and authored segmentation; attach actual source spans to extraction candidates.
 - `agent_evaluation.py`: inspect an explicit host command plan, execute only the approved plan, retain logs/outputs and unknown metrics.

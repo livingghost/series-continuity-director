@@ -3,8 +3,8 @@
 
 Two roots exist and they are not the same.
 
-  SUITE  the skill: SKILL.md, references/, scripts/, protocols/, assets/,
-         examples/, adapters/, agents/
+  SUITE  the skill: SKILL.md, references/, scripts/, protocols/, targets/,
+         assets/, examples/, adapters/, agents/
   REPO   the repository, which is also the plugin root: README.md, LICENSE,
          CONTRIBUTING.md, CHANGELOG.md, package-manifest.toml, and the generated
          host files beside them
@@ -43,6 +43,7 @@ SUITE_DIRECTORIES = (
     "protocols",
     "references",
     "scripts",
+    "targets",
 )
 
 MANIFEST_NAME = "package-manifest.toml"

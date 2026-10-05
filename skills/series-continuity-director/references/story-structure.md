@@ -82,7 +82,7 @@ The proposition explains why the scene exists. It is not target-facing text.
 ## 6. Narrative
 
 The full field list for both artifacts is published once, in
-[the narrative protocol](../protocols/narrative/README.md), with the turn every tradition
+[the narrative protocol](narrative-protocol.md), with the turn every tradition
 shares, the profiles a series may declare, the three media a scene is realized in, and the
 focalization it is told through. This section is why each of those is there.
 

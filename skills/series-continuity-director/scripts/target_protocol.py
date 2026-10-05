@@ -13,7 +13,7 @@ from integration_contract import canonical_json
 from schema_engine import validate_against_schema as _validate_against_schema
 
 ROOT = Path(__file__).resolve().parents[1]
-PROTOCOL_DIR = ROOT / "protocols" / "target"
+PROTOCOL_DIR = ROOT / "targets"
 SCHEMA_DIR = PROTOCOL_DIR / "schemas"
 PROFILE_DIR = PROTOCOL_DIR / "profiles"
 MANIFEST = PROTOCOL_DIR / "protocol-manifest.json"

@@ -111,6 +111,7 @@ def snapshot(root: Path, task_path: str) -> tuple[dict[str,Any],dict[str,Any],li
     import route_reading
     reading=c.decode(add(root,task['route_reading'],'project'))
     issuance=route_reading.require_route_reading(reading,project=root,routes={task['route']},features=task['features'])
+    realizations=[]
     for source in task['sources']:
         raw=add(root,source['path'],'project')
         if source['disposition']!='applied': continue
@@ -141,6 +142,7 @@ def snapshot(root: Path, task_path: str) -> tuple[dict[str,Any],dict[str,Any],li
             from scene_plot import validate_scene_plot
             report=validate_scene_plot(c.decode(raw))
             if not report['ok']: raise ValueError('invalid scene plot: '+str(report['errors']))
+            realizations.append(report['realization'])
         elif source['role']=='public-artifact':
             from protocol_contract import validate_artifact
             report=validate_artifact(c.decode(raw))
@@ -155,9 +157,9 @@ def snapshot(root: Path, task_path: str) -> tuple[dict[str,Any],dict[str,Any],li
             if c.digest(add(root,asset['path'],'project'))!=asset['sha256']:
                 raise ValueError('sequence asset changed during preparation')
     import scene_persona
-    scene_materials = scene_persona.consume(root, task.get('scene_materials', []), add)
+    scene_materials = scene_persona.consume(root, task.get('scene_materials', []), add, realizations)
     skill_files={execution_routes.MANIFEST} | {x['path'] for x in route['reads']}
-    for parent,glob in [('scripts','*.py'),('schemas','*.json'),('protocols','*.json')]:
+    for parent,glob in [('scripts','*.py'),('schemas','*.json'),('protocols','*.json'),('targets','*.json')]:
         skill_files.update(f.relative_to(ROOT).as_posix() for f in (ROOT/parent).rglob(glob))
     for path in sorted(skill_files): add(ROOT,path,'skill')
     consumer={'route':task['route'],'transport':task['delivery']['transport'],'instructions':delivery,

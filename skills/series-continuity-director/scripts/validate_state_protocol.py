@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tomllib
@@ -18,7 +19,22 @@ EXAMPLE = ROOT / "examples" / "mixed-viewpoint-workshop"
 GENERATED = EXAMPLE / "generated"
 
 sys.path.insert(0, str(ROOT / "scripts"))
+from protocol_contract import ZERO_SHA256  # noqa: E402
 from state_protocol import artifact_hash, load_json, load_jsonl, validate_artifact  # noqa: E402
+
+HEX64 = re.compile(r"[0-9a-fA-F]{64}")
+
+
+def real_hashes(value: Any, path: str = "$") -> Iterable[str]:
+    """Each 64-hex string in a template other than the all-zero placeholder, under any key."""
+    if isinstance(value, dict):
+        for key, child in value.items():
+            yield from real_hashes(child, f"{path}.{key}")
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            yield from real_hashes(child, f"{path}[{index}]")
+    elif isinstance(value, str) and HEX64.fullmatch(value) and value != ZERO_SHA256:
+        yield f"{path}: {value}"
 
 
 def walk_refs(value: Any) -> Iterable[str]:
@@ -42,7 +58,7 @@ def main() -> int:
     except Exception as exc:
         print(json.dumps({"ok": False, "errors": [str(exc)]}, indent=2))
         return 1
-    from protocol_exchange import check_installed
+    from protocol_contract import check_installed
     try:
         check_installed()
     except (ValueError, OSError) as exc:
@@ -77,6 +93,8 @@ def main() -> int:
         except Exception as exc:
             errors.append(f"{path.relative_to(ROOT)}: invalid template: {exc}")
             continue
+        errors.extend(f"{path.relative_to(ROOT)}: a template carries the all-zero placeholder for every hash, "
+                      f"found {found}" for found in real_hashes(value))
         if value.get("artifact_type"):
             validated_templates += 1
             report = validate_artifact(value, allow_placeholder_hashes=True)

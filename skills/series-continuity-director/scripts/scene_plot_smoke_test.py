@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check that this side's scene plot reader reaches the verdict each rule is for.
 
-The contract is published in `protocols/narrative/README.md`, and every rule
+The contract is published in `references/narrative-protocol.md`, and every rule
 it states has a case here, so a rule that stops firing is caught by the case
 written for it rather than by a count that still adds up.
 

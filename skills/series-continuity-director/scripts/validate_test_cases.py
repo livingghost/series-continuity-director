@@ -536,6 +536,7 @@ def case_64() -> list[str]:
         envelope = I.finalize({
             "artifact_type": "interchange-envelope",
             "envelope_id": "IE-CASE-64",
+            "contract_set_sha256": I.installed_contract_set_sha256(),
             "contract_profile": profile["profile"],
             "profile_sha256": profile["profile_sha256"],
             "origin": {

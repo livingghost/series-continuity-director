@@ -19,7 +19,7 @@ from __future__ import annotations
 # The contract this reader answers, over the document with the block that
 # publishes this file's own hash removed. Without that cut the two would
 # each feed the other and neither could be computed.
-CONTRACT_SHA256 = "d8de7a0b5ed87aee5bb6ca29c907a8c347262b5abe87d69e7fed098ae5d7cc2f"
+CONTRACT_SHA256 = "b0ce5e92ef1c35604127c403438430bb2c253b68e1b27f8ced7f66cae1dd3152"
 
 import argparse
 import difflib

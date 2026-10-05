@@ -1,6 +1,5 @@
 {
-  "protocol": "series-viewpoint-protocol",
-  "default_profile": "external-character-aligned-third-person",
+  "protocol": "viewpoint",
   "artifact_types": [
     "scene-viewpoint-plan",
     "shot-camera-spec",
@@ -10,22 +9,16 @@
     "viewpoint-profile",
     "viewpoint-transition"
   ],
+  "supporting_schemas": [],
+  "ownership": "Assigned by the project; application identity does not confer authority.",
+  "registry": "../contract-manifest.json",
   "profile_files": [
+    "profiles/embodied-first-person.json",
     "profiles/external-character-aligned-third-person.json",
     "profiles/external-objective-third-person.json",
     "profiles/external-omniscient-third-person.json",
-    "profiles/over-the-shoulder.json",
-    "profiles/embodied-first-person.json",
+    "profiles/fixed-diegetic-observer.json",
     "profiles/held-device-first-person.json",
-    "profiles/fixed-diegetic-observer.json"
-  ],
-  "principles": {
-    "third_person_primary": true,
-    "viewpoint_selected_per_shot": true,
-    "camera_ownership_separate_from_knowledge_scope": true,
-    "audition_separate_from_camera": true,
-    "viewpoint_switch_is_continuity_event": true,
-    "state_does_not_change_from_viewpoint_switch_alone": true
-  },
-  "supporting_schemas": []
+    "profiles/over-the-shoulder.json"
+  ]
 }

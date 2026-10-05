@@ -85,7 +85,7 @@ Find the action about to be performed and read those files before performing it.
 | Build, inspect or revise timed material and an assembled interval | `timed-production.md`, `production-execution.md` |
 | Create or rename a full persona, world or intent record | `narrative-authoring.md`, `story-structure.md` |
 | Add a person to the cast, or decide how much of a persona a scene needs | `story-structure.md` section 6, `scene-persona.md` |
-| Settle or revise what the series is about, its arcs, chapters, characters, promises, questions, or who knows what | `story-structure.md` section 6, `continuity-core.md` |
+| Settle or revise what the series is about, its arcs, chapters, characters, promises, questions, or who knows what | `story-structure.md` section 6, `narrative-protocol.md`, `continuity-core.md` |
 | Plan or revise a scene or episode | `story-structure.md` sections 6 and 7, `continuity-core.md`, `blocking-and-coverage.md` |
 | Break a scene into shots, pages or passages and choose coverage | `viewpoint-profiles.md`, `blocking-and-coverage.md`, `shot-continuity.md` |
 | Choose whose viewpoint a scene or shot takes, or switch it between shots | `viewpoint-profiles.md`, `viewpoint-transitions.md` |
@@ -231,8 +231,9 @@ itself must still have happened. Ordinary wording changes inside the reviewed
 scene scope proceed on the existing reading. The code validates integrity and
 declared links; understanding the scene stays the reader's work. The verified
 bundle is also the record that the Persona is ready for this use, at this phase
-and in this medium; it says nothing about the Persona's completeness elsewhere,
-which the Persona Template's completion rule governs for a release.
+and in the medium the material names, `text` or `image`; it says nothing about
+the Persona's completeness elsewhere, which the Persona Template's completion
+rule governs for a release.
 
 An intact source digest proves the sources unchanged and nothing about a
 creative direction the scene has yet to record. Section 3 traces a changed
@@ -257,6 +258,7 @@ A plan uses `schemas/authoring/scene-persona-plan.schema.json`. It names:
   portrayal basis (no human, speech or cast-size requirement);
 - each definition by its anchor in a Markdown source, its declared definition
   dependencies and why it applies;
+- the medium: `text`, or `image` for any depiction, a picture or a video;
 - scene applications, directional interactions, constraints, unknowns and conditions
   that reopen preparation;
 - a preparation review with its author, basis, readiness, remaining limitations
@@ -275,25 +277,35 @@ Markdown source it read, quoted or not. Section 3 compares a later Persona
 against that record.
 
 A Persona written in the installed form carries a core in every scene: the
-anchors `config/persona-core.json` names, which are the portrayal identity, what
-the person knows at this point, the speech baseline and the prohibitions. The
-build refuses a material that leaves part of the core out, and a core with no
-answer in it. Fill the core before a scene relies on it, and fill the rest of
-the form as scenes need it. A Persona in a custom format names no core.
+`anchors` of `config/persona-core.json`, which are the portrayal identity, what
+the person knows at this point, the speech baseline and the prohibitions. An
+image material also carries its `depiction_anchors`, the appearance, for each
+character without an adopted identity image. The build refuses a material that
+leaves part of the core or the appearance out, and one with no answer in it.
+Fill the core before a scene relies on it, and fill the rest of the form as
+scenes need it. A Persona in a custom format names no core.
 
-When the scene source is a scene plot and the project's narrative declares
-persona phases, each Persona subject reads the file of the phase its chapter
-falls in, and the build refuses another.
+An adopted identity image holds the appearance: an asset the registry accepts
+in the role `<character>/identity` through a production selection with
+influence `identity`. An image material records each such image by its path
+and SHA-256 under `identities`. `verify` and production refuse the material
+when that image is no longer accepted or its bytes differ.
+
+When the scene source is a scene plot, its `realization.kind` decides the
+medium: shots and pages make an image, and passages make text. `draft` and the
+build refuse the other medium. When the project's narrative declares persona
+phases, each Persona subject reads the file of the phase its chapter falls in,
+and the build refuses another.
 
 `draft` writes a plan from a scene plot: each character's Persona for that
-chapter, its core, the Important People table, and the relationship block for
-each other character in the scene. Every value the author writes is a
-`<fill: ...>` placeholder that the build refuses. After reading the Persona in
-full, add the definitions the scene's topics, knowledge and voice modes need,
-and write the applications.
+chapter, its core, the appearance an image needs, the Important People table,
+and the relationship block for each other character in the scene. Every value
+the author writes is a `<fill: ...>` placeholder that the build refuses. After
+reading the Persona in full, add the definitions the scene's topics, knowledge
+and voice modes need, and write the applications.
 
 ```bash
-python scripts/scene_persona.py draft --root PROJECT --scene-plot narrative/scenes/SC01-plot.json --out work/scene-persona/SC01.plan.json
+python scripts/scene_persona.py draft --root PROJECT --scene-plot narrative/scenes/SC01-plot.json --medium image --out work/scene-persona/SC01.plan.json
 python scripts/scene_persona.py inspect --root PROJECT --plan work/scene-persona/SC01.plan.json
 python scripts/scene_persona.py build --root PROJECT --plan work/scene-persona/SC01.plan.json --out work/scene-persona/SC01
 python scripts/scene_persona.py verify --root PROJECT --plan work/scene-persona/SC01.plan.json --bundle work/scene-persona/SC01 --require-ready
@@ -379,7 +391,9 @@ Add `scene-persona` to `features` and name the material explicitly:
 
 Preparation validates the complete sources and exact derived files, pins them
 into the production dependencies, and places the text in `consumer.json` under
-`authoring_materials`. The production direction, reviews, authorization and
+`authoring_materials`. A task whose applied scene plot realizes the scene as
+shots or pages refuses a material prepared for text; rebuild it with medium
+`image`. The production direction, reviews, authorization and
 canonical owners still apply. The prepared authoring material is **not** a
 generation prompt. Form the actual rendition under the existing viewpoint and
 delivery rules instead of attaching the material wholesale to a media tool, and
@@ -2214,7 +2228,7 @@ The proposition explains why the scene exists. It is not target-facing text.
 ## 6. Narrative
 
 The full field list for both artifacts is published once, in
-[the narrative protocol](../protocols/narrative/README.md), with the turn every tradition
+[the narrative protocol](../references/narrative-protocol.md), with the turn every tradition
 shares, the profiles a series may declare, the three media a scene is realized in, and the
 focalization it is told through. This section is why each of those is there.
 
@@ -3784,9 +3798,9 @@ Media transport is part of the binding. A control that names a file by identifie
 
 Surface facts researched for one project are worth keeping. A target profile is the durable half of the evidence: what the surface accepts and how it wants to be addressed, separate from what any one project decided to send it.
 
-Profiles live in the suite as data, one file per exact model under `protocols/target/profiles/`, validated by
+Profiles live in the suite as data, one file per exact model under `targets/profiles/`, validated by
 [`scripts/target_protocol.py`](../scripts/target_protocol.py) against
-[the target-profile schema](../protocols/target/schemas/target-profile.schema.json). Read the profile for the selected
+[the target-profile schema](../targets/schemas/target-profile.schema.json). Read the profile for the selected
 model before writing a director package or an exact submission; write project decisions into the project's
 production state, not into the profile. A project keeps profiles of its own, such as the one `observe_schema.py`
 writes, in a directory such as `target-profiles/`, which `--profiles` reads before the suite's. A profile carries:
@@ -3897,7 +3911,7 @@ A package is ready when:
 Three records, because three things change at different times.
 
 - A **service record** says how a service is called: endpoint, authentication shape, request envelope, operations, asynchronous delivery and polling, error shape, limits. It lives once, in the `service-profiles` pack resource, and is read from there rather than transcribed (`scripts/service_profile.py`). The record carries one `observed_at` and one `source`: it is refreshed as a whole from the service's documentation, not fact by fact. The operator adds `http_timeout_seconds`, the seconds each network wait may take; it is an operator budget rather than a documented service fact.
-- A **model profile** (`protocols/target/profiles/`) says how a model behaves: prompt contract, camera vocabulary, the meaning of each input mode and which modes exclude each other, anti-patterns, observations. Nothing in it names an endpoint or a service's identifier for the model.
+- A **model profile** (`targets/profiles/`) says how a model behaves: prompt contract, camera vocabulary, the meaning of each input mode and which modes exclude each other, anti-patterns, observations. Nothing in it names an endpoint or a service's identifier for the model.
 - An **offering** inside the model profile says how that model is exposed on one service. It records the service's identifier for the model, the request keys each input mode occupies, and the request shape: where the model identifier, the text and each media reference go. It also records the limits the service enforces for the model (a duration band, a reference count, a geometry rule), with its own `observed_at` and evidence. The same model on another service is a second offering in the same profile, and a submission names the service it will use when the profile lists more than one.
 
 What to update when something changes: a service's endpoint, envelope, or polling behaviour changes the service record; a discovery about how a model reads text or references changes the model profile; a limit a service enforces on a model changes that offering. A new service is one entry in the service record, an offering on every profile it exposes, and a transport: the record's `"transport": "<name>"` selects `scripts/transport_<name>.py`, which implements `scripts/transport_contract.py`, and several records may share one; a model already profiled that a recorded service also exposes is one more offering. A record that fails at the service is refreshed from the documentation and its date updated. Scripts that send read the service record and the offering rather than carrying endpoints, identifiers, or limits of their own, and print the record's observation date beside what they send.
@@ -7928,7 +7942,7 @@ Validate the exact request and its referenced files with `scripts/shot_request.p
 
 ### The narrative contract
 
-[The narrative protocol](../protocols/narrative/README.md) describes what the series is about. The author controls the narrative; the agent can propose and edit it under that direction. `scripts/narrative.py`, persona records and `scripts/scene_plot.py` read the production's narrative and scene evidence. Screen scenes are realized as shots, comics as pages and panels, and prose as passages. Derive each shot's purpose and permitted disclosure from its approved scene plot.
+[The narrative protocol](../references/narrative-protocol.md) describes what the series is about. The author controls the narrative; the agent can propose and edit it under that direction. `scripts/narrative.py`, persona records and `scripts/scene_plot.py` read the production's narrative and scene evidence. Screen scenes are realized as shots, comics as pages and panels, and prose as passages. Derive each shot's purpose and permitted disclosure from its approved scene plot.
 
 ### Where the shot came from
 
@@ -7971,7 +7985,7 @@ Preserve the candidate and the observation. Present returned work before reviewi
 
 ## 8. Public artifact delivery
 
-When the request includes artifact exchange, select the artifact type, required features and exact referenced content. Use `scripts/protocol_exchange.py` to inspect or export the artifact with its schema contract, and to verify a received bundle. `protocols/contract-manifest.json` lists the public types and `config/protocol-layout.json` resolves their schemas.
+When the request includes artifact exchange, select the artifact type, required features and exact referenced content. Use `scripts/protocol_exchange.py` to inspect or export the artifact with its schema contract, and to verify a received bundle. `protocols/contract-manifest.json` lists the public types and their schemas.
 
 For profile-aware exchange, `scripts/build_interchange_envelope.py` writes `artifact.json`, `declaration.json` and `envelope.json`. Validation checks the profile, identifiers, required features and content commitments. Preserve unknown optional features as uninterpreted evidence; stop if a required feature cannot be interpreted.
 

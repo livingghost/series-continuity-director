@@ -29,8 +29,9 @@ itself must still have happened. Ordinary wording changes inside the reviewed
 scene scope proceed on the existing reading. The code validates integrity and
 declared links; understanding the scene stays the reader's work. The verified
 bundle is also the record that the Persona is ready for this use, at this phase
-and in this medium; it says nothing about the Persona's completeness elsewhere,
-which the Persona Template's completion rule governs for a release.
+and in the medium the material names, `text` or `image`; it says nothing about
+the Persona's completeness elsewhere, which the Persona Template's completion
+rule governs for a release.
 
 An intact source digest proves the sources unchanged and nothing about a
 creative direction the scene has yet to record. Section 3 traces a changed
@@ -55,6 +56,7 @@ A plan uses `schemas/authoring/scene-persona-plan.schema.json`. It names:
   portrayal basis (no human, speech or cast-size requirement);
 - each definition by its anchor in a Markdown source, its declared definition
   dependencies and why it applies;
+- the medium: `text`, or `image` for any depiction, a picture or a video;
 - scene applications, directional interactions, constraints, unknowns and conditions
   that reopen preparation;
 - a preparation review with its author, basis, readiness, remaining limitations
@@ -73,25 +75,35 @@ Markdown source it read, quoted or not. Section 3 compares a later Persona
 against that record.
 
 A Persona written in the installed form carries a core in every scene: the
-anchors `config/persona-core.json` names, which are the portrayal identity, what
-the person knows at this point, the speech baseline and the prohibitions. The
-build refuses a material that leaves part of the core out, and a core with no
-answer in it. Fill the core before a scene relies on it, and fill the rest of
-the form as scenes need it. A Persona in a custom format names no core.
+`anchors` of `config/persona-core.json`, which are the portrayal identity, what
+the person knows at this point, the speech baseline and the prohibitions. An
+image material also carries its `depiction_anchors`, the appearance, for each
+character without an adopted identity image. The build refuses a material that
+leaves part of the core or the appearance out, and one with no answer in it.
+Fill the core before a scene relies on it, and fill the rest of the form as
+scenes need it. A Persona in a custom format names no core.
 
-When the scene source is a scene plot and the project's narrative declares
-persona phases, each Persona subject reads the file of the phase its chapter
-falls in, and the build refuses another.
+An adopted identity image holds the appearance: an asset the registry accepts
+in the role `<character>/identity` through a production selection with
+influence `identity`. An image material records each such image by its path
+and SHA-256 under `identities`. `verify` and production refuse the material
+when that image is no longer accepted or its bytes differ.
+
+When the scene source is a scene plot, its `realization.kind` decides the
+medium: shots and pages make an image, and passages make text. `draft` and the
+build refuse the other medium. When the project's narrative declares persona
+phases, each Persona subject reads the file of the phase its chapter falls in,
+and the build refuses another.
 
 `draft` writes a plan from a scene plot: each character's Persona for that
-chapter, its core, the Important People table, and the relationship block for
-each other character in the scene. Every value the author writes is a
-`<fill: ...>` placeholder that the build refuses. After reading the Persona in
-full, add the definitions the scene's topics, knowledge and voice modes need,
-and write the applications.
+chapter, its core, the appearance an image needs, the Important People table,
+and the relationship block for each other character in the scene. Every value
+the author writes is a `<fill: ...>` placeholder that the build refuses. After
+reading the Persona in full, add the definitions the scene's topics, knowledge
+and voice modes need, and write the applications.
 
 ```bash
-python scripts/scene_persona.py draft --root PROJECT --scene-plot narrative/scenes/SC01-plot.json --out work/scene-persona/SC01.plan.json
+python scripts/scene_persona.py draft --root PROJECT --scene-plot narrative/scenes/SC01-plot.json --medium image --out work/scene-persona/SC01.plan.json
 python scripts/scene_persona.py inspect --root PROJECT --plan work/scene-persona/SC01.plan.json
 python scripts/scene_persona.py build --root PROJECT --plan work/scene-persona/SC01.plan.json --out work/scene-persona/SC01
 python scripts/scene_persona.py verify --root PROJECT --plan work/scene-persona/SC01.plan.json --bundle work/scene-persona/SC01 --require-ready
@@ -177,7 +189,9 @@ Add `scene-persona` to `features` and name the material explicitly:
 
 Preparation validates the complete sources and exact derived files, pins them
 into the production dependencies, and places the text in `consumer.json` under
-`authoring_materials`. The production direction, reviews, authorization and
+`authoring_materials`. A task whose applied scene plot realizes the scene as
+shots or pages refuses a material prepared for text; rebuild it with medium
+`image`. The production direction, reviews, authorization and
 canonical owners still apply. The prepared authoring material is **not** a
 generation prompt. Form the actual rendition under the existing viewpoint and
 delivery rules instead of attaching the material wholesale to a media tool, and

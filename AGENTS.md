@@ -11,7 +11,7 @@ Generated file. Edit `hosts/shared/repository-guide.md.template`.
   hosts/                                        templates and hook sources
   .github/
   skills/series-continuity-director/
-      SKILL.md references/ scripts/ protocols/ config/ assets/ examples/ adapters/ agents/
+      SKILL.md references/ scripts/ protocols/ targets/ config/ assets/ examples/ adapters/ agents/
 ```
 
 `skills/series-continuity-director/` is the skill, and the only copy of it.
@@ -38,7 +38,7 @@ and only the second one binds.
 | Build, inspect or revise timed material and an assembled interval | `timed-production.md`, `production-execution.md` |
 | Create or rename a full persona, world or intent record | `narrative-authoring.md`, `story-structure.md` |
 | Add a person to the cast, or decide how much of a persona a scene needs | `story-structure.md` section 6, `scene-persona.md` |
-| Settle or revise what the series is about, its arcs, chapters, characters, promises, questions, or who knows what | `story-structure.md` section 6, `continuity-core.md` |
+| Settle or revise what the series is about, its arcs, chapters, characters, promises, questions, or who knows what | `story-structure.md` section 6, `narrative-protocol.md`, `continuity-core.md` |
 | Plan or revise a scene or episode | `story-structure.md` sections 6 and 7, `continuity-core.md`, `blocking-and-coverage.md` |
 | Break a scene into shots, pages or passages and choose coverage | `viewpoint-profiles.md`, `blocking-and-coverage.md`, `shot-continuity.md` |
 | Choose whose viewpoint a scene or shot takes, or switch it between shots | `viewpoint-profiles.md`, `viewpoint-transitions.md` |
@@ -100,7 +100,7 @@ It reports facts that the selected contracts cannot establish as unmeasured.
 The designated reviewer evaluates wording, depicted features, and artistic quality.
 
 It knows no provider. The submission names a target, and its profile under
-`skills/series-continuity-director/protocols/target/profiles/` names the model's input modes and which
+`skills/series-continuity-director/targets/profiles/` names the model's input modes and which
 exclude each other. A submission that names a service adds that service's offering:
 its request keys and request shape. The gate compares the two. A surface it has never seen is supported by adding a
 profile, not by editing the gate.

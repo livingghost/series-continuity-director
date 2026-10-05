@@ -1,6 +1,5 @@
 {
-  "protocol": "shared-state-protocol",
-  "canonical_event_store": "state/events.jsonl",
+  "protocol": "shared-state",
   "artifact_types": [
     "adoption-receipt",
     "appearance-adaptation-proposal",
@@ -56,21 +55,6 @@
     "production-spec.schema.json",
     "resolved-morphology.schema.json"
   ],
-  "ownership": {
-    "visual_contracts": "the visual-contract-package",
-    "approved_events_and_chronology": "Series Continuity Director",
-    "asset_adoption_and_lineage": "Series Continuity Director",
-    "exact_target_bindings_and_observations": "Series Continuity Director",
-    "snapshots_and_projections": "derived",
-    "species_and_individual_morphology_contracts": "the visual-contract-package",
-    "time_dependent_morphology_state": "Series Continuity Director events within approved mutable paths",
-    "shot_resolved_morphology": "derived from shared evidence by whatever resolves a shot-request"
-  },
-  "canon_gate": "Only explicit user approval or an accepted visible or audible story event can create approved canon.",
-  "morphology_layers": [
-    "species-morphology-profile",
-    "individual-morphology-contract",
-    "resolved-morphology"
-  ],
-  "integration_boundary": "protocols/interchange/integration-capabilities.json"
+  "ownership": "Assigned by the project; application identity does not confer authority.",
+  "registry": "../contract-manifest.json"
 }

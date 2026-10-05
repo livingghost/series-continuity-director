@@ -61,7 +61,7 @@ import submission_gate  # noqa: E402
 import transport_contract  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PROFILES = ROOT / "protocols" / "target" / "profiles"
+DEFAULT_PROFILES = ROOT / "targets" / "profiles"
 
 
 def api_key(service: dict[str, Any]) -> str:

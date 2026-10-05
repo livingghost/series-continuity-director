@@ -110,8 +110,8 @@ class ProfileImportTests(AcquisitionTests):
             cli.profile_destination(self.root,cli.target_protocol.PROFILE_DIR)
         suite=cli.target_protocol.ROOT.resolve()
         with self.assertRaisesRegex(ValueError,'shipped profiles'):
-            cli.profile_destination(suite,Path('protocols/target/profiles'))
-        self.assertEqual(cli.profile_destination(suite,Path('protocols/target/profiles'),suite_maintenance=True),
+            cli.profile_destination(suite,Path('targets/profiles'))
+        self.assertEqual(cli.profile_destination(suite,Path('targets/profiles'),suite_maintenance=True),
                          cli.target_protocol.PROFILE_DIR.resolve())
     def test_schema_command_keeps_public_profile_unchanged(self):
         import observe_schema as cli

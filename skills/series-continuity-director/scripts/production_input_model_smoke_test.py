@@ -21,7 +21,7 @@ class ModelInputTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         # Use the declared public shape as test data. Nothing contacts its provider.
-        profiles = inputs.ROOT / 'protocols/target/profiles'
+        profiles = inputs.ROOT / 'targets/profiles'
         self.profile = next(value for value in (c.load(path) for path in sorted(profiles.glob('*.json')))
                             if 'image' in value['media_kind'] and value.get('offerings'))
         offering = self.profile['offerings'][0]

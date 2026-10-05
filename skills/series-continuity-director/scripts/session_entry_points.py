@@ -327,7 +327,7 @@ def next_actions(project: Path) -> list[str]:
         # A fresh narrative is empty tables, not blanks, and there is nothing to approve yet.
         actions.append(
             f"Write what the series is about in {narrative_path}: its themes, characters, arcs and "
-            f"chapters, in the shape {ROOT / 'protocols' / 'narrative' / 'README.md'} gives, then have "
+            f"chapters, in the shape {ROOT / 'references' / 'narrative-protocol.md'} gives, then have "
             "the author approve it"
         )
     elif blanks:

@@ -215,9 +215,8 @@ def _linked(path: Path) -> bool:
         info = os.lstat(path)
     except OSError:
         return False
-    # Only Windows reports a reparse tag, and only Windows defines the junction tag.
-    tag = getattr(info, "st_reparse_tag", None)
-    return stat.S_ISLNK(info.st_mode) or (tag is not None and tag == stat.IO_REPARSE_TAG_MOUNT_POINT)
+    # Windows alone reports a reparse tag and defines the junction tag.
+    return stat.S_ISLNK(info.st_mode) or (os.name == "nt" and info.st_reparse_tag == stat.IO_REPARSE_TAG_MOUNT_POINT)
 
 
 def validate_source_bytes(source: Any, field: str = "source") -> dict[str, Any]:

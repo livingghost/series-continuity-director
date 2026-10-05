@@ -1,5 +1,17 @@
 # Changelog
 
+## [2026.10.05.1] - 2026-10-05
+
+- The public protocol set is identified by one content digest. `contract_set_sha256` in `protocols/contract-manifest.json` covers every schema, template and document under `protocols/`, the semantic rules and the validator.
+- An interchange envelope carries the sender's `contract_set_sha256`. Receipt refuses an envelope whose digest differs from the installed set and names both digests.
+- A scene persona material carries `medium`, `text` or `image`, and `identities`, the accepted image of each depicted subject by path and digest. `scene_persona.py draft --medium` sets the medium, and a plot realized as shots or pages requires an image material.
+- The production specification is the embedded form with `render_intent`. A subject that names an identity contract carries its morphology references and resolved morphology.
+- The camera framing and performance language contracts, and the scene, shot and transition identifier pattern `^[A-Za-z0-9][A-Za-z0-9._:-]*$`, are the set's one definition in every installation.
+- `scripts/protocol_contract.py`, the validator, is a sealed member of the set. Its digest is part of `contract_set_sha256`, and a changed validator is refused with the set.
+- A file under `protocols/` that the contract manifest does not list stops `seal_contract.py` and every protocol operation, and the refusal names the file.
+- Every template under `protocols/` carries the all-zero placeholder for each hash. `validate_state_protocol.py` and `validate_viewpoint_protocol.py` refuse a template that carries a computed hash.
+- `protocols/` holds the public protocol set alone. The narrative contract is `references/narrative-protocol.md` with numbered sections, the target profiles live under `targets/`, and the capability declaration is `config/integration-capabilities.json`.
+
 ## [2026.09.27.1] - 2026-09-27
 
 - Add pre-generation lane and duration feasibility so provider minima, edit spans, reference modes, handles and unresolved performance evidence are separated before execution.
